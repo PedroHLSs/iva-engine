@@ -1,0 +1,84 @@
+# ---------------------------------------------------------------------------
+# BLOQUEIO OBRIGATORIO DE DADOS FISCAIS
+#
+# Este projeto processa documentos fiscais reais de uma empresa.
+# Nenhum arquivo de dado pode entrar no historico do Git.
+# Nao remova nem afrouxe as regras abaixo.
+# ---------------------------------------------------------------------------
+dados/
+*.xml
+*.zip
+*.p12
+*.pfx
+
+# Excecao deliberada: o descritor do build precisa ser versionado.
+# Qualquer outro XML que precise entrar no repositorio exige uma excecao
+# explicita adicionada aqui, uma linha por arquivo, com justificativa.
+!pom.xml
+
+# Outros formatos comuns de carga de dado fiscal / normativo
+*.csv
+*.txt.gz
+*.7z
+*.rar
+*.pem
+*.jks
+*.key
+
+# ---------------------------------------------------------------------------
+# Maven
+# ---------------------------------------------------------------------------
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# ---------------------------------------------------------------------------
+# Java
+# ---------------------------------------------------------------------------
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+
+# ---------------------------------------------------------------------------
+# IDEs
+# ---------------------------------------------------------------------------
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+bin/
+nbproject/
+nb-configuration.xml
+
+# ---------------------------------------------------------------------------
+# Sistema operacional
+# ---------------------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------------------------------------------------------------------------
+# Ambiente local
+# ---------------------------------------------------------------------------
+.env
+*.local
+application-local.properties
+application-local.yml
+logs/
+*.log
