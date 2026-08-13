@@ -187,3 +187,128 @@ Custos aceitos:
   existirem. Isso é intencional: sem tabela, a saída correta é `NAO_AVALIADO`.
 
 ---
+
+## D003 — Toda consulta normativa é resolvida na data do documento
+
+**Etapa:** 2 — Catálogo normativo e resolução por vigência
+**Status:** Aceita
+
+> Numeração: esta é a decisão que a Etapa 2 pediu sob o rótulo "D002". Como
+> `D002` já estava ocupado pela Etapa 1, foi registrada como `D003`.
+
+### Contexto
+
+O sistema audita documentos já emitidos, e o conhecimento jurídico que ele
+consulta muda ao longo do tempo. Um `cClassTrib` pode ter um conjunto de CSTs
+compatíveis num período e outro no período seguinte; um NCM pode entrar e sair
+de um anexo; uma alíquota é substituída. Auditar um documento emitido no ano
+passado contra a versão de hoje do catálogo produz apontamento fundamentado em
+norma que não valia quando o documento foi emitido.
+
+Esse erro tem uma característica que o torna especialmente perigoso num TCC:
+**ele é silencioso e o resultado parece plausível**. O relatório sai bem
+formatado, com fundamento citado e valor calculado, e está errado. Nada falha,
+nada avisa.
+
+O caminho de menor esforço conduz direto a ele, por três portas:
+
+1. o repositório expõe `buscarPorCodigo(codigo)` e alguém, mais tarde, precisa
+   de "o registro atual";
+2. uma regra chama `LocalDate.now()` porque a data não chegou até ela;
+3. o catálogo guarda só a última versão de cada registro, porque foi assim que
+   o CSV foi carregado.
+
+Havia ainda um segundo problema, independente do primeiro: **catálogo com duas
+versões do mesmo registro valendo na mesma data**. Quem consulta não tem como
+saber qual das duas responder, e qualquer critério de desempate — a mais
+recente, a primeira carregada, a de maior vigência — seria inventado por quem
+escreveu o código, não pela norma.
+
+### Decisão
+
+**A data é fixada uma vez, na fronteira, e as regras não a veem.**
+
+- `ContextoNormativo` é a única porta pela qual uma regra de auditoria consulta
+  o catálogo. **Nenhum método dela aceita data como parâmetro**, e nenhum
+  devolve data. A regra pergunta "o que o catálogo diz sobre este código?" e
+  recebe a resposta já resolvida.
+- `ContextoNormativoNaData` recebe a data de emissão do documento no construtor
+  e a guarda em campo privado sem acessor. Não há construtor sem data.
+- Os repositórios — `RepositorioClassificacaoTributaria`, `RepositorioNcm`,
+  `RepositorioItemAnexo`, `RepositorioAliquota` — recebem `LocalDate` como
+  parâmetro, porque é neles que a resolução acontece. Regra nenhuma fala com
+  eles.
+- Não há chamada a `LocalDate.now()` em nenhum ponto do domínio.
+- Uma regra que precise registrar a vigência aplicada num `Achado` a toma do
+  registro que consultou, via `RegistroNormativo.vigencia()` — a vigência que
+  de fato sustentou o apontamento, e não uma data solta que a regra teria de
+  correlacionar por conta própria.
+
+**Vigência e fonte moram num tipo só.** `ProcedenciaNormativa` reúne
+`vigenciaInicio`, `vigenciaFim` e `fonteNormativa`, e todo registro do catálogo
+a carrega através da interface `RegistroNormativo`. Não é economia de digitação:
+é a garantia de que um tipo novo de registro não possa nascer sem data ou sem
+fonte. Registro sem vigência não pode ser resolvido no tempo; registro sem fonte
+gera apontamento que ninguém consegue conferir.
+
+**Sobreposição de vigência é erro de catálogo, e falha na carga.**
+`SerieNormativa` agrupa as versões de uma mesma chave e se recusa a existir se
+duas delas valerem na mesma data. A invariante fica no domínio, não no
+repositório: trocar armazenamento em memória por PostgreSQL não pode ser
+oportunidade de perdê-la. A carga falha inteira, e não parcialmente — catálogo
+meio carregado responderia vazio para o que faltou, e vazio significa "o
+catálogo nada diz", de modo que um erro de carga sairia no relatório disfarçado
+de `NAO_AVALIADO`.
+
+**A chave da série é a identidade completa do registro, não um campo isolado.**
+Item de anexo tem chave `NCM + anexo`; alíquota tem chave
+`tributo + abrangência`. Se a chave do item de anexo fosse só o NCM, o catálogo
+recusaria como "sobreposição" um NCM vinculado a dois anexos ao mesmo tempo — o
+que equivaleria a o código afirmar que isso não pode acontecer. Quem afirma o
+que pode e o que não pode é a fonte importada.
+
+**Consulta sem resposta devolve vazio, nunca a versão mais próxima.** Data
+anterior à primeira vigência, posterior à última, ou caída num intervalo
+descoberto entre duas versões: todas devolvem vazio. Vazio significa "o catálogo
+nada diz nesta data" e leva a `NAO_AVALIADO` — nunca a conformidade, e nunca a
+um chute pela versão vizinha.
+
+**O catálogo entra vazio e só por importação.** Os quatro importadores CSV
+recusam qualquer linha sem `vigenciaInicio` ou sem `fonteNormativa`, sempre
+indicando o número da linha física do arquivo — quem opera o catálogo não é quem
+escreveu o código, e "linha 7 sem fonteNormativa" é acionável enquanto "erro de
+importação" não é. Quando um valor lido viola invariante do domínio, a exceção
+do domínio vai como causa e a mensagem acrescenta a linha.
+
+### Consequência
+
+Ganhos:
+
+- É estruturalmente impossível uma regra de auditoria consultar o catálogo numa
+  data que não seja a do documento. Não depende de disciplina de quem escreve a
+  regra, e há teste por reflexão que falha se algum método de
+  `ContextoNormativo` passar a aceitar ou devolver data.
+- O mesmo documento auditado hoje e daqui a dois anos produz o mesmo relatório,
+  desde que o catálogo não seja reescrito retroativamente.
+- Todo apontamento consegue citar a fonte e a vigência exatas que o
+  sustentaram, porque o registro consultado as carrega.
+- Catálogo contraditório falha alto, na carga, e não silenciosamente na
+  consulta.
+
+Custos aceitos:
+
+- A camada de aplicação passa a ter uma responsabilidade obrigatória: construir
+  um `ContextoNormativo` por documento auditado. Não há contexto global nem
+  reaproveitável entre documentos de datas diferentes.
+- Consultar "o que vale hoje" não é uma operação que o sistema ofereça a regras.
+  Se algum dia for preciso — para uma tela de conferência de catálogo, por
+  exemplo — isso será um caso de uso próprio na aplicação, com data explícita,
+  e não um método novo em `ContextoNormativo`.
+- Corrigir uma linha errada do catálogo exige entender vigências: não se
+  sobrescreve o registro, fecha-se a vigência anterior e abre-se a seguinte.
+  Cargas descuidadas falham em vez de "funcionar".
+- O leitor de CSV é próprio, sem biblioteca. Suporta aspas e separador `;`, mas
+  não campo com quebra de linha — o que manteria a numeração de linha honesta
+  deixaria de valer, e a numeração é o que torna a recusa acionável.
+
+---

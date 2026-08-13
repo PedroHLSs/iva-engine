@@ -2,7 +2,11 @@
   "permissions": {
     "allow": [
       "PowerShell(java *)",
-      "PowerShell(mvn *)"
+      "PowerShell(mvn *)",
+      "Bash(git fetch *)",
+      "Bash(git rev-list *)",
+      "Bash(git ls-tree *)",
+      "Bash(mvn -o test)"
     ]
   }
 }
