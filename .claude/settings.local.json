@@ -6,7 +6,8 @@
       "Bash(git fetch *)",
       "Bash(git rev-list *)",
       "Bash(git ls-tree *)",
-      "Bash(mvn -o test)"
+      "Bash(mvn -o test)",
+      "PowerShell(git check-ignore *)"
     ]
   }
 }
