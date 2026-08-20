@@ -442,3 +442,148 @@ Custos aceitos:
   que o teste tenha pedido, e nenhum zero surge de padrão.
 
 ---
+
+## D005 — A fronteira do XML: leiaute gerado, ausência preservada, participante pseudonimizado
+
+**Etapa:** 4 — Leitura de XML e normalização
+**Status:** Aceita
+
+### Contexto
+
+Esta etapa liga o sistema ao mundo. Até aqui o domínio recebia dados montados à
+mão em teste; agora ele recebe o que uma empresa real emitiu. A fronteira entre
+o arquivo e o modelo é onde quatro coisas dão errado ao mesmo tempo, e todas as
+quatro por conveniência.
+
+**Primeira: o leiaute vira código.** Escrever o parser à mão significa digitar
+`getElementsByTagName("vBC")` e afirmar, em Java, o que a norma diz que o
+documento contém. Cada nome de elemento escrito à mão é uma afirmação sobre o
+leiaute que ninguém conferiu, e que envelhece na primeira nota técnica. O mesmo
+vale para "quase à mão": biblioteca genérica de XML com caminhos em texto.
+
+**Segunda: ausência vira zero.** Toda biblioteca de XML devolve `null` para
+elemento que não veio, e `null` vira `0` na primeira conta ou na primeira coluna
+`NOT NULL DEFAULT 0`. D002 existe justamente para separar "o contribuinte não
+declarou" de "o contribuinte declarou zero", e é aqui — no ponto onde o dado
+entra — que essa distinção se perde ou se preserva. Perdida aqui, nenhuma regra
+adiante consegue recuperá-la.
+
+**Terceira: o CNPJ entra junto.** O documento traz CNPJ, CPF, razão social e
+endereço de quem emitiu e de quem recebeu. O repositório processa notas reais de
+uma empresa. Se esses valores atravessarem a fronteira, passam a existir em todo
+objeto, todo log, toda mensagem de erro e todo relatório do sistema.
+
+**Quarta: um arquivo ruim derruba o lote.** Acervo real tem arquivo truncado
+pela metade, arquivo que na verdade é um evento de cancelamento, arquivo com
+campo fora da forma esperada. Um laço que lê tudo e explode no primeiro problema
+processa quinhentos documentos e não entrega nenhum.
+
+### Decisão
+
+**O leiaute não é escrito, é gerado.** As classes de leitura vêm do XSD oficial
+do Portal Nacional da NF-e, compilado pelo `jaxb2-maven-plugin` para o pacote
+`infraestrutura.xml.gerado` em `target/generated-sources`. Nenhum nome de
+elemento do documento fiscal é digitado neste repositório fora do XSD — a
+exceção é o próprio ponto de tradução, e ela é única e localizada.
+
+Os XSD **não são versionados por padrão** e não são reproduzidos aqui: quem
+clona baixa o Pacote de Liberação do Portal e copia seis arquivos para
+`src/main/resources/schemas`, conforme o `LEIAME.md` de lá. Só os dois esquemas
+raiz — `procNFe_v4.00.xsd` e `nfe_v4.00.xsd` — entram na configuração do plugin;
+os outros quatro chegam por `xs:include`. Listar todos faria o XJC compilar o
+mesmo esquema duas vezes e falhar com colisão de nomes na `ObjectFactory`.
+
+**As classes geradas param na fronteira.** Só `infraestrutura.xml` as enxerga, e
+há teste (`ClassesGeradasNaoVazam`) que varre o código de produção fora desse
+pacote e falha se alguém importar o pacote gerado, `jakarta.xml.bind` ou
+`javax.xml.stream`. Sem isso, o primeiro caso de uso que aceitar um `TNFe` por
+parâmetro transforma a versão do esquema em parte da assinatura do sistema.
+
+**Ausência atravessa como ausência.** Campo que não veio e campo em branco viram
+`Optional.empty()`; campo declarado como `0` vira `Optional.of(ZERO)`. Os valores
+são construídos a partir do texto do XML, o que preserva a escala declarada —
+`99.99` e `9.9900` chegam ao domínio com as casas que o documento escreveu.
+Percentual entra como declarado, sem conversão para fração.
+
+**Onde o leiaute traz um campo e o domínio tem dois, o valor é repetido.** O
+grupo `IBSCBS` do item declara um `CST`, um `cClassTrib` e um `vBC` únicos,
+válidos para os dois tributos; `ItemDocumento` tem campo separado para IBS e
+para CBS. A normalização preenche os dois com o valor declarado, porque foi isso
+que o documento afirmou dos dois. Deixar o lado da CBS vazio faria as regras
+apontarem ausência de campo que o contribuinte preencheu — apontamento falso, que
+é o pior defeito possível numa ferramenta de auditoria.
+
+**Participante só entra pseudonimizado, e o sal vem de fora.** CNPJ e CPF passam
+por SHA-256 com um sal de instalação que **não tem valor padrão**: sem ele
+configurado, o sistema para. Sal fixo em código estaria no repositório e no jar,
+e o espaço de CNPJ é pequeno o bastante para ser percorrido inteiro por força
+bruta — pseudônimo com sal público é reversível, e portanto não é
+pseudonimização. A garantia é verificada por varredura: o teste percorre o objeto
+normalizado inteiro por reflexão, campo a campo, dentro de `Optional` e de lista,
+e falha se encontrar o identificador que entrou pelo XML.
+
+**A chave de acesso é preservada como veio, e isso tem preço.** Ela é a
+identidade do documento auditado: é o que liga o apontamento ao arquivo e é o que
+o contribuinte usa para conferir. Também carrega o CNPJ do emitente nas posições
+intermediárias, por definição do leiaute. Logo: **documento com participantes
+pseudonimizados não é documento anônimo.** A varredura ignora a chave, de
+propósito e com comentário no teste, para não fingir uma garantia que o sistema
+não dá.
+
+**Documento que o domínio não representa é recusado inteiro.** Chave com 43
+dígitos, NCM fora da forma, data ilegível: a exceção sobe e o documento não é
+normalizado. Não há conserto silencioso nem descarte de campo — um documento
+representado pela metade entraria no relatório parecendo íntegro.
+
+**O lote registra e continua.** Cada arquivo é lido e fechado antes do seguinte;
+falha em um vira `FalhaDeLeitura` — origem, tipo do erro e motivo — e o lote
+segue. A única exceção é a falta do sal, que é erro de configuração da instalação
+e vale para todos os arquivos. A ordem de processamento sai do nome do arquivo, e
+não da listagem do sistema de arquivos, para que dois relatórios do mesmo acervo
+possam ser comparados linha a linha.
+
+**Entrada é tratada como não confiável.** DTD e entidades externas estão
+desligados no leitor. Sem isso, um documento com `<!DOCTYPE>` faria o processo
+abrir arquivo local ou fazer requisição de rede em nome de quem rodou a
+auditoria.
+
+### Consequência
+
+Ganhos:
+
+- Trocar de versão de leiaute é baixar outro pacote de XSD e recompilar. Nenhum
+  nome de campo do documento fiscal está escrito à mão para ser caçado depois.
+- A distinção entre omissão e declaração sobrevive à entrada, que era o único
+  ponto onde D002 ainda podia ser perdida sem ninguém ver.
+- Não existe caminho pelo qual CNPJ ou CPF cheguem ao domínio, e a afirmação é
+  testada por varredura, não por leitura de código.
+- Um acervo de dezenas de milhares de notas passa pelo leitor sem caber na
+  memória, e o que não pôde ser lido aparece contado e nomeado.
+
+Custos aceitos:
+
+- **O projeto não compila logo depois do clone.** Falta baixar os XSD. É o preço
+  de não versionar esquema de terceiro por conta própria; o `LEIAME.md` diz
+  exatamente quais arquivos e de onde, e a falha do build aponta o diretório.
+- **O caminho do projeto não pode conter acento.** O XJC monta a URI base do
+  esquema sem codificar caracteres não-ASCII, e os `xs:include` relativos deixam
+  de resolver — em `.../Área de Trabalho/...` a geração falha dizendo que não
+  achou `leiauteNFe_v4.00.xsd`. Não é defeito do plugin: acontece igual chamando
+  o XJC direto. Espaço no caminho é inofensivo; acento não.
+- **NCM de dois dígitos, que o leiaute admite, faz o documento inteiro ser
+  recusado**, porque `Ncm` exige oito. Hoje isso vira falha registrada e visível.
+  Aceitar esses documentos exige mexer no domínio da Etapa 1, e essa decisão não
+  foi tomada aqui.
+- **A repetição do CST e da base nos dois tributos é leitura do leiaute atual.**
+  Se uma nota técnica passar a declarar CST próprio para a CBS, este é o ponto
+  que muda.
+- **`indicadorDestinatario` foi mapeado para `dest/indIEDest`** e `crtEmitente`
+  para `emit/CRT`. O primeiro é interpretação do nome escolhido na Etapa 1, que
+  não registrou de qual campo do leiaute vinha.
+- **O leitor de lote captura `RuntimeException` por arquivo.** Erro de
+  programação também vira falha registrada, em vez de subir. Fica visível no
+  relatório com o nome da exceção, mas não interrompe o lote.
+- Os XML sintéticos de teste caem no bloqueio de `*.xml` do `.gitignore` e
+  precisam de `git add -f`, um a um. É intencional, e vale a conferida.
+
+---

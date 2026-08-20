@@ -24,6 +24,39 @@ src/main/java/br/edu/tcc/auditoria/
   infraestrutura/   XML, banco, CSV, Spring
 ```
 
+## Antes do primeiro build: baixar os esquemas XSD
+
+A leitura de XML não é escrita à mão — as classes de leiaute são geradas do XSD
+oficial da NF-e. **Os XSD não vêm no clone.** Baixe o Pacote de Liberação no
+[Portal Nacional da NF-e](https://www.nfe.fazenda.gov.br/portal/listaConteudo.aspx?tipoConteudo=BMPFMBoln3w=)
+e copie seis arquivos para `src/main/resources/schemas`. A lista exata está em
+[`src/main/resources/schemas/LEIAME.md`](src/main/resources/schemas/LEIAME.md).
+
+Sem eles, o build falha em `generate-sources`.
+
+**O caminho do projeto não pode conter acento.** O XJC não resolve os
+`xs:include` relativos quando o caminho tem caractere não-ASCII — em
+`...\Área de Trabalho\...` a geração falha dizendo que não achou
+`leiauteNFe_v4.00.xsd`. Espaço no caminho é inofensivo; acento não. Detalhes no
+`LEIAME.md` e em D005.
+
+## Configuração obrigatória: sal de pseudonimização
+
+CNPJ e CPF não entram no núcleo do sistema em texto claro — viram resumo
+criptográfico com um sal de instalação. **Esse sal não tem valor padrão**, e sem
+ele configurado o processamento para. Defina antes de rodar:
+
+```bash
+# variável de ambiente
+export AUDITORIA_PSEUDONIMIZACAO_SAL="<valor aleatório com 32+ caracteres>"
+
+# ou propriedade de sistema
+mvn -Dauditoria.pseudonimizacao.sal="<valor aleatório com 32+ caracteres>" ...
+```
+
+Não versione o sal. Trocá-lo muda todos os pseudônimos e invalida a comparação
+com o que já foi processado.
+
 ## Como rodar os testes
 
 Requer JDK 21 e Maven 3.9+.

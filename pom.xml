@@ -22,14 +22,32 @@
         <java.version>21</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <jaxb2-maven-plugin.version>3.2.0</jaxb2-maven-plugin.version>
+        <pacote.das.classes.geradas>br.edu.tcc.auditoria.infraestrutura.xml.gerado</pacote.das.classes.geradas>
     </properties>
 
     <!--
         Nenhuma dependencia de web, JPA, Flyway ou driver de banco nesta etapa.
         O parent do Spring Boot entra apenas como gerenciador de versoes.
-        As versoes de JUnit 5 e AssertJ vem do dependencyManagement do parent.
+        As versoes de JUnit 5, AssertJ, jakarta.xml.bind-api e jaxb-runtime vem
+        do dependencyManagement do parent.
     -->
     <dependencies>
+        <!--
+            JAXB. Usado somente por infraestrutura/xml e pelas classes geradas a
+            partir do XSD oficial. O pacote dominio nao pode importar nada disto
+            (D001), e ha teste que verifica isso.
+        -->
+        <dependency>
+            <groupId>jakarta.xml.bind</groupId>
+            <artifactId>jakarta.xml.bind-api</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.glassfish.jaxb</groupId>
+            <artifactId>jaxb-runtime</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -41,5 +59,51 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <plugins>
+            <!--
+                Geracao das classes de leiaute a partir dos XSD oficiais do
+                Portal Nacional da NF-e.
+
+                Os XSD NAO estao no repositorio: quem clona o projeto precisa
+                baixa-los e coloca-los em src/main/resources/schemas. A lista
+                exata dos arquivos esta em src/main/resources/schemas/LEIAME.md.
+                Sem eles, este plugin nao gera nada e a compilacao falha
+                apontando o pacote inexistente.
+
+                Somente os dois esquemas raiz sao listados como fonte. Os demais
+                entram por xs:include a partir deles; lista-los tambem faria o
+                XJC compilar o mesmo esquema duas vezes e falhar com colisao de
+                nomes na ObjectFactory.
+
+                As classes geradas ficam num pacote separado e sao tratadas como
+                detalhe de infraestrutura: so infraestrutura/xml as enxerga.
+            -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>jaxb2-maven-plugin</artifactId>
+                <version>${jaxb2-maven-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>gerar-classes-do-leiaute-nfe</id>
+                        <goals>
+                            <goal>xjc</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <sources>
+                        <source>src/main/resources/schemas/procNFe_v4.00.xsd</source>
+                        <source>src/main/resources/schemas/nfe_v4.00.xsd</source>
+                    </sources>
+                    <packageName>${pacote.das.classes.geradas}</packageName>
+                    <outputDirectory>${project.build.directory}/generated-sources/jaxb</outputDirectory>
+                    <clearOutputDir>false</clearOutputDir>
+                    <locale>pt_BR</locale>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
 </project>
