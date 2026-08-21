@@ -1,0 +1,7 @@
+# ATENCAO: DADOS INTEIRAMENTE FICTICIOS, CRIADOS SO PARA TESTE AUTOMATIZADO.
+# Nenhum NCM, anexo, tratamento ou data deste arquivo corresponde a legislacao
+# real. Nao use este arquivo como referencia normativa.
+ncm;identificadorDoAnexo;tipoDeTratamento;vigenciaInicio;vigenciaFim;fonteNormativa
+00000000;ANEXO-XX;TRATAMENTO-XX;1900-01-01;1900-06-30;FONTE FICTICIA v0.0
+00000000;ANEXO-YY;TRATAMENTO-YY;1900-01-01;;FONTE FICTICIA v0.0
+99999999;ANEXO-XX;TRATAMENTO-ZZ;1900-01-01;;FONTE FICTICIA v0.0

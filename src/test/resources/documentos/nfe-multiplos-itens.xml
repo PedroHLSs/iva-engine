@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  DOCUMENTO SINTETICO DE TESTE - NAO E UM DOCUMENTO FISCAL REAL.
+
+  NF-e (modelo 55) com tres itens e destinatario pessoa fisica, para verificar
+  que cada item e normalizado por conta propria:
+
+    item 1 - grupo IBS/CBS completo;
+    item 2 - grupo IBS/CBS pela metade, so com CST e cClassTrib;
+    item 3 - sem grupo IBS/CBS nenhum.
+
+  Todos os valores sao ficticios.
+-->
+<NFe xmlns="http://www.portalfiscal.inf.br/nfe">
+	<infNFe versao="4.00" Id="NFe44444444444444444444444444444444444444444444">
+		<ide>
+			<cUF>31</cUF>
+			<cNF>66666666</cNF>
+			<natOp>OPERACAO FICTICIA DE TESTE</natOp>
+			<mod>55</mod>
+			<serie>999</serie>
+			<nNF>666666666</nNF>
+			<dhEmi>2026-04-05T08:15:00-03:00</dhEmi>
+			<tpNF>1</tpNF>
+			<idDest>2</idDest>
+			<cMunFG>3199999</cMunFG>
+			<tpImp>1</tpImp>
+			<tpEmis>1</tpEmis>
+			<cDV>4</cDV>
+			<tpAmb>2</tpAmb>
+			<finNFe>1</finNFe>
+			<indFinal>1</indFinal>
+			<indPres>2</indPres>
+			<procEmi>0</procEmi>
+			<verProc>TESTE-0.0.1</verProc>
+		</ide>
+		<emit>
+			<CNPJ>99999999999999</CNPJ>
+			<xNome>EMITENTE FICTICIO LTDA</xNome>
+			<enderEmit>
+				<xLgr>RUA FICTICIA</xLgr>
+				<nro>999</nro>
+				<xBairro>BAIRRO FICTICIO</xBairro>
+				<cMun>3199999</cMun>
+				<xMun>MUNICIPIO FICTICIO</xMun>
+				<UF>MG</UF>
+				<CEP>99999999</CEP>
+				<cPais>1058</cPais>
+				<xPais>BRASIL</xPais>
+			</enderEmit>
+			<IE>999999999</IE>
+			<CRT>3</CRT>
+		</emit>
+		<dest>
+			<CPF>77777777777</CPF>
+			<xNome>DESTINATARIO FICTICIO PESSOA FISICA</xNome>
+			<enderDest>
+				<xLgr>TRAVESSA FICTICIA</xLgr>
+				<nro>777</nro>
+				<xBairro>BAIRRO FICTICIO</xBairro>
+				<cMun>3599999</cMun>
+				<xMun>OUTRO MUNICIPIO FICTICIO</xMun>
+				<UF>SP</UF>
+				<CEP>77777777</CEP>
+				<cPais>1058</cPais>
+				<xPais>BRASIL</xPais>
+			</enderDest>
+			<indIEDest>9</indIEDest>
+		</dest>
+		<det nItem="1">
+			<prod>
+				<cProd>PROD-FICTICIO-1</cProd>
+				<cEAN>SEM GTIN</cEAN>
+				<xProd>PRIMEIRO PRODUTO FICTICIO</xProd>
+				<NCM>00000000</NCM>
+				<CFOP>6999</CFOP>
+				<uCom>UN</uCom>
+				<qCom>1.0000</qCom>
+				<vUnCom>11.1100000000</vUnCom>
+				<vProd>11.11</vProd>
+				<cEANTrib>SEM GTIN</cEANTrib>
+				<uTrib>UN</uTrib>
+				<qTrib>1.0000</qTrib>
+				<vUnTrib>11.1100000000</vUnTrib>
+				<indTot>1</indTot>
+			</prod>
+			<imposto>
+				<IBSCBS>
+					<CST>999</CST>
+					<cClassTrib>999999</cClassTrib>
+					<gIBSCBS>
+						<vBC>11.11</vBC>
+						<gIBSUF>
+							<pIBSUF>1.0000</pIBSUF>
+							<vIBSUF>1.11</vIBSUF>
+						</gIBSUF>
+						<gIBSMun>
+							<pIBSMun>2.0000</pIBSMun>
+							<vIBSMun>2.22</vIBSMun>
+						</gIBSMun>
+						<vIBS>3.33</vIBS>
+						<gCBS>
+							<pCBS>3.0000</pCBS>
+							<vCBS>3.33</vCBS>
+						</gCBS>
+					</gIBSCBS>
+				</IBSCBS>
+			</imposto>
+		</det>
+		<det nItem="2">
+			<prod>
+				<cProd>PROD-FICTICIO-2</cProd>
+				<cEAN>SEM GTIN</cEAN>
+				<xProd>SEGUNDO PRODUTO FICTICIO</xProd>
+				<NCM>00000000</NCM>
+				<CFOP>6999</CFOP>
+				<uCom>UN</uCom>
+				<qCom>1.0000</qCom>
+				<vUnCom>22.2200000000</vUnCom>
+				<vProd>22.22</vProd>
+				<cEANTrib>SEM GTIN</cEANTrib>
+				<uTrib>UN</uTrib>
+				<qTrib>1.0000</qTrib>
+				<vUnTrib>22.2200000000</vUnTrib>
+				<indTot>1</indTot>
+			</prod>
+			<imposto>
+				<IBSCBS>
+					<CST>888</CST>
+					<cClassTrib>888888</cClassTrib>
+				</IBSCBS>
+			</imposto>
+		</det>
+		<det nItem="3">
+			<prod>
+				<cProd>PROD-FICTICIO-3</cProd>
+				<cEAN>SEM GTIN</cEAN>
+				<xProd>TERCEIRO PRODUTO FICTICIO</xProd>
+				<NCM>00000000</NCM>
+				<CFOP>6999</CFOP>
+				<uCom>UN</uCom>
+				<qCom>1.0000</qCom>
+				<vUnCom>33.3300000000</vUnCom>
+				<vProd>33.33</vProd>
+				<cEANTrib>SEM GTIN</cEANTrib>
+				<uTrib>UN</uTrib>
+				<qTrib>1.0000</qTrib>
+				<vUnTrib>33.3300000000</vUnTrib>
+				<indTot>1</indTot>
+			</prod>
+			<imposto/>
+		</det>
+		<total>
+			<ICMSTot>
+				<vBC>0</vBC>
+				<vICMS>0</vICMS>
+				<vICMSDeson>0</vICMSDeson>
+				<vFCP>0</vFCP>
+				<vBCST>0</vBCST>
+				<vST>0</vST>
+				<vFCPST>0</vFCPST>
+				<vFCPSTRet>0</vFCPSTRet>
+				<vProd>66.66</vProd>
+				<vFrete>0</vFrete>
+				<vSeg>0</vSeg>
+				<vDesc>0</vDesc>
+				<vII>0</vII>
+				<vIPI>0</vIPI>
+				<vIPIDevol>0</vIPIDevol>
+				<vPIS>0</vPIS>
+				<vCOFINS>0</vCOFINS>
+				<vOutro>0</vOutro>
+				<vNF>66.66</vNF>
+			</ICMSTot>
+		</total>
+		<transp>
+			<modFrete>9</modFrete>
+		</transp>
+		<pag>
+			<detPag>
+				<tPag>90</tPag>
+				<vPag>66.66</vPag>
+			</detPag>
+		</pag>
+	</infNFe>
+	<Signature xmlns="http://www.w3.org/2000/09/xmldsig#">
+		<SignedInfo>
+			<CanonicalizationMethod Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+			<SignatureMethod Algorithm="http://www.w3.org/2000/09/xmldsig#rsa-sha1"/>
+			<Reference URI="#NFe44444444444444444444444444444444444444444444">
+				<Transforms>
+					<Transform Algorithm="http://www.w3.org/2000/09/xmldsig#enveloped-signature"/>
+					<Transform Algorithm="http://www.w3.org/TR/2001/REC-xml-c14n-20010315"/>
+				</Transforms>
+				<DigestMethod Algorithm="http://www.w3.org/2000/09/xmldsig#sha1"/>
+				<DigestValue>QUFB</DigestValue>
+			</Reference>
+		</SignedInfo>
+		<SignatureValue>QUFB</SignatureValue>
+		<KeyInfo>
+			<X509Data>
+				<X509Certificate>QUFB</X509Certificate>
+			</X509Data>
+		</KeyInfo>
+	</Signature>
+</NFe>

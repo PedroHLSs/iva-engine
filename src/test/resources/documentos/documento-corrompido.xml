@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ARQUIVO SINTETICO DE TESTE, PROPOSITALMENTE INVALIDO.
+
+  XML truncado no meio do grupo <ide>. Existe para verificar que um arquivo
+  ilegivel e registrado como falha e nao interrompe o processamento do lote.
+-->
+<nfeProc xmlns="http://www.portalfiscal.inf.br/nfe" versao="4.00">
+	<NFe>
+		<infNFe versao="4.00" Id="NFe55555555555555555555555555555555555555555555">
+			<ide>
+				<cUF>31</cUF>
+				<cNF>55555555

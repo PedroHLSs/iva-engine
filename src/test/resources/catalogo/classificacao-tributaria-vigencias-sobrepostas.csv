@@ -1,0 +1,7 @@
+# ATENCAO: DADOS INTEIRAMENTE FICTICIOS, CRIADOS SO PARA TESTE AUTOMATIZADO.
+# Arquivo propositalmente defeituoso: as duas linhas sao a mesma chave XXX001
+# com vigencias que se sobrepoem. A importacao passa; a carga do repositorio
+# e que recusa.
+codigo;cstsCompativeis;dispositivoLegal;indicadorDeBeneficio;percentualReducao;camposObrigatoriosCondicionados;vigenciaInicio;vigenciaFim;fonteNormativa
+XXX001;AAA;Dispositivo ficticio A;false;;;1900-01-01;1900-12-31;FONTE FICTICIA v0.0
+XXX001;BBB;Dispositivo ficticio B;false;;;1900-06-01;;FONTE FICTICIA v0.1

@@ -1,0 +1,5 @@
+# ATENCAO: DADOS INTEIRAMENTE FICTICIOS, CRIADOS SO PARA TESTE AUTOMATIZADO.
+# Arquivo propositalmente defeituoso: a ultima linha nao tem vigenciaInicio.
+codigo;cstsCompativeis;dispositivoLegal;indicadorDeBeneficio;percentualReducao;camposObrigatoriosCondicionados;vigenciaInicio;vigenciaFim;fonteNormativa
+XXX001;AAA;Dispositivo ficticio A;false;;;1900-01-01;;FONTE FICTICIA v0.0
+XXX002;AAA;Dispositivo ficticio B;false;;;;;FONTE FICTICIA v0.0
