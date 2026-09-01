@@ -2,6 +2,7 @@ package br.edu.tcc.auditoria.infraestrutura.catalogo;
 
 import br.edu.tcc.auditoria.dominio.PeriodoVigencia;
 import br.edu.tcc.auditoria.dominio.catalogo.ProcedenciaNormativa;
+import br.edu.tcc.auditoria.infraestrutura.csv.LinhaCsv;
 
 import java.time.LocalDate;
 import java.util.Optional;

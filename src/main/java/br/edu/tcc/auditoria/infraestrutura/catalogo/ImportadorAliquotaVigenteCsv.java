@@ -4,6 +4,8 @@ import br.edu.tcc.auditoria.dominio.catalogo.Abrangencia;
 import br.edu.tcc.auditoria.dominio.catalogo.AliquotaVigente;
 import br.edu.tcc.auditoria.dominio.catalogo.ProcedenciaNormativa;
 import br.edu.tcc.auditoria.dominio.catalogo.Tributo;
+import br.edu.tcc.auditoria.infraestrutura.csv.LeitorCsv;
+import br.edu.tcc.auditoria.infraestrutura.csv.LinhaCsv;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -32,7 +34,9 @@ public final class ImportadorAliquotaVigenteCsv {
     public static final String COLUNA_ABRANGENCIA = "abrangencia";
 
     public List<AliquotaVigente> importar(Reader origem) throws IOException {
-        return LeitorCsv.ler(origem).stream().map(this::converter).toList();
+        return LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new).stream()
+                .map(this::converter)
+                .toList();
     }
 
     public List<AliquotaVigente> importar(Path arquivo) throws IOException {

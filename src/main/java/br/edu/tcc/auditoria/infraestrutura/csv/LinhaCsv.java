@@ -1,4 +1,4 @@
-package br.edu.tcc.auditoria.infraestrutura.catalogo;
+package br.edu.tcc.auditoria.infraestrutura.csv;
 
 import br.edu.tcc.auditoria.dominio.excecao.ExcecaoDeDominio;
 
@@ -12,7 +12,7 @@ import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
- * Uma linha de dados de um CSV de catálogo, com acesso por nome de coluna.
+ * Uma linha de dados de um CSV, com acesso por nome de coluna.
  *
  * <p>Guarda o número da linha física no arquivo — contando comentários e linhas
  * em branco — para que toda recusa possa apontar onde corrigir.</p>
@@ -24,19 +24,25 @@ import java.util.function.Supplier;
  *
  * @param numero   linha física no arquivo, começando em 1
  * @param valores  valores por nome de coluna, já sem aspas
+ * @param recusa   como nomear a falha quando o valor lido não servir; vem de
+ *                 quem abriu o arquivo, porque só ele sabe de que assunto ele é
  */
-record LinhaCsv(int numero, Map<String, String> valores) {
+public record LinhaCsv(int numero, Map<String, String> valores, RecusaDeCsv recusa) {
 
     private static final String SEPARADOR_DE_LISTA = "|";
 
-    LinhaCsv {
+    public LinhaCsv {
+        if (recusa == null) {
+            throw new IllegalArgumentException(
+                    "A linha de CSV precisa saber como recusar um valor que não serve.");
+        }
         valores = Map.copyOf(valores);
     }
 
     /** Valor da coluna, vazio quando o campo veio em branco. */
-    Optional<String> texto(String coluna) {
+    public Optional<String> texto(String coluna) {
         if (!valores.containsKey(coluna)) {
-            throw new ImportacaoDeCatalogoInvalida(
+            throw recusa.de(
                     "Linha %d: o arquivo não tem a coluna \"%s\". Colunas encontradas: %s."
                             .formatted(numero, coluna, valores.keySet()));
         }
@@ -45,33 +51,46 @@ record LinhaCsv(int numero, Map<String, String> valores) {
     }
 
     /** Valor da coluna, recusando a linha quando o campo veio em branco. */
-    String textoObrigatorio(String coluna) {
-        return texto(coluna).orElseThrow(() -> new ImportacaoDeCatalogoInvalida(
+    public String textoObrigatorio(String coluna) {
+        return texto(coluna).orElseThrow(() -> recusa.de(
                 "Linha %d: a coluna \"%s\" é obrigatória e veio em branco.".formatted(numero, coluna)));
     }
 
-    Optional<LocalDate> data(String coluna) {
+    public Optional<LocalDate> data(String coluna) {
         return texto(coluna).map(valor -> converterData(coluna, valor));
     }
 
-    LocalDate dataObrigatoria(String coluna) {
+    public LocalDate dataObrigatoria(String coluna) {
         return converterData(coluna, textoObrigatorio(coluna));
     }
 
     /** Decimal aceitando vírgula ou ponto como separador. */
-    Optional<BigDecimal> decimal(String coluna) {
+    public Optional<BigDecimal> decimal(String coluna) {
         return texto(coluna).map(valor -> {
             try {
                 return new BigDecimal(valor.replace(",", "."));
             } catch (NumberFormatException naoENumero) {
-                throw new ImportacaoDeCatalogoInvalida(
+                throw recusa.de(
                         "Linha %d: a coluna \"%s\" não é um número: \"%s\".".formatted(numero, coluna, valor),
                         naoENumero);
             }
         });
     }
 
-    boolean booleanoObrigatorio(String coluna) {
+    /** Inteiro da coluna, recusando a linha quando o campo veio em branco ou não for número. */
+    public int inteiroObrigatorio(String coluna) {
+        String valor = textoObrigatorio(coluna);
+        try {
+            return Integer.parseInt(valor);
+        } catch (NumberFormatException naoENumero) {
+            throw recusa.de(
+                    "Linha %d: a coluna \"%s\" deve ser um número inteiro, mas veio \"%s\"."
+                            .formatted(numero, coluna, valor),
+                    naoENumero);
+        }
+    }
+
+    public boolean booleanoObrigatorio(String coluna) {
         String valor = textoObrigatorio(coluna);
         if ("true".equalsIgnoreCase(valor)) {
             return true;
@@ -79,13 +98,13 @@ record LinhaCsv(int numero, Map<String, String> valores) {
         if ("false".equalsIgnoreCase(valor)) {
             return false;
         }
-        throw new ImportacaoDeCatalogoInvalida(
+        throw recusa.de(
                 "Linha %d: a coluna \"%s\" aceita apenas \"true\" ou \"false\", mas veio \"%s\"."
                         .formatted(numero, coluna, valor));
     }
 
     /** Lista de valores separados por {@code |} dentro de um único campo; vazia quando o campo veio em branco. */
-    List<String> lista(String coluna) {
+    public List<String> lista(String coluna) {
         return texto(coluna)
                 .map(valor -> Arrays.stream(valor.split("\\" + SEPARADOR_DE_LISTA))
                         .map(String::strip)
@@ -100,11 +119,11 @@ record LinhaCsv(int numero, Map<String, String> valores) {
      * <p>Sem isto, um NCM malformado na linha 40 produziria "O NCM deve ter 8
      * dígitos" sem dizer onde.</p>
      */
-    <T> T converterCom(Supplier<T> conversao) {
+    public <T> T converterCom(Supplier<T> conversao) {
         try {
             return conversao.get();
         } catch (ExcecaoDeDominio recusaDoDominio) {
-            throw new ImportacaoDeCatalogoInvalida(
+            throw recusa.de(
                     "Linha %d: %s".formatted(numero, recusaDoDominio.getMessage()), recusaDoDominio);
         }
     }
@@ -113,7 +132,7 @@ record LinhaCsv(int numero, Map<String, String> valores) {
         try {
             return LocalDate.parse(valor);
         } catch (DateTimeParseException formatoInvalido) {
-            throw new ImportacaoDeCatalogoInvalida(
+            throw recusa.de(
                     "Linha %d: a coluna \"%s\" deve estar no formato aaaa-mm-dd, mas veio \"%s\"."
                             .formatted(numero, coluna, valor),
                     formatoInvalido);

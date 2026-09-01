@@ -4,6 +4,8 @@ import br.edu.tcc.auditoria.aplicacao.catalogo.CargaDeCatalogo;
 import br.edu.tcc.auditoria.aplicacao.catalogo.TabelaNormativa;
 import br.edu.tcc.auditoria.dominio.catalogo.ProcedenciaNormativa;
 import br.edu.tcc.auditoria.dominio.regras.CoberturaDoCatalogo;
+import br.edu.tcc.auditoria.infraestrutura.csv.LeitorCsv;
+import br.edu.tcc.auditoria.infraestrutura.csv.LinhaCsv;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -90,7 +92,7 @@ public final class LeitorDeCatalogoEmCsv {
     private static CoberturaDoCatalogo lerCobertura(Path arquivo) throws IOException {
         Map<String, ProcedenciaNormativa> porTabela = new LinkedHashMap<>();
         try (Reader origem = Files.newBufferedReader(arquivo, StandardCharsets.UTF_8)) {
-            for (LinhaCsv linha : LeitorCsv.ler(origem)) {
+            for (LinhaCsv linha : LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new)) {
                 String tabela = linha.textoObrigatorio(COLUNA_TABELA);
                 if (!ehTabelaConhecida(tabela)) {
                     throw new ImportacaoDeCatalogoInvalida(

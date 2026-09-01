@@ -3,6 +3,8 @@ package br.edu.tcc.auditoria.infraestrutura.catalogo;
 import br.edu.tcc.auditoria.dominio.Ncm;
 import br.edu.tcc.auditoria.dominio.catalogo.ProcedenciaNormativa;
 import br.edu.tcc.auditoria.dominio.catalogo.RegistroNcm;
+import br.edu.tcc.auditoria.infraestrutura.csv.LeitorCsv;
+import br.edu.tcc.auditoria.infraestrutura.csv.LinhaCsv;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -23,7 +25,9 @@ public final class ImportadorRegistroNcmCsv {
     public static final String COLUNA_DESCRICAO = "descricao";
 
     public List<RegistroNcm> importar(Reader origem) throws IOException {
-        return LeitorCsv.ler(origem).stream().map(this::converter).toList();
+        return LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new).stream()
+                .map(this::converter)
+                .toList();
     }
 
     public List<RegistroNcm> importar(Path arquivo) throws IOException {

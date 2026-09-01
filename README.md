@@ -235,6 +235,62 @@ sai como `(não informado)`, regra sem valor de referência a opor como
 sem decisão como `ABERTO`. Célula vazia numa planilha lida meses depois é
 indistinguível de célula que ninguém preencheu.
 
+### `avaliar-acuracia`
+
+Mede o motor contra um gabarito rotulado à mão, e imprime precisão, recall e F1
+por regra e consolidados. É o resultado empírico do trabalho.
+
+```bash
+java -jar target/auditoria-ibs-cbs-0.0.1-SNAPSHOT.jar avaliar-acuracia --origem=dados/amostra --gabarito=gabarito.csv
+
+java -jar target/auditoria-ibs-cbs-0.0.1-SNAPSHOT.jar avaliar-acuracia --origem=dados/amostra --gabarito=gabarito.csv --relatorio=relatorios/acuracia.csv
+```
+
+O gabarito é um CSV com quatro colunas obrigatórias — separador `;`, UTF-8,
+linhas iniciadas por `#` são comentário:
+
+| Coluna | O que traz |
+|---|---|
+| `chave_documento` | Chave de acesso do documento, 44 dígitos |
+| `numero_item` | Número do item dentro do documento, a partir de 1 |
+| `regra_id` | Identificador da regra (`R01` a `R07`) |
+| `rotulo_esperado` | `ACHADO` ou `CONFORME` — nada mais |
+
+Sem `--relatorio`, o resultado sai apenas no terminal. Com ele, sai também num
+CSV com uma linha por regra e uma consolidada, e a identificação da rodada em
+linhas de comentário no topo.
+
+**`NAO_AVALIADO` não é rótulo de gabarito e não conta como acerto nem como
+erro.** Quem rotula responde sobre o documento, não sobre o sistema. Quando o
+motor não consegue julgar — faltou campo no documento ou tabela no catálogo —
+isso fica **fora de precisão, recall e F1** e aparece na **cobertura**, que é
+`avaliados / total do gabarito`, reportada como métrica própria.
+
+Essa separação é o ponto da etapa: um sistema que não avalia nada tem precisão
+**indefinida**, não precisão perfeita.
+
+**Métrica sem denominador sai como `(indefinida)`, nunca como zero ou um.**
+Precisão exige `VP + FP > 0`, recall exige `VP + FN > 0`, e F1 só é definido
+quando os dois são. Campo em branco num relatório lido depois é indistinguível de
+campo que ninguém preencheu.
+
+**O consolidado soma células, não faz média das métricas por regra.** A média
+trataria uma regra com três linhas rotuladas igual a uma com duzentas.
+
+**Toda regra do conjunto ganha linha**, inclusive as que o gabarito não cita —
+zeradas, com métricas indefinidas. Omiti-las faria o relatório parecer completo
+quando não é.
+
+**Linha de gabarito cujo item o motor não avaliou** — documento fora do lote,
+item inexistente — é contada em `SemAval`, listada com endereço, e também fica
+fora das métricas: é desalinhamento entre gabarito e acervo, não qualidade de
+regra.
+
+**Nada é gravado no banco.** Medir não é auditar: a medição roda o motor de novo
+e não entra no histórico de execuções nem vira papel de trabalho. Rodar o motor
+de novo é obrigatório, aliás — o banco não guarda avaliação conforme, e sem elas
+metade da matriz de confusão seria inobservável.
+
 ## Como rodar os testes
 
 Requer JDK 21 e Maven 3.9+.

@@ -4,6 +4,8 @@ import br.edu.tcc.auditoria.dominio.CodigoClassificacaoTributaria;
 import br.edu.tcc.auditoria.dominio.CodigoCst;
 import br.edu.tcc.auditoria.dominio.catalogo.ClassificacaoTributaria;
 import br.edu.tcc.auditoria.dominio.catalogo.ProcedenciaNormativa;
+import br.edu.tcc.auditoria.infraestrutura.csv.LeitorCsv;
+import br.edu.tcc.auditoria.infraestrutura.csv.LinhaCsv;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -36,7 +38,9 @@ public final class ImportadorClassificacaoTributariaCsv {
     public static final String COLUNA_CAMPOS_OBRIGATORIOS = "camposObrigatoriosCondicionados";
 
     public List<ClassificacaoTributaria> importar(Reader origem) throws IOException {
-        return LeitorCsv.ler(origem).stream().map(this::converter).toList();
+        return LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new).stream()
+                .map(this::converter)
+                .toList();
     }
 
     public List<ClassificacaoTributaria> importar(Path arquivo) throws IOException {

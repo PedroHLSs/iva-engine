@@ -1,4 +1,4 @@
-package br.edu.tcc.auditoria.infraestrutura.catalogo;
+package br.edu.tcc.auditoria.infraestrutura.csv;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Leitor dos CSVs de catálogo.
+ * Leitor dos CSVs que entram no sistema.
  *
  * <p>Convenções do formato, todas escolhidas por conveniência de operação e
  * nenhuma delas com significado normativo:</p>
@@ -25,8 +25,13 @@ import java.util.Map;
  *       uma aspa literal. Aspas não podem envolver quebra de linha: a numeração
  *       de linha precisa continuar valendo para as mensagens de erro.</li>
  * </ul>
+ *
+ * <p>Nasceu na Etapa 2, dentro de {@code infraestrutura.catalogo}, e mudou para
+ * cá na Etapa 7, quando o gabarito de acurácia passou a precisar do mesmo
+ * formato — ver D008. O leitor não sabe de que assunto é o arquivo: quem o chama
+ * informa, por {@link RecusaDeCsv}, como uma recusa deve ser nomeada.</p>
  */
-final class LeitorCsv {
+public final class LeitorCsv {
 
     private static final char SEPARADOR = ';';
     private static final char ASPAS = '"';
@@ -35,9 +40,19 @@ final class LeitorCsv {
     private LeitorCsv() {
     }
 
-    static List<LinhaCsv> ler(Reader origem) throws IOException {
+    /**
+     * Lê o CSV inteiro.
+     *
+     * @param origem de onde ler; a codificação é de quem abriu o {@link Reader}
+     * @param recusa como nomear a falha quando o arquivo estiver malformado
+     */
+    public static List<LinhaCsv> ler(Reader origem, RecusaDeCsv recusa) throws IOException {
+        if (recusa == null) {
+            throw new IllegalArgumentException(
+                    "O leitor de CSV precisa saber como recusar um arquivo malformado.");
+        }
         if (origem == null) {
-            throw new ImportacaoDeCatalogoInvalida("Nenhuma origem de CSV informada para importação.");
+            throw recusa.de("Nenhuma origem de CSV informada para leitura.");
         }
 
         List<String> cabecalho = null;
@@ -53,15 +68,15 @@ final class LeitorCsv {
                 }
                 List<String> campos = dividir(conteudo);
                 if (cabecalho == null) {
-                    cabecalho = validarCabecalho(campos, numeroDaLinha);
+                    cabecalho = validarCabecalho(campos, numeroDaLinha, recusa);
                     continue;
                 }
-                linhas.add(montarLinha(cabecalho, campos, numeroDaLinha));
+                linhas.add(montarLinha(cabecalho, campos, numeroDaLinha, recusa));
             }
         }
 
         if (cabecalho == null) {
-            throw new ImportacaoDeCatalogoInvalida(
+            throw recusa.de(
                     "O arquivo não tem cabeçalho: só foram encontradas linhas em branco ou comentários.");
         }
         return List.copyOf(linhas);
@@ -72,24 +87,27 @@ final class LeitorCsv {
         return semEspacos.isEmpty() || semEspacos.startsWith(MARCA_DE_COMENTARIO);
     }
 
-    private static List<String> validarCabecalho(List<String> campos, int numeroDaLinha) {
+    private static List<String> validarCabecalho(
+            List<String> campos, int numeroDaLinha, RecusaDeCsv recusa) {
+
         List<String> colunas = campos.stream().map(String::strip).toList();
         for (String coluna : colunas) {
             if (coluna.isBlank()) {
-                throw new ImportacaoDeCatalogoInvalida(
-                        "Linha %d: o cabeçalho tem coluna sem nome.".formatted(numeroDaLinha));
+                throw recusa.de("Linha %d: o cabeçalho tem coluna sem nome.".formatted(numeroDaLinha));
             }
             if (colunas.indexOf(coluna) != colunas.lastIndexOf(coluna)) {
-                throw new ImportacaoDeCatalogoInvalida(
+                throw recusa.de(
                         "Linha %d: o cabeçalho repete a coluna \"%s\".".formatted(numeroDaLinha, coluna));
             }
         }
         return colunas;
     }
 
-    private static LinhaCsv montarLinha(List<String> cabecalho, List<String> campos, int numeroDaLinha) {
+    private static LinhaCsv montarLinha(
+            List<String> cabecalho, List<String> campos, int numeroDaLinha, RecusaDeCsv recusa) {
+
         if (campos.size() != cabecalho.size()) {
-            throw new ImportacaoDeCatalogoInvalida(
+            throw recusa.de(
                     "Linha %d: o cabeçalho tem %d colunas, mas a linha tem %d campos."
                             .formatted(numeroDaLinha, cabecalho.size(), campos.size()));
         }
@@ -97,7 +115,7 @@ final class LeitorCsv {
         for (int posicao = 0; posicao < cabecalho.size(); posicao++) {
             valores.put(cabecalho.get(posicao), campos.get(posicao));
         }
-        return new LinhaCsv(numeroDaLinha, valores);
+        return new LinhaCsv(numeroDaLinha, valores, recusa);
     }
 
     private static List<String> dividir(String conteudo) {

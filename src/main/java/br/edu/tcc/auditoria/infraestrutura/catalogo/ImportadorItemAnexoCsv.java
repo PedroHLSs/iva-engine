@@ -4,6 +4,8 @@ import br.edu.tcc.auditoria.dominio.Ncm;
 import br.edu.tcc.auditoria.dominio.catalogo.IdentificadorAnexo;
 import br.edu.tcc.auditoria.dominio.catalogo.ItemAnexo;
 import br.edu.tcc.auditoria.dominio.catalogo.ProcedenciaNormativa;
+import br.edu.tcc.auditoria.infraestrutura.csv.LeitorCsv;
+import br.edu.tcc.auditoria.infraestrutura.csv.LinhaCsv;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -26,7 +28,9 @@ public final class ImportadorItemAnexoCsv {
     public static final String COLUNA_TIPO_DE_TRATAMENTO = "tipoDeTratamento";
 
     public List<ItemAnexo> importar(Reader origem) throws IOException {
-        return LeitorCsv.ler(origem).stream().map(this::converter).toList();
+        return LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new).stream()
+                .map(this::converter)
+                .toList();
     }
 
     public List<ItemAnexo> importar(Path arquivo) throws IOException {

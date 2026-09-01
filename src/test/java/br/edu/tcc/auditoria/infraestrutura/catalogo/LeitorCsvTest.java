@@ -1,5 +1,8 @@
 package br.edu.tcc.auditoria.infraestrutura.catalogo;
 
+import br.edu.tcc.auditoria.infraestrutura.csv.LeitorCsv;
+import br.edu.tcc.auditoria.infraestrutura.csv.LinhaCsv;
+
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -21,7 +24,7 @@ class LeitorCsvTest {
                 outroValorFicticio
                 """;
 
-        List<LinhaCsv> linhas = LeitorCsv.ler(ArquivoDeTeste.conteudo(csv));
+        List<LinhaCsv> linhas = ler(csv);
 
         assertThat(linhas).hasSize(2);
         assertThat(linhas.get(0).numero()).isEqualTo(4);
@@ -30,7 +33,7 @@ class LeitorCsvTest {
 
     @Test
     void deveTratarCampoEmBrancoComoAusente() throws IOException {
-        List<LinhaCsv> linhas = LeitorCsv.ler(ArquivoDeTeste.conteudo("colunaA;colunaB\nvalorFicticio;   \n"));
+        List<LinhaCsv> linhas = ler("colunaA;colunaB\nvalorFicticio;   \n");
 
         assertThat(linhas.get(0).texto("colunaA")).contains("valorFicticio");
         assertThat(linhas.get(0).texto("colunaB")).isEmpty();
@@ -38,7 +41,7 @@ class LeitorCsvTest {
 
     @Test
     void deveRecusarColunaQueNaoExisteNoCabecalho() throws IOException {
-        List<LinhaCsv> linhas = LeitorCsv.ler(ArquivoDeTeste.conteudo("colunaA\nvalorFicticio\n"));
+        List<LinhaCsv> linhas = ler("colunaA\nvalorFicticio\n");
 
         assertThatThrownBy(() -> linhas.get(0).texto("colunaInexistente"))
                 .isInstanceOf(ImportacaoDeCatalogoInvalida.class)
@@ -47,35 +50,35 @@ class LeitorCsvTest {
 
     @Test
     void deveRecusarLinhaComQuantidadeDeCamposDiferenteDoCabecalho() {
-        assertThatThrownBy(() -> LeitorCsv.ler(ArquivoDeTeste.conteudo("colunaA;colunaB\nso-um-campo\n")))
+        assertThatThrownBy(() -> ler("colunaA;colunaB\nso-um-campo\n"))
                 .isInstanceOf(ImportacaoDeCatalogoInvalida.class)
                 .hasMessageContaining("Linha 2");
     }
 
     @Test
     void deveRecusarCabecalhoComColunaRepetida() {
-        assertThatThrownBy(() -> LeitorCsv.ler(ArquivoDeTeste.conteudo("colunaA;colunaA\nx;y\n")))
+        assertThatThrownBy(() -> ler("colunaA;colunaA\nx;y\n"))
                 .isInstanceOf(ImportacaoDeCatalogoInvalida.class)
                 .hasMessageContaining("repete");
     }
 
     @Test
     void deveRecusarArquivoSemCabecalho() {
-        assertThatThrownBy(() -> LeitorCsv.ler(ArquivoDeTeste.conteudo("# so comentario\n\n")))
+        assertThatThrownBy(() -> ler("# so comentario\n\n"))
                 .isInstanceOf(ImportacaoDeCatalogoInvalida.class)
                 .hasMessageContaining("cabeçalho");
     }
 
     @Test
     void deveLerListaSeparadaPorBarraVerticalDentroDeUmCampo() throws IOException {
-        List<LinhaCsv> linhas = LeitorCsv.ler(ArquivoDeTeste.conteudo("colunaA\numFicticio|outroFicticio\n"));
+        List<LinhaCsv> linhas = ler("colunaA\numFicticio|outroFicticio\n");
 
         assertThat(linhas.get(0).lista("colunaA")).containsExactly("umFicticio", "outroFicticio");
     }
 
     @Test
     void deveDevolverListaVaziaQuandoOCampoDeListaVemEmBranco() throws IOException {
-        List<LinhaCsv> linhas = LeitorCsv.ler(ArquivoDeTeste.conteudo("colunaA;colunaB\n;valorFicticio\n"));
+        List<LinhaCsv> linhas = ler("colunaA;colunaB\n;valorFicticio\n");
 
         assertThat(linhas.get(0).lista("colunaA")).isEmpty();
         assertThat(linhas.get(0).texto("colunaB")).contains("valorFicticio");
@@ -83,7 +86,7 @@ class LeitorCsvTest {
 
     @Test
     void deveRecusarDataForaDoFormatoIndicandoALinha() throws IOException {
-        List<LinhaCsv> linhas = LeitorCsv.ler(ArquivoDeTeste.conteudo("colunaA\n01/01/1900\n"));
+        List<LinhaCsv> linhas = ler("colunaA\n01/01/1900\n");
 
         assertThatThrownBy(() -> linhas.get(0).dataObrigatoria("colunaA"))
                 .isInstanceOf(ImportacaoDeCatalogoInvalida.class)
@@ -93,8 +96,7 @@ class LeitorCsvTest {
 
     @Test
     void deveAceitarPontoOuVirgulaComoSeparadorDecimal() throws IOException {
-        List<LinhaCsv> linhas =
-                LeitorCsv.ler(ArquivoDeTeste.conteudo("comVirgula;comPonto\n99,99;99.99\n"));
+        List<LinhaCsv> linhas = ler("comVirgula;comPonto\n99,99;99.99\n");
 
         assertThat(linhas.get(0).decimal("comVirgula").orElseThrow()).isEqualByComparingTo("99.99");
         assertThat(linhas.get(0).decimal("comPonto").orElseThrow()).isEqualByComparingTo("99.99");
@@ -102,10 +104,15 @@ class LeitorCsvTest {
 
     @Test
     void deveRecusarNumeroMalformadoIndicandoALinha() throws IOException {
-        List<LinhaCsv> linhas = LeitorCsv.ler(ArquivoDeTeste.conteudo("colunaA\nnao-e-numero\n"));
+        List<LinhaCsv> linhas = ler("colunaA\nnao-e-numero\n");
 
         assertThatThrownBy(() -> linhas.get(0).decimal("colunaA"))
                 .isInstanceOf(ImportacaoDeCatalogoInvalida.class)
                 .hasMessageContaining("Linha 2");
+    }
+
+    /** Lê um CSV de teste recusando como a importação de catálogo recusa. */
+    private static List<LinhaCsv> ler(String conteudo) throws IOException {
+        return LeitorCsv.ler(ArquivoDeTeste.conteudo(conteudo), ImportacaoDeCatalogoInvalida::new);
     }
 }

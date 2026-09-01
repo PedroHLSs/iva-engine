@@ -852,3 +852,146 @@ Custos aceitos:
   A correção não foi feita porque está fora do que esta etapa autorizou mexer.
 
 ---
+
+## D008 — Acurácia medida por gabarito, com o não avaliado fora das métricas
+
+**Etapa:** 7 — Harness de avaliação
+**Status:** Aceita
+
+### Contexto
+
+Até aqui o sistema afirma coisas sobre documentos fiscais. Esta etapa responde a
+outra pergunta, que é a contribuição do trabalho: **quanto dessas afirmações se
+sustenta**. A única resposta honesta vem de comparar a saída do motor com o
+julgamento de uma pessoa sobre os mesmos itens.
+
+Três problemas apareceram, e o segundo é o eixo da etapa.
+
+**O primeiro é de onde tirar a saída do motor.** Ler os apontamentos gravados
+pela última auditoria seria o caminho curto e está errado: o banco não guarda
+avaliação conforme. A Etapa 5 grava apontamento e a Etapa 6 acrescentou as não
+concluídas; a regra que se aplicou por inteiro e nada encontrou não deixa linha
+nenhuma. Como são justamente essas que formam os verdadeiros negativos — e, por
+diferença, os falsos negativos —, medir pelo banco tornaria metade da matriz de
+confusão inobservável.
+
+**O segundo é o que fazer com `NAO_AVALIADO`.** Ele não é acerto e não é erro.
+Contá-lo como erro puniria o sistema exatamente por aquilo que o resto do projeto
+existe para garantir: dizer "não sei" em vez de dizer "está certo". Contá-lo como
+acerto é pior, e é o defeito silencioso que esta etapa tem de tornar impossível —
+com ele, um sistema que não avalia nada teria acurácia perfeita, e o número que
+sustenta o TCC seria uma mentira aritmeticamente correta.
+
+**O terceiro é o que responder quando não há denominador.** Se o motor não
+apontou nada entre as linhas medidas, `VP + FP` é zero e a precisão é uma divisão
+por zero. Devolver 1 afirma "de tudo o que o sistema apontou, tudo procedia" a
+respeito de um sistema que não apontou nada. Devolver 0 afirma o contrário, e é
+igualmente falso.
+
+### Decisão
+
+**O gabarito é um CSV rotulado à mão, com quatro colunas obrigatórias**:
+`chave_documento`, `numero_item`, `regra_id` e `rotulo_esperado`. O rótulo é
+`ACHADO` ou `CONFORME`, e **`NAO_AVALIADO` é recusado explicitamente**: quem
+rotula responde sobre o documento, não sobre o sistema. Rotular "aqui o motor não
+vai conseguir julgar" mediria a ferramenta contra a expectativa que já se tem
+dela.
+
+**Seis desfechos, quatro dos quais entram na métrica.** `Desfecho` é um enum com
+os quatro quadrantes da matriz de confusão mais `NAO_AVALIADO` — o motor não pôde
+julgar — e `SEM_AVALIACAO` — o gabarito aponta item que o motor não viu.
+`entraNaMetrica()` é o único lugar do sistema em que se decide o que conta como
+medição, e existe isolado para que a decisão não fique espalhada em somas.
+
+**Precisão e recall se calculam só sobre os quatro quadrantes.** As duas outras
+contagens não aparecem em nenhum denominador dessas fórmulas. Elas aparecem em
+**cobertura**, que é métrica própria: avaliados sobre o total do gabarito.
+Cobertura baixa com precisão alta é resultado legítimo — o sistema acerta o que
+julga e julga pouco — e só é legível porque os dois números são reportados lado
+a lado.
+
+**Métrica sem denominador é `Metrica.Indefinida`, com o motivo.** O tipo é selado
+em duas variantes pelo mesmo raciocínio de `Avaliacao`: um `BigDecimal` obrigaria
+alguém, em algum ponto, a escolher um número para o caso sem denominador. Na
+saída ela vira `(indefinida)` — nunca campo em branco, que quem tem pressa lê
+como zero.
+
+**F1 é calculado como `2VP / (2VP + FP + FN)`**, algebricamente igual à média
+harmônica onde as duas são definidas, e **só é definido quando precisão e recall
+também são**. A fórmula direta daria zero em casos em que a precisão não existe,
+e um resumo não pode afirmar mais que os números que resume.
+
+**O consolidado soma células, não faz média das métricas por regra.** A média
+trataria uma regra com três linhas rotuladas igual a uma com duzentas, e
+obrigaria a decidir o que fazer com as regras de métrica indefinida — decisão sem
+resposta defensável. Somando células, uma regra sem linha no gabarito contribui
+com zero e não distorce nada.
+
+**Toda regra do conjunto ganha linha no relatório**, inclusive as que o gabarito
+não cita, zeradas e com métricas indefinidas. Omiti-las faria o relatório parecer
+completo quando não é.
+
+**O harness roda o motor de novo e não persiste nada.** Não grava execução, não
+entra no histórico e não vira papel de trabalho. Medir não é auditar, e uma
+opção "não grave" num serviço que grava é a forma mais discreta de um dia gravar
+por engano — por isso são dois serviços, e não um com sinalizador.
+
+**Duas recusas duras, ambas para não transformar erro de digitação em conclusão
+sobre o acervo:** gabarito que rotula o mesmo endereço duas vezes falha na carga,
+como falha uma vigência sobreposta no catálogo (D003); e gabarito que cita
+`regra_id` fora do conjunto falha na comparação, listando as regras conhecidas —
+sem isso, um `R0X` viraria dezenas de `SEM_AVALIACAO` e o relatório acusaria o
+acervo em vez do arquivo.
+
+**O `LeitorCsv` da Etapa 2 mudou de `infraestrutura.catalogo` para
+`infraestrutura.csv`, com autorização.** O gabarito usa o mesmo formato, e
+duplicar o analisador significaria duas convenções de CSV divergindo com o tempo.
+Como o leitor não sabe de que assunto é o arquivo, ele passou a receber
+`RecusaDeCsv` — quem o chama diz como nomear a falha. Catálogo malformado
+continua produzindo `ImportacaoDeCatalogoInvalida`, com as mesmas mensagens; o
+gabarito produz `GabaritoInvalido`.
+
+### Consequência
+
+Ganhos:
+
+- Precisão, recall e F1 por regra e consolidados, em `BigDecimal` com quatro
+  casas, contra um gabarito rotulado à mão — o resultado empírico do trabalho.
+- **É impossível `NAO_AVALIADO` inflar métrica.** A separação está no tipo, não
+  numa condição: as contagens que não entram na medição são campos distintos de
+  `ContagemDeAcuracia`, e nenhuma fórmula de precisão ou recall as menciona.
+- O confronto é função pura sobre duas listas, conferível à mão em teste, sem
+  leitura de arquivo nem banco no caminho.
+- O relatório diz contra qual catálogo e qual versão de regras foi obtido. Um
+  número de acurácia sem procedência não sustenta afirmação nenhuma.
+- Desalinhamento entre gabarito e acervo aparece com endereço, e não como métrica
+  ruim.
+
+Custos aceitos:
+
+- **Repetição deliberada** dos quatro primeiros passos de `ServicoDeAuditoria`.
+  Os dois serviços divergem no passo seguinte, e uni-los exigiria o sinalizador
+  que a decisão recusa.
+- **O harness relê o acervo inteiro a cada medição.** Com trezentos itens é
+  irrelevante; com um acervo grande, é uma auditoria completa só para medir.
+- **Sete arquivos da Etapa 2 mudaram**, com autorização: `LeitorCsv` e `LinhaCsv`
+  mudaram de pacote e ficaram públicos, os quatro importadores e
+  `LeitorDeCatalogoEmCsv` passaram a informar como recusam, e `LeitorCsvTest`
+  acompanhou a assinatura. `ConfiguracaoDaAuditoria`, da Etapa 5, ganhou dois
+  `@Bean`.
+- **`ComandoAvaliarAcuracia` traduz as próprias recusas em `UsoInvalido`**, em
+  vez de `LinhaDeComando` ganhar mais um `catch`. O efeito colateral é útil —
+  gabarito malformado sai acompanhado do formato esperado — mas a decisão sobre
+  onde tratar erro de arquivo passa a ter dois lugares.
+- **A chave de acesso aparece em texto claro no terminal e no comentário do CSV
+  de acurácia**, para os endereços que o motor não avaliou. É o mesmo que
+  `listar-achados` já faz, e quem mede escreveu o gabarito com essas chaves — mas
+  não é o tratamento que a D007 dá ao papel de trabalho, e a diferença é
+  deliberada: o relatório de acurácia é insumo de quem opera, não artefato que
+  circula.
+- **O consolidado é micro, não macro.** Uma regra com muitas linhas rotuladas
+  domina o número consolidado. As linhas por regra estão logo acima, mas quem
+  citar só o consolidado estará citando uma média ponderada pelo esforço de
+  rotulagem.
+
+---

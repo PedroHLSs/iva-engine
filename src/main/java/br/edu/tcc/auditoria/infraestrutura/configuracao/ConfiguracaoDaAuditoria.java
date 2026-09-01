@@ -1,5 +1,9 @@
 package br.edu.tcc.auditoria.infraestrutura.configuracao;
 
+import br.edu.tcc.auditoria.aplicacao.acuracia.ComparadorDeGabarito;
+import br.edu.tcc.auditoria.aplicacao.acuracia.EscritorDeRelatorioDeAcuracia;
+import br.edu.tcc.auditoria.aplicacao.acuracia.FonteDeGabarito;
+import br.edu.tcc.auditoria.aplicacao.acuracia.ServicoDeAvaliacaoDeAcuracia;
 import br.edu.tcc.auditoria.aplicacao.auditoria.FonteDeLoteDeDocumentos;
 import br.edu.tcc.auditoria.aplicacao.auditoria.MotorAuditoria;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ProvedorDeCatalogo;
@@ -184,5 +188,30 @@ public class ConfiguracaoDaAuditoria {
             MontadorDePapelDeTrabalho montador,
             ExportadorDePapelDeTrabalho exportador) {
         return new ServicoDeExportacao(execucoes, montador, exportador);
+    }
+
+    @Bean
+    ComparadorDeGabarito comparadorDeGabarito() {
+        return new ComparadorDeGabarito();
+    }
+
+    /**
+     * Harness de avaliação de acurácia.
+     *
+     * <p>Recebe os mesmos insumos de {@link #servicoDeAuditoria} menos o
+     * repositório, e é essa ausência que o define: a medição roda o motor e não
+     * grava nada. Ver D008.</p>
+     */
+    @Bean
+    ServicoDeAvaliacaoDeAcuracia servicoDeAvaliacaoDeAcuracia(
+            FonteDeLoteDeDocumentos fonte,
+            ProvedorDeCatalogo provedorDeCatalogo,
+            FonteDeGabarito fonteDeGabarito,
+            MotorAuditoria motor,
+            ComparadorDeGabarito comparador,
+            EscritorDeRelatorioDeAcuracia escritor,
+            ToleranciaDeValor tolerancia) {
+        return new ServicoDeAvaliacaoDeAcuracia(
+                fonte, provedorDeCatalogo, fonteDeGabarito, motor, comparador, escritor, tolerancia);
     }
 }
