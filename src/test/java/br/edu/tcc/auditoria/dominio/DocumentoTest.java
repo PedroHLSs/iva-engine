@@ -40,18 +40,27 @@ class DocumentoTest {
 
     @Test
     void deveApontarOperacaoInterestadualQuandoAsUfsDiferem() {
-        assertThat(DadosFicticios.documento().ehInterestadual()).isTrue();
+        assertThat(DadosFicticios.documento().ehInterestadual()).contains(true);
     }
 
     @Test
     void naoDeveApontarOperacaoInterestadualQuandoAsUfsCoincidem() {
-        assertThat(documentoComDestino(Optional.of(Uf.SP)).ehInterestadual()).isFalse();
+        assertThat(documentoComDestino(Optional.of(Uf.SP)).ehInterestadual()).contains(false);
     }
 
     @Test
-    void naoDeveApontarOperacaoInterestadualQuandoNaoHaUfDeDestino() {
-        // Sem UF de destino não há como afirmar interestadualidade, e o modelo não chuta.
-        assertThat(documentoComDestino(Optional.empty()).ehInterestadual()).isFalse();
+    void naoDeveResponderSobreInterestadualidadeQuandoNaoHaUfDeDestino() {
+        // Sem UF de destino não há como afirmar interestadualidade, e o modelo não
+        // chuta: responder "false" seria afirmar operação interna sobre um documento
+        // que não disse isso.
+        assertThat(documentoComDestino(Optional.empty()).ehInterestadual()).isEmpty();
+    }
+
+    @Test
+    void deveDistinguirOperacaoInternaDeInterestadualidadeDesconhecida() {
+        assertThat(documentoComDestino(Optional.of(Uf.SP)).ehInterestadual())
+                .as("mesma UF é resposta; ausência de UF de destino é ausência de resposta")
+                .isNotEqualTo(documentoComDestino(Optional.empty()).ehInterestadual());
     }
 
     @Test

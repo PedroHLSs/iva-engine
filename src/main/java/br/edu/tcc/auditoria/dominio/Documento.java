@@ -59,9 +59,25 @@ public record Documento(
         exigirCodigoQuandoPresente(indicadorDestinatario, "indicadorDestinatario");
     }
 
-    /** Indica se emitente e destinatário estão em unidades federativas diferentes. */
-    public boolean ehInterestadual() {
-        return ufDestinatario.map(destino -> destino != ufEmitente).orElse(false);
+    /**
+     * Indica se emitente e destinatário estão em unidades federativas
+     * diferentes, quando há como saber.
+     *
+     * <p><strong>Devolve {@code Optional.empty()} quando o documento não
+     * declarou UF de destino</strong> — destinatário no exterior, consumidor
+     * não identificado, ou destinatário sem endereço declarado. Nesses casos
+     * não há como afirmar nem negar interestadualidade, e responder
+     * {@code false} seria dizer "é operação interna" sobre um documento que não
+     * disse isso. Pela D002, ausência tem uma grafia só, e é
+     * {@code Optional.empty()} — a distinção entre "não é" e "não dá para
+     * saber" vale aqui como vale para os campos monetários do item.</p>
+     *
+     * <p>Ainda não é consumido por nenhuma regra de auditoria: existe para que
+     * uma regra futura possa perguntar isso sem reimplementar a comparação, e
+     * sobretudo sem repetir o engano de tratar ausência como negativa.</p>
+     */
+    public Optional<Boolean> ehInterestadual() {
+        return ufDestinatario.map(destino -> destino != ufEmitente);
     }
 
     private static void exigirPresente(Object valor, String nomeDoCampo) {

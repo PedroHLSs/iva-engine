@@ -8,6 +8,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -19,9 +21,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  * para serializar, mapear ou injetar. Uma revisão de código pega isso enquanto
  * alguém lembra da regra; este teste pega sempre.</p>
  *
- * <p>A verificação é pela positiva: código de domínio só pode importar a
- * biblioteca padrão do Java e o próprio domínio. Qualquer outro import falha,
+ * <p>A verificação é pela positiva: código de domínio só pode referenciar a
+ * biblioteca padrão do Java e o próprio domínio. Qualquer outro pacote falha,
  * inclusive os que ainda não existem no projeto.</p>
+ *
+ * <p>São duas varreduras, porque a declaração de dependência tem duas
+ * grafias:</p>
+ *
+ * <ul>
+ *   <li>a linha {@code import}, que é como a violação costuma aparecer;</li>
+ *   <li>o nome totalmente qualificado escrito no corpo do arquivo, que é como
+ *       ela aparece quando alguém quer evitar o import — {@code
+ *       @org.springframework.stereotype.Component} não gera linha de import
+ *       nenhuma e passaria pela primeira varredura.</li>
+ * </ul>
  */
 class DominioNaoDependeDeFrameworkTest {
 
@@ -29,7 +42,17 @@ class DominioNaoDependeDeFrameworkTest {
             Path.of("src", "main", "java", "br", "edu", "tcc", "auditoria", "dominio");
 
     private static final String PREFIXO_DA_BIBLIOTECA_PADRAO = "java.";
-    private static final String PREFIXO_DO_PROPRIO_DOMINIO = "br.edu.tcc.auditoria.dominio";
+    private static final String PREFIXO_DO_PROPRIO_DOMINIO = "br.edu.tcc.auditoria.dominio.";
+
+    /**
+     * Nome de tipo precedido de pacote: um ou mais segmentos minúsculos
+     * seguidos de um identificador que começa em maiúscula.
+     */
+    private static final Pattern NOME_QUALIFICADO =
+            Pattern.compile("\\b(?:[a-z][a-z0-9_]*\\.)+[A-Z][A-Za-z0-9_]*");
+
+    private static final Pattern TEXTO_LITERAL =
+            Pattern.compile("\"(?:\\\\.|[^\"\\\\])*\"");
 
     @Test
     void deveEncontrarArquivosDeDominioParaInspecionar() throws IOException {
@@ -61,6 +84,34 @@ class DominioNaoDependeDeFrameworkTest {
                 .isEmpty();
     }
 
+    @Test
+    void naoDeveCitarPacoteDeFrameworkPeloNomeQualificadoNoCorpoDoArquivo() throws IOException {
+        List<String> violacoes = new ArrayList<>();
+
+        for (Path arquivo : arquivosDeDominio()) {
+            List<String> linhas = Files.readAllLines(arquivo, StandardCharsets.UTF_8);
+            for (int indice = 0; indice < linhas.size(); indice++) {
+                Matcher achados = NOME_QUALIFICADO.matcher(codigoSemComentarioNemTexto(linhas.get(indice)));
+                while (achados.find()) {
+                    String citado = achados.group();
+                    if (ehPermitido(citado)) {
+                        continue;
+                    }
+                    violacoes.add("%s:%d cita %s"
+                            .formatted(RAIZ_DO_DOMINIO.relativize(arquivo), indice + 1, citado));
+                }
+            }
+        }
+
+        assertThat(violacoes)
+                .as("Escrever o nome por extenso não é uma forma legítima de contornar a proibição de "
+                        + "import: \"@jakarta.persistence.Entity\" no domínio anula a D001 exatamente "
+                        + "como o import anularia. Comentários e literais de texto são ignorados nesta "
+                        + "varredura — citar um framework para explicar por que ele não entra continua "
+                        + "permitido.")
+                .isEmpty();
+    }
+
     private static List<Path> arquivosDeDominio() throws IOException {
         try (Stream<Path> caminhos = Files.walk(RAIZ_DO_DOMINIO)) {
             return caminhos.filter(Files::isRegularFile)
@@ -81,8 +132,27 @@ class DominioNaoDependeDeFrameworkTest {
                 .strip();
     }
 
-    private static boolean ehPermitido(String importado) {
-        return importado.startsWith(PREFIXO_DA_BIBLIOTECA_PADRAO)
-                || importado.startsWith(PREFIXO_DO_PROPRIO_DOMINIO);
+    /**
+     * Devolve a linha sem comentário e sem literal de texto, ou vazio se a
+     * linha inteira é comentário.
+     *
+     * <p>Apoia-se no estilo em uso no projeto: bloco de comentário sempre com
+     * {@code *} no início de cada linha de continuação, e nenhum bloco aberto e
+     * fechado no meio de uma linha de código. Se esse estilo mudar, este teste
+     * passa a acusar demais, e não de menos — que é o lado seguro de errar.</p>
+     */
+    private static String codigoSemComentarioNemTexto(String linhaBruta) {
+        String linha = linhaBruta.strip();
+        if (linha.startsWith("*") || linha.startsWith("/*") || linha.startsWith("//")) {
+            return "";
+        }
+        String semTexto = TEXTO_LITERAL.matcher(linha).replaceAll("\"\"");
+        int inicioDoComentario = semTexto.indexOf("//");
+        return inicioDoComentario < 0 ? semTexto : semTexto.substring(0, inicioDoComentario);
+    }
+
+    private static boolean ehPermitido(String referencia) {
+        return referencia.startsWith(PREFIXO_DA_BIBLIOTECA_PADRAO)
+                || referencia.startsWith(PREFIXO_DO_PROPRIO_DOMINIO);
     }
 }

@@ -55,7 +55,14 @@ public record PeriodoVigencia(LocalDate inicio, Optional<LocalDate> fim) {
         return !data.isBefore(inicio) && fim.map(ultimoDia -> !data.isAfter(ultimoDia)).orElse(true);
     }
 
-    /** Indica se a vigência ainda está aberta, isto é, sem último dia conhecido. */
+    /**
+     * Indica se a vigência ainda está aberta, isto é, sem último dia conhecido.
+     *
+     * <p>Ainda não é consumido em produção: a resolução por vigência usa
+     * {@link #contem(java.time.LocalDate)}. Existe porque "vigência aberta" é
+     * uma condição que o relatório precisa saber enunciar, e perguntá-la pelo
+     * {@code fim().isEmpty()} espalharia a definição pelo código.</p>
+     */
     public boolean estaAberta() {
         return fim.isEmpty();
     }

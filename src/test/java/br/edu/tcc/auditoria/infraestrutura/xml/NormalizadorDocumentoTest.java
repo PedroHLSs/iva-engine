@@ -38,7 +38,7 @@ class NormalizadorDocumentoTest {
         assertThat(documento.ufDestinatario()).contains(Uf.SP);
         assertThat(documento.crtEmitente()).contains("3");
         assertThat(documento.indicadorDestinatario()).contains("1");
-        assertThat(documento.ehInterestadual()).isTrue();
+        assertThat(documento.ehInterestadual()).contains(true);
     }
 
     @Test
@@ -121,7 +121,9 @@ class NormalizadorDocumentoTest {
         assertThat(documento.ufDestinatario())
                 .as("o destinatário existe e não declarou endereço")
                 .isEmpty();
-        assertThat(documento.ehInterestadual()).isFalse();
+        assertThat(documento.ehInterestadual())
+                .as("sem UF de destino não há como afirmar nem negar interestadualidade")
+                .isEmpty();
     }
 
     @Test

@@ -587,3 +587,268 @@ Custos aceitos:
   precisam de `git add -f`, um a um. É intencional, e vale a conferida.
 
 ---
+
+## D006 — Persistência sem anotação no domínio, e apontamento identificado pelo que aponta
+
+**Etapa:** 5 — Persistência e orquestração
+**Status:** Aceita
+
+### Contexto
+
+A partir desta etapa o sistema guarda o que auditou. Isso trouxe três problemas
+que não existiam enquanto tudo era memória.
+
+**O primeiro é o caminho fácil do JPA.** Anotar `Documento`, `ItemDocumento` e
+`Achado` com `@Entity` faria a persistência quase desaparecer. Também faria o
+domínio depender de `jakarta.persistence`, o que D001 proíbe — e não por
+purismo: o modelo do domínio é construído sobre distinções que o mapeamento
+automático apaga com naturalidade. `Optional.empty()` vira `null` vira zero;
+`BigDecimal` com escala declarada vira `numeric(19,2)`; tipo selado com três
+variantes vira uma coluna de texto sem quem saiba reconstruí-lo.
+
+**O segundo é o reprocessamento.** Um acervo fiscal é auditado várias vezes: o
+catálogo muda, a regra ganha versão, o lote é reprocessado por segurança. Se o
+apontamento for identificado pela linha em que foi gravado, cada rodada cria
+apontamento novo, e o trabalho humano de examinar cada um se perde a cada
+rodada. Quem audita para de confiar no relatório na segunda semana.
+
+**O terceiro é a tratativa.** Um apontamento examinado por uma pessoa recebe uma
+decisão — procede, ou não procede — e uma justificativa. Essa decisão precisa
+sobreviver ao reprocessamento. Mas não pode sobreviver a *qualquer* coisa: se a
+regra que gerou o apontamento mudar de critério, a justificativa antiga passa a
+responder a uma pergunta que não está mais sendo feita.
+
+### Decisão
+
+**Entidades JPA separadas, em `infraestrutura/persistencia`, com mapeadores
+escritos à mão.** O domínio continua sem uma única anotação. O preço são cerca
+de quinze classes de entidade e quatro mapeadores; o retorno é que cada
+conversão entre ausência e nulo é uma linha visível, que alguém escreveu de
+propósito e que um teste cobre.
+
+**As migrations criam as tabelas vazias.** Catálogo (as quatro tabelas
+normativas da Etapa 2 e suas tabelas filhas), documento, item, apontamento,
+evidência, execução e tratativa. Nenhum `INSERT` de dado normativo, em nenhuma
+migration, em nenhum ambiente. Colunas de código de origem normativa são `text`,
+sem limite: um `varchar(N)` seria uma afirmação sobre quantos caracteres a norma
+admite. Colunas monetárias são `numeric` sem precisão declarada, porque
+PostgreSQL preserva a escala exata do valor gravado e, para a auditoria, "0" e
+"0,00" não são o mesmo registro.
+
+**A identidade do apontamento é o que ele aponta**, não a linha:
+`(resumo do item, identificador da regra, versão da regra)`. O resumo do item é
+um SHA-256 sobre a chave de acesso, o número do item e todos os campos
+declarados, com marca própria para campo ausente e preservando a escala dos
+valores. Reprocessar o mesmo lote reencontra a linha, atualiza o conteúdo,
+avança a última execução que a viu e mantém a primeira detecção.
+
+**A tratativa usa exatamente essa chave, e não tem chave estrangeira para o
+apontamento.** É o que a faz sobreviver ao apontamento ser regravado. E,
+**deliberadamente, a versão da regra faz parte da chave**: se a regra mudar de
+versão, a tratativa antiga não é encontrada e **o apontamento reabre**. A
+tratativa antiga não é apagada — fica no banco, presa à versão em que foi dada.
+Mudar o conteúdo do item tem o mesmo efeito, pelo mesmo motivo.
+
+**A execução é sempre nova.** Cada rodada é um fato distinto, com hora, resumo
+da entrada, versão do catálogo, versão do conjunto de regras, quantidade de
+documentos e de itens, e contagem de apontamentos por severidade e por regra —
+essas contagens incluindo zero, para que regra que rodou e nada encontrou não
+suma do relatório.
+
+**A interface de uso é uma linha de comando, não uma API REST.** Quatro
+comandos: `importar-catalogo`, `auditar`, `listar-achados`, `tratar-achado`. Não
+há segundo sistema chamando, não há sessão e não há concorrência entre usuários;
+uma API traria autenticação, autorização, versionamento de contrato e superfície
+de exposição de documento fiscal real, tudo isso sem nenhum consumidor.
+
+**O catálogo gravado é carregado inteiro para a memória a cada rodada**, e
+consultado pelos repositórios em memória da Etapa 2. É neles que mora a
+resolução por vigência e a recusa de vigências sobrepostas; reimplementar isso
+em SQL criaria duas versões da mesma regra, com risco de divergirem.
+
+**Duas coisas entraram além do que a etapa pedia**, porque sem elas o resto não
+funciona: a tabela `carga_catalogo`, que identifica cada importação e dá à
+execução o `versaoCatalogo` que ela precisa registrar; e a tabela
+`cobertura_catalogo`, que guarda a cobertura declarada por tabela — sem ela o
+`ConjuntoRegras` não pode ser montado, e silêncio do catálogo voltaria a se
+confundir com tabela não carregada (D004). A cobertura entra por um quinto
+arquivo CSV, `cobertura.csv`.
+
+**A tolerância de valor da regra R05 é configuração obrigatória, sem padrão.**
+Não é conteúdo normativo — é a escolha de quem audita sobre quanta diferença de
+arredondamento não merece apontamento. Escolher por conta própria seria decidir,
+em nome do usuário, quantos centavos ficam invisíveis no relatório.
+
+### Consequência
+
+Ganhos:
+
+- Reprocessar o mesmo lote não duplica apontamento e não perde tratativa, e isso
+  é provado contra um PostgreSQL de verdade, não contra um dublê.
+- O domínio continua testável sem contexto Spring e sem banco: a maior parte dos
+  testes do projeto roda em segundos e sem Docker.
+- Um relatório antigo continua dizendo contra qual catálogo e qual conjunto de
+  regras foi produzido, mesmo depois de novas importações.
+- O banco recusa, por restrição de formato, qualquer coisa que não seja resumo
+  criptográfico nas colunas de participante. É a segunda barreira contra dado
+  pessoal em texto claro, depois da do domínio.
+
+Custos aceitos:
+
+- **Cerca de quinze classes de entidade e quatro mapeadores de código
+  repetitivo.** É o preço direto de D001, e é conhecido.
+- **O Hibernate roda com `ddl-auto=none`.** A validação automática reclama de
+  detalhe de tipo que aqui é deliberado — `numeric` sem precisão —, e falharia na
+  subida por um motivo que não é defeito. Quem garante que entidade e migration
+  concordam é o teste de integração, que grava e lê todas as tabelas.
+- **Sem Docker o teste de integração se desabilita em vez de falhar.** Quem clona
+  o projeto para ler não precisa de Docker; quem for mexer na persistência
+  precisa, e o teste desabilitado aparece no resumo do Maven — o que também
+  significa que uma quebra de persistência passa despercebida em máquina sem
+  Docker.
+- **Apontamento sobre o documento inteiro ainda não tem gravação.** Nenhuma das
+  sete regras produz um — o motor percorre itens —, e a identidade gravada é o
+  resumo do item. Se uma regra de documento surgir, o serviço de auditoria falha
+  com mensagem explícita em vez de violar restrição do banco em silêncio. Criar
+  agora uma identidade para apontamento que não existe seria ponto de extensão
+  antecipado.
+- **Cada importação de catálogo acumula uma carga inteira no banco.** As antigas
+  não são apagadas, para que relatórios produzidos contra elas continuem
+  conferíveis. Não há comando para limpá-las.
+- **O catálogo inteiro vai para a memória a cada rodada.** É aceitável porque um
+  catálogo normativo é pequeno perto de um acervo de notas, e porque a carga
+  acontece uma vez por rodada, não uma por documento — mas é um limite real.
+- **A origem do lote é lida duas vezes**, uma para o resumo da entrada e outra
+  para os documentos. Derivar o resumo dos documentos lidos não serviria: ele
+  precisa descrever o que foi apresentado ao sistema, inclusive o que não pôde
+  ser lido.
+- **Reabrir apontamento a cada mudança de versão de regra vai gerar retrabalho
+  visível.** É o comportamento pretendido, e é a parte desta decisão que mais
+  provavelmente será questionada. A alternativa — deixar a decisão antiga valer
+  para o critério novo — faria uma justificativa silenciar um apontamento que ela
+  nunca examinou, e isso é pior.
+
+---
+
+## D007 — O papel de trabalho: identificação no topo, documento sem participante
+
+**Etapa:** 6 — Papel de trabalho em xlsx
+**Status:** Aceita
+
+### Contexto
+
+Tudo o que o sistema fez até aqui — ler XML, resolver catálogo por vigência,
+aplicar regra, gravar apontamento — só vira auditoria quando uma pessoa consegue
+olhar uma linha e decidir se ela procede. A saída é o produto; o resto é meio.
+
+Três problemas apareceram ao construí-la.
+
+**O primeiro é o que a planilha responde meses depois.** Um arquivo encontrado
+numa pasta compartilhada em novembro precisa dizer contra qual catálogo e com
+que versão de regras foi produzido. Sem isso, um apontamento que hoje não
+procede mais — porque a tabela mudou — é indistinguível de um erro do sistema, e
+a conversa termina em "não sei, roda de novo".
+
+**O segundo é a tensão entre pseudonimizar e rastrear.** A chave de acesso não é
+um identificador neutro: os dígitos dela carregam o CNPJ do emitente. Exportá-la
+é exportar o CNPJ com um passo a mais de trabalho para lê-lo — e a planilha é
+justamente o artefato que sai da máquina e vai por e-mail. Mas trocar a chave por
+um resumo criptográfico, sozinho, deixa a linha sem como chegar à nota: o critério
+de pronto da etapa é que o achado leve ao documento *sem consultar o banco*, e um
+hash de 64 caracteres não leva a lugar nenhum sem o sistema aberto ao lado.
+
+**O terceiro é que os `NAO_AVALIADO` não existiam.** A Etapa 5 gravou só a
+contagem, e o motivo de cada um se perdia no fim da rodada. Sem eles não há aba
+de não avaliados nem motivos agrupados — e um lote em que nada pôde ser avaliado
+sairia com cara de lote limpo.
+
+### Decisão
+
+**Apache POI, xlsx, três abas: Resumo, Achados e Não avaliados.** A escrita é em
+fluxo (`SXSSFWorkbook`), com janela de 500 linhas: um acervo real produz dezenas
+de milhares de apontamentos, e a alternativa carrega a planilha inteira na
+memória.
+
+**A identificação da execução abre o Resumo, sem nada acima dela.** Execução,
+data e hora, versão do catálogo, versão do conjunto de regras, resumo da entrada,
+documentos e itens auditados. O leiaute é testado por índice de linha, de modo
+que empurrar o bloco para o meio da aba quebra o teste.
+
+**O documento aparece pelo pseudônimo da chave — calculado com o mesmo sal de
+instalação de emitente e destinatário — acompanhado de modelo, série, número,
+data de emissão e UF.** Nenhum desses cinco é dado de participante: série e
+número são a numeração sequencial do próprio emitente, e a data e a UF situam a
+operação. Juntos localizam a nota no ERP da empresa; separados do CNPJ, não
+identificam ninguém. É o que resolve a tensão do segundo problema sem afrouxar a
+regra.
+
+**Os `NAO_AVALIADO` passaram a ser gravados**, numa tabela nova
+(`avaliacao_nao_concluida`), com o motivo que a própria regra escreveu.
+Diferente do apontamento, **não são deduplicados**: não concluir é fato da
+rodada, não do documento. A mesma regra sobre o mesmo item pode não concluir hoje
+por falta de tabela no catálogo e concluir amanhã, e o papel de trabalho de cada
+execução tem de mostrar o que valia na hora dela.
+
+**Entrou também `achado_da_execucao`**, ligando execução a apontamento. A linha
+do apontamento guarda só a primeira e a última execução que o viram; sem o
+vínculo, reemitir o papel de trabalho de uma rodada antiga traria os apontamentos
+da rodada mais recente, e as contagens do Resumo não bateriam com as linhas da
+aba de achados. Uma planilha internamente contraditória é pior que nenhuma.
+
+**Uma linha por achado, com as evidências alinhadas dentro da célula.** Um
+apontamento pode ter várias evidências; as colunas de campo, valor encontrado e
+valor esperado recebem uma linha cada, na mesma ordem, de modo que a enésima
+linha de uma corresponde à enésima das outras. Quem confere quer contar
+apontamentos, não evidências.
+
+**Ausência é escrita, nunca deixada em branco.** Campo que não veio no documento
+vira `(não informado)`; regra sem valor de referência a opor vira
+`(sem referência)`; vigência sem fim vira `(sem fim declarado)`; apontamento sem
+decisão vira `ABERTO`. Numa planilha lida meses depois, célula vazia é
+indistinguível de célula que ninguém preencheu — e a diferença entre "não veio" e
+"veio zero" é o eixo do sistema inteiro desde D002.
+
+**O `exportar` é sempre de uma execução identificada**, nunca "do banco".
+Exportar os apontamentos atuais produziria uma planilha sem data de corte,
+impossível de reconciliar com outra emitida uma semana depois.
+
+### Consequência
+
+Ganhos:
+
+- Um apontamento na planilha leva ao documento, ao item, ao campo, ao valor
+  declarado, ao esperado e ao dispositivo legal sem abrir o sistema.
+- Nenhum identificador em texto claro sai na exportação, e isso é verificado
+  varrendo o arquivo descompactado — não as células —, de modo que um vazamento
+  em nome de aba ou propriedade do documento também apareceria.
+- O papel de trabalho de qualquer rodada pode ser reemitido, com os apontamentos
+  daquela rodada e a identificação que ela tinha.
+- Duas emissões do mesmo papel de trabalho saem iguais: as contagens por regra
+  são ordenadas pelo identificador, e não pela ordem de iteração do mapa.
+
+Custos aceitos:
+
+- **Quatro arquivos da Etapa 5 mudaram**, com autorização: `ResultadoDaAuditoria`
+  passou a carregar a lista de não concluídas em vez da contagem,
+  `ServicoDeAuditoria` a recolhê-las, e `RepositorioDaAuditoria(NoBanco)` a
+  gravá-las. `DocumentoEntidade` ganhou acessores de leitura.
+- **`avaliacao_nao_concluida` cresce a cada rodada** e não é deduplicada. Num
+  acervo grande com catálogo incompleto, ela será a maior tabela do banco. É o
+  preço de conseguir reemitir o papel de trabalho de uma rodada antiga.
+- **Série e número do documento aparecem na planilha.** Não identificam
+  participante, mas identificam a operação. Se o arquivo for tratado como
+  público, isso precisa ser reconsiderado — a decisão aqui é que o papel de
+  trabalho é documento interno de auditoria.
+- **A ordem das contagens por regra é alfabética**, e não a ordem de declaração
+  do conjunto. Com identificadores `R01` a `R07` as duas coincidem; com uma regra
+  chamada de outro jeito, deixariam de coincidir.
+- **O leiaute do Resumo está preso a índices de linha no teste.** Mudar o bloco
+  quebra o teste de propósito, mas também obriga a mexer nele em toda alteração
+  de leiaute.
+- **A largura das colunas é fixa.** O cálculo automático exige ter todas as
+  linhas em memória, que é justamente o que a escrita em fluxo evita.
+- **`ComandoAuditar`, da Etapa 5, continua imprimindo as contagens por regra na
+  ordem de iteração de um `Map` imutável**, que a JVM embaralha a cada execução.
+  A correção não foi feita porque está fora do que esta etapa autorizou mexer.
+
+---

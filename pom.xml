@@ -24,14 +24,32 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
         <jaxb2-maven-plugin.version>3.2.0</jaxb2-maven-plugin.version>
+
+        <!--
+            Testcontainers acima do que o parent do Spring Boot 3.3 gerencia
+            (1.19.8). A versao gerenciada negocia a API 1.32 do Docker, e o
+            Docker Engine 29 exige no minimo 1.40: a conexao morre com
+            "400 Bad Request" sem mensagem, e o teste de integracao se desabilita
+            achando que nao ha Docker. Esta propriedade e a que o
+            spring-boot-dependencies usa para o testcontainers-bom.
+        -->
+        <testcontainers.version>1.21.4</testcontainers.version>
+
+        <!--
+            Apache POI, para o papel de trabalho em xlsx. Nao e gerenciado pelo
+            parent do Spring Boot, entao a versao vem daqui.
+        -->
+        <poi.version>5.5.1</poi.version>
         <pacote.das.classes.geradas>br.edu.tcc.auditoria.infraestrutura.xml.gerado</pacote.das.classes.geradas>
     </properties>
 
     <!--
-        Nenhuma dependencia de web, JPA, Flyway ou driver de banco nesta etapa.
-        O parent do Spring Boot entra apenas como gerenciador de versoes.
-        As versoes de JUnit 5, AssertJ, jakarta.xml.bind-api e jaxb-runtime vem
-        do dependencyManagement do parent.
+        Nenhuma dependencia de web nesta etapa: a interface de uso e uma CLI
+        (D006). Nao ha spring-boot-starter-web nem spring-boot-starter-webflux,
+        e nao deve haver enquanto nao existir decisao registrada em contrario.
+
+        As versoes de todas as dependencias vem do dependencyManagement do
+        parent do Spring Boot, inclusive as de Testcontainers.
     -->
     <dependencies>
         <!--
@@ -48,6 +66,60 @@
             <artifactId>jaxb-runtime</artifactId>
         </dependency>
 
+        <!--
+            Spring Boot sem web. O contexto sobe, roda o comando pedido na linha
+            de comando e encerra.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter</artifactId>
+        </dependency>
+
+        <!--
+            Persistencia. As entidades JPA ficam apenas em
+            infraestrutura/persistencia: o dominio nao tem anotacao nenhuma
+            (D001), e o mapeamento entre os dois e explicito (D006).
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-data-jpa</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!--
+            Flyway e o unico dono do esquema. O Hibernate roda com
+            ddl-auto=validate e nao cria nem altera tabela.
+
+            flyway-database-postgresql e obrigatorio a partir do Flyway 10: o
+            suporte a cada banco saiu do core para um modulo proprio.
+        -->
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.flywaydb</groupId>
+            <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <!--
+            Escrita do papel de trabalho em xlsx. Usado somente por
+            infraestrutura/exportacao: o formato do arquivo e detalhe de saida, e
+            nem o dominio nem a aplicacao conhecem POI.
+
+            O log4j-api que o POI traz e redirecionado para o SLF4J pelo
+            log4j-to-slf4j que o spring-boot-starter-logging ja inclui.
+        -->
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${poi.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
@@ -58,10 +130,51 @@
             <artifactId>assertj-core</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+            Testcontainers: o teste de integracao roda contra um PostgreSQL de
+            verdade, com as migrations do Flyway aplicadas. Banco em memoria nao
+            serviria — o esquema usa tipos e restricoes de PostgreSQL, e o que
+            precisa ser provado e justamente que reprocessar o mesmo lote nao
+            duplica achado no banco real.
+
+            Exige Docker em execucao. Sem Docker, o teste se desabilita em vez
+            de falhar (ver PersistenciaDeAuditoriaIT).
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-testcontainers</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>postgresql</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
+            <!--
+                Empacotamento executavel para a CLI:
+                java -jar target/auditoria-ibs-cbs-<versao>.jar <comando> ...
+            -->
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+
             <!--
                 Geracao das classes de leiaute a partir dos XSD oficiais do
                 Portal Nacional da NF-e.

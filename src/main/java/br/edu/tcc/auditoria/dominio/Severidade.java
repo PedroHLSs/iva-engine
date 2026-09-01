@@ -1,5 +1,7 @@
 package br.edu.tcc.auditoria.dominio;
 
+import br.edu.tcc.auditoria.dominio.excecao.SeveridadeInvalida;
+
 /**
  * Gravidade atribuída a um {@link Achado}, para ordenar o relatório.
  *
@@ -41,8 +43,19 @@ public enum Severidade {
      *
      * <p>Apoia-se na ordem de declaração das constantes, da mais grave para a
      * menos grave.</p>
+     *
+     * <p>Ainda não é consumido por nenhuma regra nem pela montagem do papel de
+     * trabalho, que hoje ordena por outros critérios. Existe para que a
+     * ordenação por gravidade não seja reescrita à mão em cada ponto que
+     * precisar dela.</p>
+     *
+     * @throws SeveridadeInvalida se {@code outra} for nula
      */
     public boolean maisGraveQue(Severidade outra) {
+        if (outra == null) {
+            throw new SeveridadeInvalida(
+                    "A severidade comparada não pode ser nula: não há gravidade a confrontar.");
+        }
         return this.ordinal() < outra.ordinal();
     }
 }

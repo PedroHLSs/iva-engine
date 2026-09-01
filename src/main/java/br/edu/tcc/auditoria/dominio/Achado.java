@@ -80,7 +80,15 @@ public record Achado(
         evidencias = List.copyOf(evidencias);
     }
 
-    /** Indica se o apontamento é sobre um item específico, e não sobre o documento inteiro. */
+    /**
+     * Indica se o apontamento é sobre um item específico, e não sobre o documento inteiro.
+     *
+     * <p>Ainda não é consumido em produção: a montagem do papel de trabalho lê
+     * o número do item diretamente. Existe para que quem percorre apontamentos
+     * possa separar os de documento dos de item sem inspecionar o OptionalInt,
+     * que é o ponto em que se costuma escorregar para um "sem item logo item
+     * zero".</p>
+     */
     public boolean ehDeItem() {
         return numeroItem.isPresent();
     }

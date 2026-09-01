@@ -80,6 +80,11 @@ public record ItemDocumento(
      *
      * <p>Diferente de ter trazido os campos zerados: aqui não há informação
      * nenhuma a confrontar.</p>
+     *
+     * <p>Ainda não é consumido por nenhuma regra de auditoria. Existe para que a
+     * pergunta "este item simplesmente não tem grupo de IBS/CBS?" tenha uma
+     * resposta única no modelo, em vez de onze testes de isEmpty() repetidos em
+     * cada regra que precisar distinguir omissão total de declaração zerada.</p>
      */
     public boolean semNenhumCampoDeIbsCbs() {
         return cstIbs.isEmpty()
