@@ -3,20 +3,7 @@ package br.edu.tcc.auditoria.aplicacao.analise;
 import br.edu.tcc.auditoria.dominio.ChaveAcesso;
 import br.edu.tcc.auditoria.dominio.tratativa.HashDoItem;
 
-/**
- * Um item que uma análise leu — com apontamento, sem apontamento ou sem
- * conclusão.
- *
- * <p>É o que permite perguntar "quais são os produtos desta análise" sem derivar
- * a resposta dos apontamentos, o que devolveria só os produtos com problema e
- * faria uma nota inteiramente conforme sumir do resultado da análise que a
- * leu.</p>
- *
- * <p>O {@link HashDoItem} é o que <strong>esta</strong> análise leu. O item
- * gravado é sobrescrito a cada reprocessamento, então a divergência entre os dois
- * é o sinal de que o conteúdo mudou depois — e o sinal é para ser dito, não
- * corrigido em silêncio.</p>
- */
+// Representa um item de uma análise, com sua chave de acesso, número, hash e descrição do produto.
 public record ItemDaAnalise(
         ChaveAcesso chaveAcesso,
         int numeroItem,

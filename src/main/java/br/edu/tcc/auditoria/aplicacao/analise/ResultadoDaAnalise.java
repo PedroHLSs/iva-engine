@@ -6,21 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * O que uma análise produziu: a auditoria, e os arquivos que não deu para ler.
- *
- * <h2>Os ilegíveis andam ao lado, nunca dentro</h2>
- *
- * <p>{@code ResultadoDaAuditoria} conta avaliações, apontamentos e avaliações
- * não concluídas — todas sobre documentos que <em>foram lidos</em>. Um arquivo
- * ilegível não tem item, não tem regra aplicada e não tem desfecho: ele não cabe
- * em nenhuma dessas contagens, e enfiá-lo em uma delas seria transformar
- * ausência em resultado.</p>
- *
- * <p>Por isso ele fica num campo próprio, deste tipo, e não dentro daquele. A
- * separação é a mesma que {@code ResumoDaConferencia} faz: não existe soma
- * possível por descuido porque não existe o campo onde somar.</p>
- */
+//Classe record que representa o resultado de uma análise, incluindo o resultado da auditoria e a lista de arquivos ilegíveis.
 public record ResultadoDaAnalise(
         ResultadoDaAuditoria auditoria, List<ArquivoIlegivel> arquivosIlegiveis) {
 
@@ -54,13 +40,7 @@ public record ResultadoDaAnalise(
         return arquivosIlegiveis.size();
     }
 
-    /**
-     * Se a análise não conseguiu ler documento nenhum, tendo recebido arquivos.
-     *
-     * <p>Não é erro, e não vira exceção: é um resultado, e o resultado precisa
-     * aparecer como tal. O contrário — falhar a requisição — apagaria a
-     * informação de que houve tentativa e de quantos arquivos ela envolveu.</p>
-     */
+    // Indica se a análise não conseguiu ler nenhum documento, mas encontrou arquivos ilegíveis.
     public boolean nadaPodeSerLido() {
         return quantidadeDeDocumentosLidos() == 0 && !arquivosIlegiveis.isEmpty();
     }

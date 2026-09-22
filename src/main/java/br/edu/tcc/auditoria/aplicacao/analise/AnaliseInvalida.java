@@ -1,8 +1,7 @@
 package br.edu.tcc.auditoria.aplicacao.analise;
 
-/** Acervo de análise montado sem o que ele precisa para ser gravado ou lido. */
 public class AnaliseInvalida extends RuntimeException {
-
+    // Construtor que recebe a mensagem de erro e chama RuntimeException com essa mensagem.
     public AnaliseInvalida(String mensagem) {
         super(mensagem);
     }
