@@ -2,20 +2,9 @@ package br.edu.tcc.auditoria.aplicacao.acuracia;
 
 import br.edu.tcc.auditoria.dominio.acuracia.RotuloEsperado;
 
-/**
- * Uma afirmação do gabarito: nesta regra, sobre este item, a resposta certa é
- * esta.
- *
- * <p>Guarda o número da linha física do arquivo de onde veio, para que qualquer
- * recusa possa dizer onde corrigir — a mesma escolha do leitor de CSV do
- * catálogo, e pelo mesmo motivo: o gabarito é escrito à mão.</p>
- *
- * @param numeroDaLinha linha física no arquivo de gabarito, começando em 1
- * @param endereco      documento, item e regra a que a afirmação se refere
- * @param rotulo        o que a pessoa que rotulou afirmou
- */
+// Representa uma linha do gabarito, que contém o número da linha, o endereço da avaliação e o rótulo esperado.
 public record LinhaDeGabarito(int numeroDaLinha, EnderecoDaAvaliacao endereco, RotuloEsperado rotulo) {
-
+    // Construtor que valida os parâmetros da linha do gabarito, garantindo que não sejam nulos e que o número da linha seja válido.
     public LinhaDeGabarito {
         if (endereco == null) {
             throw new AvaliacaoDeAcuraciaInvalida("A linha do gabarito precisa do endereço que ela rotula.");
@@ -31,7 +20,6 @@ public record LinhaDeGabarito(int numeroDaLinha, EnderecoDaAvaliacao endereco, R
         }
     }
 
-    /** Identificador da regra que esta linha rotula. */
     public String regraId() {
         return endereco.regraId();
     }

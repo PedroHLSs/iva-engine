@@ -86,7 +86,8 @@ class LeitorCsvTest {
 
     @Test
     void deveRecusarDataForaDoFormatoIndicandoALinha() throws IOException {
-        List<LinhaCsv> linhas = ler("colunaA\n01/01/1900\n");
+        // Até 14/09/2026 o exemplo era 01/01/1900, que passou a ser formato aceito.
+        List<LinhaCsv> linhas = ler("colunaA\n1900/01/01\n");
 
         assertThatThrownBy(() -> linhas.get(0).dataObrigatoria("colunaA"))
                 .isInstanceOf(ImportacaoDeCatalogoInvalida.class)

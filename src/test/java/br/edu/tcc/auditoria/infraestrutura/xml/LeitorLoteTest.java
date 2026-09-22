@@ -25,12 +25,15 @@ class LeitorLoteTest {
     private Path diretorio;
 
     private FalhasDeLeituraEmMemoria falhas;
+    private DescricoesDeProdutoEmMemoria descricoes;
     private LeitorLote leitorLote;
 
     @BeforeEach
     void prepararLeitor() {
         falhas = new FalhasDeLeituraEmMemoria();
-        leitorLote = new LeitorLote(DocumentoDeTeste.leitor(), DocumentoDeTeste.normalizador(), falhas);
+        descricoes = new DescricoesDeProdutoEmMemoria();
+        leitorLote = new LeitorLote(
+                DocumentoDeTeste.leitor(), DocumentoDeTeste.normalizador(), falhas, descricoes);
     }
 
     @Test

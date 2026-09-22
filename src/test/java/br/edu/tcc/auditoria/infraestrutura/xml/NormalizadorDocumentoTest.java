@@ -1,6 +1,7 @@
 package br.edu.tcc.auditoria.infraestrutura.xml;
 
 import br.edu.tcc.auditoria.aplicacao.auditoria.DocumentoComItens;
+import br.edu.tcc.auditoria.dominio.tratativa.HashDoItem;
 import br.edu.tcc.auditoria.dominio.Cfop;
 import br.edu.tcc.auditoria.dominio.CodigoClassificacaoTributaria;
 import br.edu.tcc.auditoria.dominio.CodigoCst;
@@ -14,14 +15,20 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.lang.reflect.RecordComponent;
+import java.util.Arrays;
+import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class NormalizadorDocumentoTest {
 
     private final LeitorDocumentoFiscal leitor = DocumentoDeTeste.leitor();
     private final NormalizadorDocumento normalizador = DocumentoDeTeste.normalizador();
+    private final DescricoesDeProdutoEmMemoria descricoes = new DescricoesDeProdutoEmMemoria();
 
     @Test
     void deveNormalizarIdentificacaoDoDocumento() throws IOException {
@@ -169,9 +176,95 @@ class NormalizadorDocumentoTest {
         assertThat(documento.ufDestinatario()).contains(Uf.SP);
     }
 
+    // -----------------------------------------------------------------------
+    // Descrição do produto. Acrescentado na etapa de conferência.
+    //
+    // A descrição NÃO entra em ItemDocumento: nenhuma regra a examina, e o
+    // domínio não muda. Ela sai pela lateral, endereçada pelo resumo do item.
+    // -----------------------------------------------------------------------
+
+    /**
+     * O endereço da descrição é calculado de novo aqui, do zero.
+     *
+     * <p>É esse o ponto do teste. Se o normalizador endereçasse por outra coisa —
+     * o número do item, a ordem de leitura, um contador —, a busca abaixo não
+     * acharia nada, porque ela usa a identidade que o resto do sistema usa. É a
+     * mesma função, sobre as mesmas entradas, dos dois lados.</p>
+     */
+    @Test
+    void deveRegistrarUmaDescricaoPorItemEnderecadaPeloResumoDoItem() throws IOException {
+        DocumentoComItens documento = normalizar(DocumentoDeTeste.MULTIPLOS_ITENS);
+
+        assertThat(documento.itensOrdenados()).hasSize(3);
+        assertThat(descricoes.quantidade()).isEqualTo(3);
+
+        Map<Integer, String> esperado = Map.of(
+                1, "PRIMEIRO PRODUTO FICTICIO",
+                2, "SEGUNDO PRODUTO FICTICIO",
+                3, "TERCEIRO PRODUTO FICTICIO");
+
+        for (ItemDocumento item : documento.itensOrdenados()) {
+            HashDoItem calculadoAqui =
+                    HashDoItem.de(documento.documento().chaveAcesso(), item);
+
+            assertThat(descricoes.de(calculadoAqui))
+                    .describedAs("item %d endereçado pelo resumo dele", item.numeroItem())
+                    .contains(Optional.of(esperado.get(item.numeroItem())));
+        }
+    }
+
+    @Test
+    void aDescricaoDeUmItemNaoDeveResponderPeloResumoDeOutro() throws IOException {
+        DocumentoComItens documento = normalizar(DocumentoDeTeste.MULTIPLOS_ITENS);
+
+        ItemDocumento primeiro = documento.itensOrdenados().get(0);
+        ItemDocumento segundo = documento.itensOrdenados().get(1);
+
+        Optional<Optional<String>> doPrimeiro = descricoes.de(
+                HashDoItem.de(documento.documento().chaveAcesso(), primeiro));
+        Optional<Optional<String>> doSegundo = descricoes.de(
+                HashDoItem.de(documento.documento().chaveAcesso(), segundo));
+
+        assertThat(doPrimeiro)
+                .describedAs("descrição trocada de produto é pior que descrição faltando")
+                .isNotEqualTo(doSegundo);
+    }
+
+    /**
+     * O domínio não soube de nada disto.
+     *
+     * <p>Guarda por reflexão, e não por leitura: se alguém acrescentar a descrição
+     * a {@code ItemDocumento} — que é objeto de valor sob {@code dominio/} —, este
+     * teste quebra, e a quebra é o aviso de que a restrição foi rompida.</p>
+     */
+    @Test
+    void aDescricaoNaoDeveEntrarNoItemDoDominio() {
+        RecordComponent[] componentes = ItemDocumento.class.getRecordComponents();
+
+        assertThat(componentes)
+                .describedAs("autoverificação: a varredura precisa ter olhado alguma coisa")
+                .hasSizeGreaterThan(10);
+
+        assertThat(Arrays.stream(componentes).map(RecordComponent::getName))
+                .describedAs("nenhuma regra examina texto, e o domínio não carrega o que não usa")
+                .noneMatch(nome -> nome.toLowerCase(Locale.ROOT).contains("descricao")
+                        || nome.toLowerCase(Locale.ROOT).contains("xprod"));
+    }
+
+    @Test
+    void deveRecusarNormalizarSemDestinoParaAsDescricoes() throws IOException {
+        try (InputStream conteudo = DocumentoDeTeste.abrir(DocumentoDeTeste.ITEM_COMPLETO)) {
+            var lido = leitor.ler(conteudo);
+            assertThatThrownBy(() -> normalizador.normalizar(lido, null))
+                    .describedAs("um padrão silencioso faria um caminho deixar de registrar sem decisão")
+                    .isInstanceOf(DocumentoFiscalIlegivel.class)
+                    .hasMessageContaining("DESCARTA");
+        }
+    }
+
     private DocumentoComItens normalizar(String nomeDoDocumento) throws IOException {
         try (InputStream conteudo = DocumentoDeTeste.abrir(nomeDoDocumento)) {
-            return normalizador.normalizar(leitor.ler(conteudo));
+            return normalizador.normalizar(leitor.ler(conteudo), descricoes);
         }
     }
 

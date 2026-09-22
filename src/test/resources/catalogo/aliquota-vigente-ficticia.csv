@@ -2,8 +2,8 @@
 # Os percentuais abaixo foram escolhidos para serem impossiveis de confundir com
 # aliquota real. Nenhum valor, abrangencia ou data deste arquivo corresponde a
 # legislacao. Nao use este arquivo como referencia normativa.
-tributo;percentual;abrangencia;vigenciaInicio;vigenciaFim;fonteNormativa
-IBS_UF;99,99;ABRANGENCIA-XX;1900-01-01;1900-06-30;FONTE FICTICIA v0.0
-IBS_UF;88,88;ABRANGENCIA-XX;1900-07-01;;FONTE FICTICIA v0.1
-IBS_MUN;77,77;ABRANGENCIA-YY;1900-01-01;;FONTE FICTICIA v0.0
-CBS;66,66;ABRANGENCIA-ZZ;1900-01-01;;FONTE FICTICIA v0.0
+tributo;percentual;abrangencia;vigenciaInicio;vigenciaFim;fonteNormativa;natureza
+IBS_UF;99,99;ABRANGENCIA-XX;1900-01-01;1900-06-30;FONTE FICTICIA v0.0;FICTICIO
+IBS_UF;88,88;ABRANGENCIA-XX;1900-07-01;;FONTE FICTICIA v0.1;FICTICIO
+IBS_MUN;77,77;ABRANGENCIA-YY;1900-01-01;;FONTE FICTICIA v0.0;FICTICIO
+CBS;66,66;ABRANGENCIA-ZZ;1900-01-01;;FONTE FICTICIA v0.0;FICTICIO

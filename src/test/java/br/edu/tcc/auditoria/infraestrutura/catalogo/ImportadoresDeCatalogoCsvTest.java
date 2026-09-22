@@ -25,7 +25,7 @@ class ImportadoresDeCatalogoCsvTest {
     void deveImportarVinculosEntreNcmEAnexo() throws IOException {
         List<ItemAnexo> importados;
         try (Reader origem = ArquivoDeTeste.csv("item-anexo-ficticio.csv")) {
-            importados = importadorDeAnexos.importar(origem);
+            importados = importadorDeAnexos.importar(origem).registros();
         }
 
         assertThat(importados).hasSize(3);
@@ -39,7 +39,7 @@ class ImportadoresDeCatalogoCsvTest {
     void deveCarregarOMesmoNcmEmDoisAnexosSemAcusarSobreposicao() throws IOException {
         List<ItemAnexo> importados;
         try (Reader origem = ArquivoDeTeste.csv("item-anexo-ficticio.csv")) {
-            importados = importadorDeAnexos.importar(origem);
+            importados = importadorDeAnexos.importar(origem).registros();
         }
 
         RepositorioItemAnexoEmMemoria repositorio = new RepositorioItemAnexoEmMemoria(importados);
@@ -51,7 +51,7 @@ class ImportadoresDeCatalogoCsvTest {
     void deveImportarRegistrosDeNcm() throws IOException {
         List<RegistroNcm> importados;
         try (Reader origem = ArquivoDeTeste.csv("registro-ncm-ficticio.csv")) {
-            importados = importadorDeNcm.importar(origem);
+            importados = importadorDeNcm.importar(origem).registros();
         }
 
         assertThat(importados).hasSize(3);
@@ -62,7 +62,7 @@ class ImportadoresDeCatalogoCsvTest {
     void deveResolverAVersaoCertaDoNcmConformeADataConsultada() throws IOException {
         List<RegistroNcm> importados;
         try (Reader origem = ArquivoDeTeste.csv("registro-ncm-ficticio.csv")) {
-            importados = importadorDeNcm.importar(origem);
+            importados = importadorDeNcm.importar(origem).registros();
         }
         RepositorioNcmEmMemoria repositorio = new RepositorioNcmEmMemoria(importados);
         Ncm ncm = new Ncm("00000000");
@@ -78,7 +78,7 @@ class ImportadoresDeCatalogoCsvTest {
     void deveImportarAliquotasComVirgulaComoSeparadorDecimal() throws IOException {
         List<AliquotaVigente> importadas;
         try (Reader origem = ArquivoDeTeste.csv("aliquota-vigente-ficticia.csv")) {
-            importadas = importadorDeAliquotas.importar(origem);
+            importadas = importadorDeAliquotas.importar(origem).registros();
         }
 
         assertThat(importadas).hasSize(4);
@@ -91,7 +91,7 @@ class ImportadoresDeCatalogoCsvTest {
     void deveResolverAAliquotaCertaConformeADataConsultada() throws IOException {
         List<AliquotaVigente> importadas;
         try (Reader origem = ArquivoDeTeste.csv("aliquota-vigente-ficticia.csv")) {
-            importadas = importadorDeAliquotas.importar(origem);
+            importadas = importadorDeAliquotas.importar(origem).registros();
         }
         RepositorioAliquotaEmMemoria repositorio = new RepositorioAliquotaEmMemoria(importadas);
         var abrangencia = importadas.get(0).abrangencia();

@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Conferência de IBS/CBS</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/componentes.css">
+<link rel="stylesheet" href="css/conferencia.css">
+</head>
+<!--
+  A porta de entrada passou a ser a conferência.
+
+  Até a Etapa 9 este arquivo era a interface técnica, que listava execuções de
+  auditoria. Ela continua inteira, em tecnica.html, e está a um clique daqui —
+  no menu, e também no fim da tela de análises anteriores.
+
+  A troca não é de estilo: a pergunta que a ferramenta responde mudou. Antes era
+  "há incoerência nos campos de IBS/CBS desta nota"; agora é "que tratamento se
+  aplica aos produtos desta nota, e o que o XML declara é coerente com ele".
+-->
+<body>
+
+<header class="topo">
+  <div class="topo-conteudo">
+    <a class="marca" href="#/">Conferência de IBS/CBS<span>enquadramento</span></a>
+    <nav class="navegacao">
+      <a href="#/" data-rota="enviar">Analisar nota</a>
+      <a href="#/base" data-rota="base">Base tributária</a>
+      <a href="#/historico" data-rota="historico">Análises anteriores</a>
+      <a href="tecnica.html#/acuracia">Acurácia (visão técnica)</a>
+    </nav>
+  </div>
+  <p class="topo-aviso">
+    Apoio à conferência fiscal. O sistema aplica as regras cadastradas sobre os campos que elas
+    alcançam e mostra a base normativa que sustenta cada resultado.
+  </p>
+</header>
+
+<main id="tela" class="folha" tabindex="-1">
+  <p class="carregando">Carregando…</p>
+</main>
+
+<footer class="rodape">
+  <p>
+    Página estática servida pelo próprio sistema. Sem framework, sem CDN, sem rede: funciona
+    offline, contra a API na mesma origem. Importar catálogo e registrar tratativa continuam na
+    linha de comando.
+  </p>
+</footer>
+
+<script type="module" src="js/conferencia/app.js"></script>
+</body>
+</html>

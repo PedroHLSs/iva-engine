@@ -11,28 +11,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * A verdade de referência: o que uma pessoa afirmou sobre cada item, regra a
- * regra.
- *
- * <p>É a única entrada do harness que o sistema não produziu. Tudo o mais na
- * medição sai do motor; o gabarito sai de alguém que olhou os documentos. Por
- * isso ele é validado com o mesmo rigor de uma carga de catálogo, e não é
- * "limpo" em silêncio.</p>
- *
- * <h2>A mesma linha duas vezes é recusa, não é última-vence</h2>
- *
- * <p>Duas afirmações sobre o mesmo documento, item e regra ou concordam — e uma
- * delas é ruído — ou discordam, e aí não há verdade de referência a usar.
- * Escolher uma delas por ordem de arquivo faria a métrica depender de como o
- * gabarito foi digitado. A carga falha, exatamente como falha uma vigência
- * sobreposta no catálogo (D003).</p>
- */
+//Classe que representa o gabarito da avaliação de acurácia, contendo as linhas do gabarito e métodos para acessar informações sobre ele.
 public final class Gabarito {
 
     private final List<LinhaDeGabarito> linhas;
     private final Map<EnderecoDaAvaliacao, LinhaDeGabarito> porEndereco;
 
+    // Construtor que recebe uma lista de linhas do gabarito e valida se não há duplicatas ou elementos nulos.
     public Gabarito(List<LinhaDeGabarito> linhas) {
         if (linhas == null) {
             throw new AvaliacaoDeAcuraciaInvalida(
@@ -41,7 +26,7 @@ public final class Gabarito {
         if (linhas.stream().anyMatch(Objects::isNull)) {
             throw new AvaliacaoDeAcuraciaInvalida("A lista de linhas do gabarito não pode conter nulo.");
         }
-
+        // Garante que não haja duplicatas de endereço no gabarito, para evitar contagem errada de acertos e erros.
         Map<EnderecoDaAvaliacao, LinhaDeGabarito> indice = new LinkedHashMap<>();
         for (LinhaDeGabarito linha : linhas) {
             LinhaDeGabarito anterior = indice.putIfAbsent(linha.endereco(), linha);
@@ -54,12 +39,11 @@ public final class Gabarito {
         this.porEndereco = Map.copyOf(indice);
     }
 
-    /** As linhas, na ordem em que foram lidas. */
     public List<LinhaDeGabarito> linhas() {
         return linhas;
     }
 
-    /** O rótulo afirmado para este endereço, vazio se o gabarito não fala dele. */
+    // Retorna o rótulo esperado para o endereço da avaliação, se houver.
     public Optional<RotuloEsperado> rotuloDe(EnderecoDaAvaliacao endereco) {
         if (endereco == null) {
             throw new AvaliacaoDeAcuraciaInvalida("Não há endereço cujo rótulo consultar.");
@@ -72,29 +56,21 @@ public final class Gabarito {
         return rotuloDe(endereco).isPresent();
     }
 
-    /**
-     * Identificadores de regra citados pelo gabarito, na ordem em que aparecem.
-     *
-     * <p>Não é {@code Set.copyOf}: aquele descarta a ordem, e a ordem é o que
-     * torna a mensagem de recusa de regra desconhecida legível para quem vai
-     * procurar o erro de digitação no arquivo.</p>
-     */
+    // Retorna o conjunto de identificadores de regras citadas no gabarito, sem duplicatas e na ordem em que aparecem.
     public Set<String> regrasCitadas() {
         Set<String> regras = new LinkedHashSet<>();
         linhas.forEach(linha -> regras.add(linha.regraId()));
         return Collections.unmodifiableSet(regras);
     }
 
-    /** Quantas afirmações o gabarito traz. */
     public int quantidadeDeLinhas() {
         return linhas.size();
     }
 
-    /** Indica se o gabarito não afirma nada. */
     public boolean vazio() {
         return linhas.isEmpty();
     }
-
+    // Garante que o gabarito não cite regras que não estão no conjunto de regras, para evitar erros de digitação.
     private static String recusaDeDuplicata(LinhaDeGabarito anterior, LinhaDeGabarito repetida) {
         String concordancia = anterior.rotulo() == repetida.rotulo()
                 ? "As duas dizem %s, mas ainda assim uma delas sobra e contaria duas vezes."

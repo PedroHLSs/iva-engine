@@ -156,7 +156,7 @@ class ImportadorClassificacaoTributariaCsvTest {
 
     private List<ClassificacaoTributaria> importar(String arquivo) throws IOException {
         try (Reader origem = ArquivoDeTeste.csv(arquivo)) {
-            return importador.importar(origem);
+            return importador.importar(origem).registros();
         }
     }
 }

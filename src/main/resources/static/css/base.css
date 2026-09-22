@@ -1,0 +1,111 @@
+/* ---------------------------------------------------------------------------
+   Fundacao visual: tokens, tipografia, e os estados de ausencia.
+
+   A paleta e a mesma de visualizacao/resultados.html, de proposito: as figuras
+   do TCC e a tela precisam usar a mesma cor para o mesmo estado, ou quem le o
+   trabalho tem de reaprender o codigo de cor a cada pagina.
+
+   Cor NUNCA e a unica codificacao. Todo estado tem rotulo escrito, e os
+   graficos tem hachura alem da cor. Ver componentes.css.
+   --------------------------------------------------------------------------- */
+
+:root{
+  color-scheme: light;
+
+  --plano:#f9f9f7;
+  --superficie:#fcfcfb;
+  --superficie2:#f4f4f0;
+  --tinta:#0b0b0b;
+  --tinta2:#52514e;
+  --tinta3:#898781;
+  --grade:#e1e0d9;
+  --eixo:#c3c2b7;
+  --borda:rgba(11,11,11,.10);
+
+  /* Os tres desfechos. Nunca reutilizar estas tres para outra coisa. */
+  --achado:#d03b3b;
+  --achado-fraco:#fbeded;
+  --naoavaliado:#eda100;
+  --naoavaliado-fraco:#fdf7e8;
+  --conforme:#2a78d6;
+  --conforme-fraco:#eef4fc;
+
+  --sans: system-ui, "Segoe UI", Arial, Helvetica, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+
+*{box-sizing:border-box}
+html{background:var(--plano)}
+body{
+  margin:0;
+  font:15px/1.55 var(--sans);
+  color:var(--tinta);
+  background:var(--plano);
+}
+
+.folha{max-width:1180px;margin:0 auto;padding:26px 24px 90px}
+main:focus{outline:none}
+
+h1{font-size:23px;line-height:1.25;margin:0 0 4px;font-weight:640;letter-spacing:-.01em}
+h2{font-size:17px;line-height:1.3;margin:0 0 10px;font-weight:620;letter-spacing:-.005em}
+h3{font-size:12.5px;margin:22px 0 10px;font-weight:640;color:var(--tinta2);
+   text-transform:uppercase;letter-spacing:.07em}
+p{margin:0 0 10px}
+a{color:#1c5fb0}
+
+.sub{color:var(--tinta2);font-size:14px;margin:0 0 22px;max-width:88ch}
+.nota{color:var(--tinta3);font-size:12.5px;margin:8px 0 0;max-width:88ch}
+.mono{font-family:var(--mono)}
+
+/* --- topo ---------------------------------------------------------------- */
+.topo{background:var(--superficie);border-bottom:1px solid var(--borda)}
+.topo-conteudo{
+  max-width:1180px;margin:0 auto;padding:14px 24px 0;
+  display:flex;align-items:baseline;gap:26px;flex-wrap:wrap;
+}
+.marca{font-weight:660;font-size:15.5px;text-decoration:none;color:var(--tinta)}
+.marca span{
+  font-weight:500;color:var(--tinta3);font-size:12px;margin-left:8px;
+  text-transform:uppercase;letter-spacing:.09em;
+}
+.navegacao{display:flex;gap:18px}
+.navegacao a{
+  text-decoration:none;color:var(--tinta2);font-size:14px;padding:4px 0 10px;
+  border-bottom:2px solid transparent;
+}
+.navegacao a:hover{color:var(--tinta)}
+.navegacao a[aria-current="page"]{color:var(--tinta);border-bottom-color:var(--tinta)}
+.topo-aviso{
+  max-width:1180px;margin:0 auto;padding:0 24px 12px;
+  font-size:12.5px;color:var(--tinta3);
+}
+
+.rodape{border-top:1px solid var(--borda);background:var(--superficie)}
+.rodape p{max-width:1180px;margin:0 auto;padding:16px 24px;font-size:12.5px;color:var(--tinta3)}
+
+/* --- ausencia é escrita, nunca deixada em branco -------------------------- */
+/*
+   Estas duas classes sao a regra de apresentacao numero 1 traduzida em CSS.
+   .ausente marca um valor que NAO existe e diz por que; .indefinida marca
+   metrica sem denominador. Nenhuma das duas se parece com zero: sao italicas,
+   em cinza, e sempre acompanhadas de texto.
+*/
+.ausente{font-style:italic;color:var(--tinta3)}
+.indefinida{font-style:italic;color:var(--tinta3);font-family:var(--mono);font-size:13px}
+
+.carregando{color:var(--tinta3);font-style:italic}
+
+/* --- avisos -------------------------------------------------------------- */
+.aviso{
+  border-left:3px solid var(--naoavaliado);background:var(--naoavaliado-fraco);
+  padding:11px 15px;margin:14px 0;font-size:13.5px;color:var(--tinta2);
+  border-radius:0 6px 6px 0;max-width:96ch;
+}
+.aviso.erro{border-left-color:var(--achado);background:var(--achado-fraco)}
+.aviso strong{color:var(--tinta)}
+.aviso pre{
+  margin:9px 0 0;padding:9px 11px;background:var(--superficie);border:1px solid var(--borda);
+  border-radius:5px;font:12.5px/1.5 var(--mono);white-space:pre-wrap;word-break:break-all;
+}
+
+.oculto{display:none !important}

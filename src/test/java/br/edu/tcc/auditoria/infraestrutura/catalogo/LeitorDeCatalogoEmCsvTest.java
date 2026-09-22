@@ -1,6 +1,9 @@
 package br.edu.tcc.auditoria.infraestrutura.catalogo;
 
 import br.edu.tcc.auditoria.aplicacao.catalogo.CargaDeCatalogo;
+import br.edu.tcc.auditoria.aplicacao.catalogo.SituacaoDaNatureza;
+import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
+import br.edu.tcc.auditoria.aplicacao.catalogo.Natureza;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,6 +31,14 @@ class LeitorDeCatalogoEmCsvTest {
     private static final String CABECALHO_COMUM = "vigenciaInicio;vigenciaFim;fonteNormativa";
     private static final String VIGENCIA_FICTICIA = "1900-01-01;1900-12-31;FONTE FICTICIA v0.0";
 
+    /*
+     * Os quatro arquivos de dados declaram natureza; cobertura.csv nao. Ela diz
+     * periodo e fonte, nao conteudo -- e a de aliquota nao teria onde ser
+     * declarada, porque aliquota nao tem linha de cobertura.
+     */
+    private static final String CABECALHO_DE_DADOS = CABECALHO_COMUM + ";natureza";
+    private static final String LINHA_FICTICIA = VIGENCIA_FICTICIA + ";FICTICIO";
+
     @TempDir
     private Path diretorio;
 
@@ -45,22 +56,22 @@ class LeitorDeCatalogoEmCsvTest {
                 codigo;cstsCompativeis;dispositivoLegal;indicadorDeBeneficio;percentualReducao;\
                 camposObrigatoriosCondicionados;%s
                 XXX000;AAA|BBB;Dispositivo ficticio;false;;;%s
-                """.formatted(CABECALHO_COMUM, VIGENCIA_FICTICIA));
+                """.formatted(CABECALHO_DE_DADOS, LINHA_FICTICIA));
 
         escrever("registro-ncm.csv", """
                 ncm;descricao;%s
                 00000000;Descricao ficticia;%s
-                """.formatted(CABECALHO_COMUM, VIGENCIA_FICTICIA));
+                """.formatted(CABECALHO_DE_DADOS, LINHA_FICTICIA));
 
         escrever("item-anexo.csv", """
                 ncm;identificadorDoAnexo;tipoDeTratamento;%s
                 00000000;ANEXO-XX;TRATAMENTO-XX;%s
-                """.formatted(CABECALHO_COMUM, VIGENCIA_FICTICIA));
+                """.formatted(CABECALHO_DE_DADOS, LINHA_FICTICIA));
 
         escrever("aliquota-vigente.csv", """
                 tributo;percentual;abrangencia;%s
                 CBS;99,99;ABRANGENCIA-XX;%s
-                """.formatted(CABECALHO_COMUM, VIGENCIA_FICTICIA));
+                """.formatted(CABECALHO_DE_DADOS, LINHA_FICTICIA));
     }
 
     @Test
@@ -86,7 +97,7 @@ class LeitorDeCatalogoEmCsvTest {
     @Test
     void deveAceitarTabelaDeclaradaSemRegistros() throws IOException {
         escrever("aliquota-vigente.csv",
-                "tributo;percentual;abrangencia;%s%n".formatted(CABECALHO_COMUM));
+                "tributo;percentual;abrangencia;%s%n".formatted(CABECALHO_DE_DADOS));
 
         CargaDeCatalogo carga = LeitorDeCatalogoEmCsv.ler(diretorio, "carga-ficticia");
 
@@ -103,6 +114,109 @@ class LeitorDeCatalogoEmCsvTest {
                 .as("arquivo ausente não pode ser lido como tabela vazia")
                 .isInstanceOf(ImportacaoDeCatalogoInvalida.class)
                 .hasMessageContaining("aliquota-vigente.csv");
+    }
+
+    // -----------------------------------------------------------------------
+    // A coluna natureza. Acrescentada na etapa de conferência.
+    // -----------------------------------------------------------------------
+
+    @Test
+    void deveLerANaturezaDeCadaTabela() throws IOException {
+        CargaDeCatalogo carga = LeitorDeCatalogoEmCsv.ler(diretorio, "carga-ficticia");
+
+        assertThat(carga.natureza().situacao())
+                .isEqualTo(SituacaoDaNatureza.INTEIRAMENTE_FICTICIO);
+        assertThat(carga.natureza().tabelasFicticias()).hasSize(4);
+    }
+
+    /**
+     * O caso que a marcação existe para conseguir dizer.
+     *
+     * <p>Um arquivo transcrito de fonte normativa e o resto de demonstração. Uma
+     * marcação por carga teria de escolher entre chamar tudo de real ou tudo de
+     * fictício; por tabela, a resposta é "parcialmente fictício" com a lista.</p>
+     */
+    @Test
+    void deveReconhecerCargaComUmaTabelaNormativaEORestoFicticio() throws IOException {
+        escrever("registro-ncm.csv", """
+                ncm;descricao;%s
+                00000000;Descricao ficticia;%s;NORMATIVO
+                """.formatted(CABECALHO_DE_DADOS, VIGENCIA_FICTICIA));
+
+        CargaDeCatalogo carga = LeitorDeCatalogoEmCsv.ler(diretorio, "carga-ficticia");
+
+        assertThat(carga.natureza().situacao())
+                .isEqualTo(SituacaoDaNatureza.PARCIALMENTE_FICTICIO);
+        assertThat(carga.natureza().registrosDeNcm()).contains(Natureza.NORMATIVO);
+        assertThat(carga.natureza().tabelasFicticias())
+                .describedAs("quem lê precisa saber em que parte da tela pode confiar")
+                .doesNotContain(NaturezaDaCarga.REGISTROS_DE_NCM)
+                .contains(NaturezaDaCarga.CLASSIFICACOES_TRIBUTARIAS);
+    }
+
+    @Test
+    void deveRecusarArquivoSemAColunaNatureza() throws IOException {
+        escrever("registro-ncm.csv", """
+                ncm;descricao;%s
+                00000000;Descricao ficticia;%s
+                """.formatted(CABECALHO_COMUM, VIGENCIA_FICTICIA));
+
+        assertThatThrownBy(() -> LeitorDeCatalogoEmCsv.ler(diretorio, "carga-ficticia"))
+                .describedAs("coluna opcional teria o mesmo buraco do cabeçalho de comentário")
+                .isInstanceOf(ImportacaoDeCatalogoInvalida.class)
+                .hasMessageContaining("natureza");
+    }
+
+    @Test
+    void deveRecusarNaturezaDesconhecida() throws IOException {
+        escrever("registro-ncm.csv", """
+                ncm;descricao;%s
+                00000000;Descricao ficticia;%s;TALVEZ
+                """.formatted(CABECALHO_DE_DADOS, VIGENCIA_FICTICIA));
+
+        assertThatThrownBy(() -> LeitorDeCatalogoEmCsv.ler(diretorio, "carga-ficticia"))
+                .isInstanceOf(ImportacaoDeCatalogoInvalida.class)
+                .hasMessageContaining("natureza desconhecida")
+                .hasMessageContaining("FICTICIO");
+    }
+
+    @Test
+    void deveRecusarDuasNaturezasNoMesmoArquivo() throws IOException {
+        escrever("registro-ncm.csv", """
+                ncm;descricao;%s
+                00000000;Descricao ficticia;%s;FICTICIO
+                99999999;Outra descricao ficticia;%s;NORMATIVO
+                """.formatted(CABECALHO_DE_DADOS, VIGENCIA_FICTICIA, VIGENCIA_FICTICIA));
+
+        assertThatThrownBy(() -> LeitorDeCatalogoEmCsv.ler(diretorio, "carga-ficticia"))
+                .describedAs("duas num arquivo costumam ser dois arquivos colados juntos")
+                .isInstanceOf(ImportacaoDeCatalogoInvalida.class)
+                .hasMessageContaining("Um arquivo tem uma procedência só");
+    }
+
+    @Test
+    void tabelaSemRegistroNaoDeveDeclararNatureza() throws IOException {
+        escrever("aliquota-vigente.csv",
+                "tributo;percentual;abrangencia;%s%n".formatted(CABECALHO_DE_DADOS));
+
+        CargaDeCatalogo carga = LeitorDeCatalogoEmCsv.ler(diretorio, "carga-ficticia");
+
+        assertThat(carga.aliquotas()).isEmpty();
+        assertThat(carga.natureza().aliquotas())
+                .describedAs("não há linha onde declarar procedência de conteúdo que não existe")
+                .isEmpty();
+    }
+
+    @Test
+    void deveRecusarNaturezaEmBranco() throws IOException {
+        escrever("registro-ncm.csv", """
+                ncm;descricao;%s
+                00000000;Descricao ficticia;%s;
+                """.formatted(CABECALHO_DE_DADOS, VIGENCIA_FICTICIA));
+
+        assertThatThrownBy(() -> LeitorDeCatalogoEmCsv.ler(diretorio, "carga-ficticia"))
+                .isInstanceOf(ImportacaoDeCatalogoInvalida.class)
+                .hasMessageContaining("natureza");
     }
 
     @Test

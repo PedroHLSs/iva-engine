@@ -24,6 +24,20 @@ import java.nio.charset.StandardCharsets;
  *   <li>variável de ambiente {@code AUDITORIA_PSEUDONIMIZACAO_SAL}.</li>
  * </ol>
  *
+ * <p><strong>Emenda da Etapa 10.</strong> As duas fontes acima continuam valendo,
+ * na mesma precedência, e {@link #daConfiguracaoExterna()} continua se comportando
+ * exatamente como está descrito. O que mudou é que deixou de ser esse o único
+ * caminho: quem monta o sal em produção passou a ser
+ * {@code infraestrutura.sal.ResolvedorDeSal}, que tenta as duas fontes daqui e,
+ * não achando nenhuma, lê um arquivo local fora do repositório ou sorteia um sal
+ * novo e o grava lá. A afirmação de que "sem sal configurado o sistema para na
+ * subida" valia até a Etapa 9 e hoje é falsa — o sistema sobe com um sal gerado,
+ * e anuncia isso.</p>
+ *
+ * <p>O que NÃO mudou, e é o ponto: continua não havendo sal fixo em código. Um
+ * sal de 256 bits sorteado por instalação não é público, não está no jar e não
+ * torna pseudônimo nenhum reversível.</p>
+ *
  * <p>{@code toString} não devolve o valor: o sal é segredo, e objeto de
  * configuração costuma parar em log de inicialização.</p>
  */

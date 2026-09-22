@@ -1,0 +1,1611 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Resultados da auditoria — figuras</title>
+<style>
+:root{
+  color-scheme: light;
+  --plano:#f9f9f7;
+  --superficie:#fcfcfb;
+  --tinta:#0b0b0b;
+  --tinta2:#52514e;
+  --tinta3:#898781;
+  --grade:#e1e0d9;
+  --eixo:#c3c2b7;
+  --borda:rgba(11,11,11,.10);
+  --achado:#d03b3b;
+  --conforme:#2a78d6;
+  --naoavaliado:#eda100;
+  --sans: system-ui, "Segoe UI", Arial, Helvetica, sans-serif;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+*{box-sizing:border-box}
+html{background:var(--plano)}
+body{
+  margin:0; padding:32px 24px 96px;
+  font:15px/1.55 var(--sans);
+  color:var(--tinta); background:var(--plano);
+}
+.folha{max-width:1080px;margin:0 auto}
+h1{font-size:24px;line-height:1.25;margin:0 0 6px;font-weight:640;letter-spacing:-.01em}
+h2{font-size:18px;line-height:1.3;margin:0 0 4px;font-weight:620;letter-spacing:-.005em}
+h3{font-size:13px;margin:20px 0 8px;font-weight:620;color:var(--tinta2);
+   text-transform:uppercase;letter-spacing:.06em}
+p{margin:0 0 10px}
+.sub{color:var(--tinta2);font-size:14px;margin:0 0 24px}
+.cartao{
+  background:var(--superficie); border:1px solid var(--borda); border-radius:10px;
+  padding:22px 24px; margin:0 0 22px;
+}
+.legenda-secao{color:var(--tinta2);font-size:13.5px;margin:0 0 18px;max-width:72ch}
+.nota{color:var(--tinta3);font-size:12.5px;margin:10px 0 0;max-width:78ch}
+.aviso{
+  border-left:3px solid var(--naoavaliado); background:#fdf7e8;
+  padding:10px 14px; margin:14px 0 0; font-size:13.5px; color:var(--tinta2); border-radius:0 6px 6px 0;
+}
+.erro{border-left-color:var(--achado);background:#fbeded}
+.oculto{display:none !important}
+
+/* ---- entrada ---- */
+.entrada{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.campo{border:1px dashed var(--eixo);border-radius:8px;padding:14px 16px;background:#fdfdfc}
+.campo.pronto{border-style:solid;border-color:var(--conforme);background:#f4f8fd}
+.campo label{display:block;font-weight:600;font-size:14px;margin-bottom:2px}
+.campo .dica{color:var(--tinta3);font-size:12.5px;margin-bottom:10px}
+.campo .estado{font-size:12.5px;color:var(--tinta2);margin-top:8px;min-height:1.2em}
+input[type=file]{font:13px var(--sans);max-width:100%}
+input[type=number]{font:14px var(--sans);padding:4px 8px;border:1px solid var(--eixo);
+  border-radius:6px;width:9ch;background:var(--superficie);color:var(--tinta)}
+.opcoes{display:flex;flex-wrap:wrap;gap:20px;align-items:center;margin-top:18px;
+  padding-top:16px;border-top:1px solid var(--grade);font-size:13.5px;color:var(--tinta2)}
+.opcoes label{display:flex;align-items:center;gap:7px}
+
+/* ---- identificação ---- */
+.identificacao{display:grid;gap:2px 28px;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));margin-top:6px}
+.identificacao div{padding:8px 0;border-top:1px solid var(--grade)}
+.identificacao dt{font-size:12px;color:var(--tinta3);text-transform:uppercase;letter-spacing:.05em}
+.identificacao dd{margin:2px 0 0;font-size:14.5px}
+.identificacao dd.longo{font-family:var(--mono);font-size:11.5px;word-break:break-all;color:var(--tinta2)}
+
+/* ---- painéis de número ---- */
+.painel{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:4px 0 26px}
+.ladrilho{border:1px solid var(--borda);border-radius:8px;padding:13px 15px;background:#fdfdfc}
+.ladrilho .rotulo{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--tinta2)}
+.ladrilho .marca{width:11px;height:11px;border-radius:2px;flex:none}
+.ladrilho .valor{font-size:27px;font-weight:640;letter-spacing:-.02em;margin-top:5px}
+.ladrilho .parte{font-size:12.5px;color:var(--tinta3);margin-top:1px}
+
+/* ---- figura ---- */
+.figura{margin:0}
+.figura svg{display:block;width:100%;height:auto}
+.barra-acoes{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+button{
+  font:13px var(--sans); padding:6px 12px; border-radius:6px; cursor:pointer;
+  border:1px solid var(--eixo); background:var(--superficie); color:var(--tinta2);
+}
+button:hover{border-color:var(--tinta3);color:var(--tinta)}
+button:active{background:#f2f1ee}
+.retorno{font-size:12.5px;color:var(--tinta3);margin-left:4px}
+
+/* ---- tabelas ---- */
+.rolagem{overflow-x:auto;margin-top:14px}
+table{border-collapse:collapse;font-size:13px;width:100%;font-variant-numeric:tabular-nums}
+caption{text-align:left;font-size:12.5px;color:var(--tinta3);padding-bottom:8px}
+th,td{padding:6px 10px;border-bottom:1px solid var(--grade);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+thead th{color:var(--tinta2);font-weight:620;border-bottom:1px solid var(--eixo);
+  font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+tbody tr.destacada td{font-weight:640;border-top:1px solid var(--eixo)}
+td.texto{text-align:left;white-space:normal;min-width:32ch;max-width:70ch;color:var(--tinta2)}
+td.indefinida{color:var(--tinta3);font-style:italic}
+.marca-linha{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:8px;vertical-align:baseline}
+
+@media print{
+  body{padding:0;background:#fff}
+  .cartao{border:none;padding:0;margin-bottom:28px;break-inside:avoid}
+  .sem-impressao{display:none !important}
+}
+</style>
+</head>
+<body>
+<div class="folha">
+
+<h1>Resultados da auditoria de coerência de IBS/CBS</h1>
+<p class="sub">Página de leitura dos arquivos que o sistema exporta. Não altera nada, não envia nada
+para lugar nenhum e funciona sem rede: toda a leitura acontece dentro do navegador.</p>
+
+<section class="cartao sem-impressao" id="cartao-entrada">
+  <h2>Arquivos</h2>
+  <p class="legenda-secao">Os dois são opcionais e independentes: o papel de trabalho alimenta as
+  seções 1 a 4; o relatório de acurácia alimenta a seção 5.</p>
+  <div class="entrada">
+    <div class="campo" id="campo-xlsx">
+      <label for="arq-xlsx">Papel de trabalho (.xlsx)</label>
+      <div class="dica">O arquivo produzido pelo comando <code>exportar</code>, com as abas
+      Resumo, Achados e Não avaliados.</div>
+      <input type="file" id="arq-xlsx" accept=".xlsx">
+      <div class="estado" id="estado-xlsx"></div>
+    </div>
+    <div class="campo" id="campo-csv">
+      <label for="arq-csv">Relatório de acurácia (.csv)</label>
+      <div class="dica">O arquivo produzido pelo comando <code>avaliar-acuracia</code>,
+      separado por ponto e vírgula.</div>
+      <input type="file" id="arq-csv" accept=".csv,text/csv">
+      <div class="estado" id="estado-csv"></div>
+    </div>
+  </div>
+  <div class="opcoes">
+    <label>Total de avaliações
+      <input type="number" id="total-avaliacoes" min="0" step="1" placeholder="derivado">
+    </label>
+    <label><input type="checkbox" id="opcao-padroes"> Padrões de preenchimento (impressão em P&amp;B)</label>
+    <span class="retorno" id="retorno-opcoes"></span>
+  </div>
+  <div id="avisos"></div>
+</section>
+
+<main id="conteudo"></main>
+
+</div>
+<script>
+'use strict';
+
+/* ===========================================================================
+   CAMINHO ALTERNATIVO DE ENTRADA — bloco de dados colado à mão.
+   ---------------------------------------------------------------------------
+   Deixe `null` para usar os seletores de arquivo. Preenchido, ele tem
+   precedência e a página desenha sem pedir arquivo nenhum. A forma é a mesma
+   que os leitores produzem:
+
+   const DADOS_EMBUTIDOS = {
+     execucao: {
+       id: "3dc80c4a-...", dataHora: "07/09/2026 09:42",
+       versaoCatalogo: "verificacao-manual", versaoConjunto: "2026.1",
+       resumoDaEntrada: "170460d8...", documentos: 4, itens: 6
+     },
+     regras: ["R01","R02","R03","R04","R05","R06","R07"],
+     severidades: ["CRITICA","GRAVE","MODERADA","INFORMATIVA"],
+     achados: { R02: { GRAVE: 2 }, R05: { MODERADA: 2 } },
+     naoAvaliadas: { R01: 1, R02: 1, R03: 1, R05: 3, R07: 1 },
+     motivos: [ { regra:"R05", motivo:"O item nao declarou...", quantidade:3 } ],
+     acuracia: {
+       catalogo: "verificacao-manual", conjunto: "2026.1",
+       avaliacoesProduzidas: 42, linhasGabarito: 15, enderecosNaoAvaliados: 1,
+       porRegra: [ { regra:"R02", vp:2, fp:0, fn:1, vn:2, avaliados:5,
+                     naoAvaliados:1, semAvaliacao:0, total:6,
+                     precisao:1, recall:0.6667, f1:0.8, cobertura:0.8333 } ],
+       consolidado: { regra:"CONSOLIDADO", vp:3 }
+     }
+   };
+
+   Metrica sem denominador e `null`, nunca 0 e nunca 1 — a pagina escreve
+   "(indefinida)".
+   =========================================================================== */
+const DADOS_EMBUTIDOS = null;
+
+/* ===========================================================================
+   1. Paleta
+   ---------------------------------------------------------------------------
+   Três estados: vermelho (achado), azul (conforme) e âmbar (não avaliado).
+   O trio foi conferido com validador de paleta sobre a superfície #fcfcfb:
+   pior par sob deuteranopia ΔE 19,8 e sob visão normal ΔE 24,1 (alvo ≥ 8 e
+   ≥ 15). O âmbar fica abaixo de 3:1 de contraste contra a superfície, e por
+   isso todo valor aparece também escrito e em tabela — cor nunca é a única
+   codificação.
+
+   Severidade é escala ORDENADA, então usa rampa de um só tom (azul, claro para
+   escuro) em vez de quatro cores: mais escuro é mais grave, o que sobrevive à
+   impressão em preto e branco sem depender de legenda de cor.
+   =========================================================================== */
+const PALETA = {
+  superficie:'#fcfcfb', tinta:'#0b0b0b', tinta2:'#52514e', tinta3:'#898781',
+  grade:'#e1e0d9', eixo:'#c3c2b7',
+  ACHADO:'#d03b3b', CONFORME:'#2a78d6', NAO_AVALIADO:'#eda100'
+};
+const ESTADOS = ['ACHADO','CONFORME','NAO_AVALIADO'];
+const ROTULO_ESTADO = {
+  ACHADO:'Achado', CONFORME:'Conforme (derivado)', NAO_AVALIADO:'Não avaliado'
+};
+const RAMPA_ORDINAL = ['#184f95','#1c5cab','#256abf','#2a78d6','#3987e5','#5598e7','#6da7ec','#86b6ef'];
+const RAMPA_FIXA = {
+  1:['#256abf'],
+  2:['#184f95','#3987e5'],
+  3:['#184f95','#2a78d6','#86b6ef'],
+  4:['#184f95','#256abf','#3987e5','#86b6ef']
+};
+function rampaSeveridade(n){
+  if (RAMPA_FIXA[n]) return RAMPA_FIXA[n].slice();
+  const passos = [];
+  for (let i = 0; i < n; i++) passos.push(RAMPA_ORDINAL[Math.round(i * (RAMPA_ORDINAL.length - 1) / (n - 1))]);
+  return passos;
+}
+
+const FONTE_SVG = 'system-ui, "Segoe UI", Arial, Helvetica, sans-serif';
+const INDEFINIDA = '(indefinida)';
+const NAO_DERIVAVEL = '(não derivável)';
+
+/* ===========================================================================
+   2. Formatação
+   =========================================================================== */
+const fmtInteiro = new Intl.NumberFormat('pt-BR');
+const fmtMetrica = new Intl.NumberFormat('pt-BR', {minimumFractionDigits:4, maximumFractionDigits:4});
+const fmtPercentual = new Intl.NumberFormat('pt-BR', {minimumFractionDigits:1, maximumFractionDigits:1});
+
+/** Inteiro, ou "(não derivável)" quando a página não tem como saber o número. */
+function inteiro(v){ return (v === null || v === undefined) ? NAO_DERIVAVEL : fmtInteiro.format(v); }
+
+/** Métrica, ou "(indefinida)" — nunca zero, nunca um, nunca célula vazia. */
+function metrica(v){ return (v === null || v === undefined) ? INDEFINIDA : fmtMetrica.format(v); }
+
+function percentual(parte, total){
+  if (parte === null || parte === undefined || !total) return null;
+  return fmtPercentual.format(parte * 100 / total) + '%';
+}
+
+function normalizar(s){
+  return String(s === null || s === undefined ? '' : s)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase().replace(/\s+/g, ' ').trim();
+}
+
+/** Serial de data do Excel (época 1899-12-30) para texto, sem deslocar fuso. */
+function dataDeSerial(serial){
+  const ms = Math.round((Number(serial) - 25569) * 86400000);
+  const d = new Date(ms);
+  if (isNaN(d.getTime())) return String(serial);
+  const dois = n => String(n).padStart(2, '0');
+  return dois(d.getUTCDate()) + '/' + dois(d.getUTCMonth() + 1) + '/' + d.getUTCFullYear() +
+         ' ' + dois(d.getUTCHours()) + ':' + dois(d.getUTCMinutes());
+}
+
+/* ===========================================================================
+   3. Leitor de ZIP
+   ---------------------------------------------------------------------------
+   Um .xlsx é um ZIP. O navegador já sabe inflar (DecompressionStream) e já sabe
+   ler XML (DOMParser), então não há biblioteca nenhuma aqui — nem no disco, nem
+   de CDN. Só o diretório central é percorrido; nada do arquivo é executado.
+   =========================================================================== */
+class FalhaDeLeitura extends Error {}
+
+function acharFimDoDiretorio(dv, tamanho){
+  const limite = Math.max(0, tamanho - 22 - 65535);
+  for (let i = tamanho - 22; i >= limite; i--) if (dv.getUint32(i, true) === 0x06054b50) return i;
+  return -1;
+}
+
+function lerEntradasDoZip(buffer){
+  const dv = new DataView(buffer);
+  const fim = acharFimDoDiretorio(dv, buffer.byteLength);
+  if (fim < 0) throw new FalhaDeLeitura('O arquivo não é um .xlsx válido: fim do ZIP não encontrado.');
+  const quantidade = dv.getUint16(fim + 10, true);
+  const inicioDoDiretorio = dv.getUint32(fim + 16, true);
+  if (quantidade === 0xffff || inicioDoDiretorio === 0xffffffff)
+    throw new FalhaDeLeitura('Planilha em formato ZIP64, que esta página não lê.');
+  const decodificador = new TextDecoder('utf-8');
+  const entradas = new Map();
+  let p = inicioDoDiretorio;
+  for (let i = 0; i < quantidade; i++){
+    if (dv.getUint32(p, true) !== 0x02014b50)
+      throw new FalhaDeLeitura('Diretório do ZIP corrompido na entrada ' + (i + 1) + '.');
+    const metodo = dv.getUint16(p + 10, true);
+    const comprimido = dv.getUint32(p + 20, true);
+    const tamanhoNome = dv.getUint16(p + 28, true);
+    const tamanhoExtra = dv.getUint16(p + 30, true);
+    const tamanhoComentario = dv.getUint16(p + 32, true);
+    const deslocamento = dv.getUint32(p + 42, true);
+    const nome = decodificador.decode(new Uint8Array(buffer, p + 46, tamanhoNome));
+    entradas.set(nome, {metodo, comprimido, deslocamento});
+    p += 46 + tamanhoNome + tamanhoExtra + tamanhoComentario;
+  }
+  return {buffer, dv, entradas};
+}
+
+async function extrair(zip, nome){
+  const entrada = zip.entradas.get(nome);
+  if (!entrada) return null;
+  const dv = zip.dv;
+  const lo = entrada.deslocamento;
+  if (dv.getUint32(lo, true) !== 0x04034b50)
+    throw new FalhaDeLeitura('Cabeçalho local ausente para "' + nome + '".');
+  const inicio = lo + 30 + dv.getUint16(lo + 26, true) + dv.getUint16(lo + 28, true);
+  const bruto = new Uint8Array(zip.buffer, inicio, entrada.comprimido);
+  if (entrada.metodo === 0) return new TextDecoder('utf-8').decode(bruto);
+  if (entrada.metodo !== 8)
+    throw new FalhaDeLeitura('Compressão não suportada (' + entrada.metodo + ') em "' + nome + '".');
+  if (typeof DecompressionStream === 'undefined')
+    throw new FalhaDeLeitura('Este navegador não tem DecompressionStream. Abra em um navegador atual.');
+  const fluxo = new Blob([bruto]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+  return new TextDecoder('utf-8').decode(await new Response(fluxo).arrayBuffer());
+}
+
+/* ===========================================================================
+   4. De XML de planilha para linhas
+   =========================================================================== */
+function xml(texto, origem){
+  const doc = new DOMParser().parseFromString(texto, 'application/xml');
+  if (doc.getElementsByTagName('parsererror').length)
+    throw new FalhaDeLeitura('XML ilegível em ' + origem + '.');
+  return doc;
+}
+
+function indiceDaColuna(referencia){
+  let n = 0;
+  for (const c of String(referencia)){
+    const cod = c.charCodeAt(0);
+    if (cod < 65 || cod > 90) break;
+    n = n * 26 + (cod - 64);
+  }
+  return n - 1;
+}
+
+function textoDe(no){
+  let s = '';
+  for (const t of no.getElementsByTagName('t')) s += t.textContent;
+  return s;
+}
+
+function valorDaCelula(c, compartilhadas){
+  const tipo = c.getAttribute('t');
+  if (tipo === 'inlineStr'){
+    const is = c.getElementsByTagName('is')[0];
+    return is ? textoDe(is) : '';
+  }
+  const v = c.getElementsByTagName('v')[0];
+  if (!v) return null;
+  if (tipo === 's'){
+    const i = Number(v.textContent);
+    return compartilhadas[i] === undefined ? '' : compartilhadas[i];
+  }
+  if (tipo === 'str' || tipo === 'e') return v.textContent;
+  if (tipo === 'b') return v.textContent === '1';
+  const n = Number(v.textContent);
+  return isNaN(n) ? v.textContent : n;
+}
+
+function linhasDaAba(textoXml, compartilhadas, origem){
+  const doc = xml(textoXml, origem);
+  const linhas = [];
+  for (const linha of doc.getElementsByTagName('row')){
+    const celulas = [];
+    for (const c of linha.getElementsByTagName('c')){
+      const ref = c.getAttribute('r');
+      const i = ref ? indiceDaColuna(ref) : celulas.length;
+      celulas[i] = valorDaCelula(c, compartilhadas);
+    }
+    linhas.push(celulas);
+  }
+  return linhas;
+}
+
+const NS_REL = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships';
+
+async function lerPlanilha(buffer){
+  const zip = lerEntradasDoZip(buffer);
+
+  const compartilhadas = [];
+  const textoCompartilhadas = await extrair(zip, 'xl/sharedStrings.xml');
+  if (textoCompartilhadas)
+    for (const si of xml(textoCompartilhadas, 'sharedStrings.xml').getElementsByTagName('si'))
+      compartilhadas.push(textoDe(si));
+
+  const livro = await extrair(zip, 'xl/workbook.xml');
+  if (!livro) throw new FalhaDeLeitura('O arquivo não tem xl/workbook.xml: não é uma planilha.');
+
+  const relacoes = new Map();
+  const textoRelacoes = await extrair(zip, 'xl/_rels/workbook.xml.rels');
+  if (textoRelacoes)
+    for (const r of xml(textoRelacoes, 'workbook.xml.rels').getElementsByTagName('Relationship'))
+      relacoes.set(r.getAttribute('Id'), r.getAttribute('Target'));
+
+  const abas = new Map();
+  for (const aba of xml(livro, 'workbook.xml').getElementsByTagName('sheet')){
+    const nome = aba.getAttribute('name');
+    const id = aba.getAttributeNS(NS_REL, 'id') || aba.getAttribute('r:id');
+    let alvo = relacoes.get(id);
+    if (!alvo) continue;
+    alvo = alvo.charAt(0) === '/' ? alvo.slice(1) : 'xl/' + alvo.replace(/^\.\//, '');
+    const conteudo = await extrair(zip, alvo);
+    if (conteudo) abas.set(nome, linhasDaAba(conteudo, compartilhadas, nome));
+  }
+  if (!abas.size) throw new FalhaDeLeitura('A planilha não tem nenhuma aba legível.');
+  return abas;
+}
+
+/* ===========================================================================
+   5. Interpretação do papel de trabalho
+   ---------------------------------------------------------------------------
+   A aba Resumo é lida por RÓTULO, não por índice de linha: mexer no leiaute da
+   planilha não deve quebrar esta página. Das abas de detalhe só saem as colunas
+   necessárias — Regra, Severidade e Motivo. As demais são ignoradas de
+   propósito, em especial Justificativa (texto livre digitado por pessoa, que
+   pode conter CNPJ ou razão social) e as colunas que identificam a operação
+   (Série, Número, Emissão, UF). Nenhuma figura desta página desce ao nível do
+   documento.
+   =========================================================================== */
+const ROTULOS_DA_EXECUCAO = {
+  'execucao':'id',
+  'data e hora':'dataHora',
+  'versao do catalogo':'versaoCatalogo',
+  'versao do conjunto de regras':'versaoConjunto',
+  'resumo da entrada':'resumoDaEntrada',
+  'documentos auditados':'documentos',
+  'itens auditados':'itens'
+};
+
+function celula(linha, i){
+  const v = linha ? linha[i] : null;
+  return (v === null || v === undefined) ? '' : String(v).trim();
+}
+
+function acharAba(abas, nome){
+  for (const [chave, linhas] of abas) if (normalizar(chave) === nome) return linhas;
+  return null;
+}
+
+function indicesDoCabecalho(linhas, nomes){
+  const cabecalho = linhas[0] || [];
+  const indices = {};
+  for (let i = 0; i < cabecalho.length; i++){
+    const n = normalizar(cabecalho[i]);
+    for (const chave in nomes) if (n === nomes[chave]) indices[chave] = i;
+  }
+  return indices;
+}
+
+function interpretarResumo(linhas){
+  const execucao = {};
+  const severidades = [];
+  const regras = [];
+  const motivos = [];
+  const declarado = {};
+  let secao = null;
+
+  for (const linha of linhas){
+    const a = celula(linha, 0);
+    const b = linha ? linha[1] : null;
+    const c = linha ? linha[2] : null;
+    const na = normalizar(a);
+    if (!na) continue;
+
+    const campo = ROTULOS_DA_EXECUCAO[na];
+    if (campo && b !== null && b !== undefined){ execucao[campo] = b; continue; }
+    if (na === 'apontamentos por severidade'){ secao = 'severidade'; continue; }
+    if (na === 'apontamentos por regra'){ secao = 'regra'; continue; }
+    if (na === 'nao avaliados'){ secao = 'naoavaliado'; continue; }
+    if (na === 'total de apontamentos'){ declarado.achados = Number(b); continue; }
+    if (na === 'avaliacoes nao concluidas'){ declarado.naoAvaliadas = Number(b); continue; }
+    if (na === 'itens atingidos'){ declarado.itensAtingidos = Number(b); continue; }
+
+    if (secao === 'severidade' && typeof b === 'number' && na !== 'severidade')
+      severidades.push({nome:a, quantidade:b});
+    else if (secao === 'regra' && typeof b === 'number' && na !== 'regra')
+      regras.push({nome:a, quantidade:b});
+    else if (secao === 'naoavaliado' && typeof c === 'number' && na !== 'regra')
+      motivos.push({regra:a, motivo:(b === null || b === undefined) ? '' : String(b), quantidade:c});
+  }
+
+  if (typeof execucao.dataHora === 'number') execucao.dataHora = dataDeSerial(execucao.dataHora);
+  execucao.documentos = Number(execucao.documentos);
+  execucao.itens = Number(execucao.itens);
+  return {execucao, severidades, regras, motivos, declarado};
+}
+
+function contarAchados(linhas, alertas){
+  const indices = indicesDoCabecalho(linhas, {regra:'regra', severidade:'severidade'});
+  const contagem = {};
+  if (indices.regra === undefined || indices.severidade === undefined){
+    alertas.push('A aba Achados não tem as colunas Regra e Severidade; os achados por regra vieram só do Resumo.');
+    return null;
+  }
+  for (let i = 1; i < linhas.length; i++){
+    const regra = celula(linhas[i], indices.regra);
+    const severidade = celula(linhas[i], indices.severidade);
+    if (!regra) continue;
+    if (!contagem[regra]) contagem[regra] = {};
+    contagem[regra][severidade] = (contagem[regra][severidade] || 0) + 1;
+  }
+  return contagem;
+}
+
+function contarNaoAvaliadas(linhas, alertas){
+  const indices = indicesDoCabecalho(linhas, {regra:'regra', motivo:'motivo'});
+  if (indices.regra === undefined){
+    alertas.push('A aba Não avaliados não tem a coluna Regra; os não avaliados por regra vieram só do Resumo.');
+    return null;
+  }
+  const porRegra = {};
+  const motivos = new Map();
+  for (let i = 1; i < linhas.length; i++){
+    const regra = celula(linhas[i], indices.regra);
+    if (!regra) continue;
+    porRegra[regra] = (porRegra[regra] || 0) + 1;
+    const motivo = indices.motivo === undefined ? '' : celula(linhas[i], indices.motivo);
+    const chave = regra + '\u0000' + motivo;
+    const ja = motivos.get(chave);
+    if (ja) ja.quantidade++; else motivos.set(chave, {regra, motivo, quantidade:1});
+  }
+  return {porRegra, motivos:Array.from(motivos.values())};
+}
+
+function somar(objeto){
+  let total = 0;
+  for (const chave in objeto){
+    const v = objeto[chave];
+    total += (typeof v === 'number') ? v : somar(v);
+  }
+  return total;
+}
+
+function interpretarPapelDeTrabalho(abas){
+  const alertas = [];
+  const linhasResumo = acharAba(abas, 'resumo');
+  if (!linhasResumo)
+    throw new FalhaDeLeitura('A planilha não tem aba Resumo. Esperava as abas Resumo, Achados e Não avaliados.');
+  const resumo = interpretarResumo(linhasResumo);
+
+  const regras = resumo.regras.map(r => r.nome);
+  const severidades = resumo.severidades.map(s => s.nome);
+  if (!regras.length) alertas.push('A aba Resumo não trouxe o bloco "Apontamentos por regra".');
+  if (!execucaoCompleta(resumo.execucao)) alertas.push('A aba Resumo não trouxe todos os campos de identificação da execução.');
+
+  const linhasAchados = acharAba(abas, 'achados');
+  const cruzado = linhasAchados ? contarAchados(linhasAchados, alertas) : null;
+  const achadosPorRegra = {};
+  const achadosPorSeveridade = {};
+  for (const r of resumo.regras) achadosPorRegra[r.nome] = r.quantidade;
+  for (const s of resumo.severidades) achadosPorSeveridade[s.nome] = s.quantidade;
+
+  if (cruzado){
+    for (const regra in cruzado){
+      const doDetalhe = somar(cruzado[regra]);
+      if (achadosPorRegra[regra] === undefined){
+        alertas.push('A regra ' + regra + ' aparece na aba Achados mas não no Resumo; ela foi acrescentada ao eixo.');
+        regras.push(regra);
+        achadosPorRegra[regra] = doDetalhe;
+      } else if (achadosPorRegra[regra] !== doDetalhe){
+        alertas.push('Divergência na regra ' + regra + ': o Resumo diz ' + achadosPorRegra[regra] +
+                     ' apontamento(s) e a aba Achados tem ' + doDetalhe + ' linha(s). A página mostra o Resumo.');
+      }
+      for (const severidade in cruzado[regra])
+        if (severidade && severidades.indexOf(severidade) < 0) severidades.push(severidade);
+    }
+  }
+
+  const linhasNaoAvaliados = acharAba(abas, 'nao avaliados');
+  const detalheNaoAvaliadas = linhasNaoAvaliados ? contarNaoAvaliadas(linhasNaoAvaliados, alertas) : null;
+  const naoAvaliadasPorRegra = {};
+  let motivos = resumo.motivos.slice();
+  if (detalheNaoAvaliadas){
+    for (const regra in detalheNaoAvaliadas.porRegra) naoAvaliadasPorRegra[regra] = detalheNaoAvaliadas.porRegra[regra];
+    if (detalheNaoAvaliadas.motivos.length) motivos = detalheNaoAvaliadas.motivos;
+  } else {
+    for (const m of resumo.motivos) naoAvaliadasPorRegra[m.regra] = (naoAvaliadasPorRegra[m.regra] || 0) + m.quantidade;
+  }
+  for (const regra in naoAvaliadasPorRegra)
+    if (regras.indexOf(regra) < 0){
+      alertas.push('A regra ' + regra + ' aparece entre os não avaliados mas não no Resumo; ela foi acrescentada ao eixo.');
+      regras.push(regra);
+    }
+
+  const totalAchados = somar(achadosPorRegra);
+  const totalNaoAvaliadas = somar(naoAvaliadasPorRegra);
+  conferir(alertas, 'apontamentos', resumo.declarado.achados, totalAchados);
+  conferir(alertas, 'avaliações não concluídas', resumo.declarado.naoAvaliadas, totalNaoAvaliadas);
+
+  return {
+    execucao: resumo.execucao, regras, severidades,
+    achadosPorRegra, achadosPorSeveridade, achadosPorRegraESeveridade: cruzado, totalAchados,
+    naoAvaliadasPorRegra, totalNaoAvaliadas, motivos,
+    itensAtingidos: resumo.declarado.itensAtingidos, alertas
+  };
+}
+
+function execucaoCompleta(execucao){
+  for (const chave in ROTULOS_DA_EXECUCAO) if (execucao[ROTULOS_DA_EXECUCAO[chave]] === undefined) return false;
+  return true;
+}
+
+function conferir(alertas, assunto, declarado, somado){
+  if (typeof declarado === 'number' && !isNaN(declarado) && declarado !== somado)
+    alertas.push('O Resumo declara ' + declarado + ' ' + assunto + ', mas as abas de detalhe somam ' +
+                 somado + '. A planilha está internamente inconsistente.');
+}
+
+/* ===========================================================================
+   6. Interpretação do relatório de acurácia
+   ---------------------------------------------------------------------------
+   O cabeçalho de comentários do CSV traz, entre outras linhas, os endereços do
+   gabarito que o motor não avaliou — e ali a chave de acesso aparece em texto
+   claro. Os dígitos da chave carregam o CNPJ do emitente, e esta página produz
+   figura para documento que circula: as linhas de endereço são CONTADAS e nunca
+   guardadas nem escritas.
+   =========================================================================== */
+const CAMPOS_DE_ACURACIA = {
+  regra:'regra_id', vp:'verdadeiros_positivos', fp:'falsos_positivos',
+  fn:'falsos_negativos', vn:'verdadeiros_negativos', avaliados:'avaliados',
+  naoAvaliados:'nao_avaliados', semAvaliacao:'sem_avaliacao', total:'total',
+  precisao:'precisao', recall:'recall', f1:'f1', cobertura:'cobertura'
+};
+const COMENTARIOS_DE_ACURACIA = {
+  'catalogo':'catalogo',
+  'conjunto de regras':'conjunto',
+  'documentos auditados':'documentos',
+  'itens auditados':'itens',
+  'avaliacoes produzidas pelo motor':'avaliacoesProduzidas',
+  'linhas de gabarito':'linhasGabarito',
+  'avaliacoes sem linha no gabarito':'semLinhaNoGabarito',
+  'linhas de gabarito sem avaliacao correspondente':'semAvaliacaoCorrespondente'
+};
+
+function numeroDeMetrica(texto){
+  const t = String(texto === null || texto === undefined ? '' : texto).trim();
+  if (!t || t === INDEFINIDA || normalizar(t) === 'indefinida') return null;
+  const n = Number(t.indexOf('.') < 0 ? t.replace(',', '.') : t);
+  return isNaN(n) ? null : n;
+}
+
+function lerAcuraciaCsv(texto){
+  const meta = {enderecosNaoAvaliados:0};
+  const linhasDeDados = [];
+  for (const bruta of String(texto).split(/\r?\n/)){
+    const linha = bruta.trim();
+    if (!linha) continue;
+    if (linha.charAt(0) === '#'){
+      const corpo = linha.replace(/^#+\s*/, '');
+      if (/^documento\b/i.test(normalizar(corpo))){ meta.enderecosNaoAvaliados++; continue; }
+      const corte = corpo.indexOf(':');
+      if (corte < 0) continue;
+      const campo = COMENTARIOS_DE_ACURACIA[normalizar(corpo.slice(0, corte))];
+      if (campo) meta[campo] = corpo.slice(corte + 1).trim();
+      continue;
+    }
+    linhasDeDados.push(linha);
+  }
+  if (!linhasDeDados.length)
+    throw new FalhaDeLeitura('O CSV de acurácia não tem nenhuma linha de dados.');
+
+  const separador = linhasDeDados[0].indexOf(';') >= 0 ? ';' : ',';
+  const cabecalho = linhasDeDados[0].split(separador).map(normalizar);
+  const indices = {};
+  for (const chave in CAMPOS_DE_ACURACIA){
+    const i = cabecalho.indexOf(CAMPOS_DE_ACURACIA[chave]);
+    if (i >= 0) indices[chave] = i;
+  }
+  if (indices.regra === undefined)
+    throw new FalhaDeLeitura('O CSV de acurácia não tem a coluna regra_id. Este não parece ser o relatório do comando avaliar-acuracia.');
+
+  const porRegra = [];
+  let consolidado = null;
+  for (let i = 1; i < linhasDeDados.length; i++){
+    const campos = linhasDeDados[i].split(separador);
+    const registro = {};
+    for (const chave in indices) registro[chave] = campos[indices[chave]];
+    registro.regra = String(registro.regra || '').trim();
+    for (const chave in CAMPOS_DE_ACURACIA) if (chave !== 'regra') registro[chave] = numeroDeMetrica(registro[chave]);
+    if (!registro.regra) continue;
+    if (normalizar(registro.regra) === 'consolidado') consolidado = registro; else porRegra.push(registro);
+  }
+  if (!porRegra.length && !consolidado)
+    throw new FalhaDeLeitura('O CSV de acurácia não trouxe nenhuma regra.');
+  meta.porRegra = porRegra;
+  meta.consolidado = consolidado;
+  meta.macro = calcularMacro(porRegra);
+  return meta;
+}
+
+/** Média macro: só as regras em que a métrica existe, com o n dito ao lado.
+    Regra de métrica indefinida não entra como zero — entraria como afirmação. */
+function calcularMacro(porRegra){
+  const macro = {};
+  for (const campo of ['precisao','recall','f1','cobertura']){
+    const definidas = porRegra.filter(r => r[campo] !== null && r[campo] !== undefined);
+    macro[campo] = definidas.length
+      ? {valor: definidas.reduce((s, r) => s + r[campo], 0) / definidas.length, n: definidas.length}
+      : {valor: null, n: 0};
+  }
+  macro.regras = porRegra.length;
+  return macro;
+}
+
+/* ===========================================================================
+   7. Modelo — e a derivação do CONFORME
+   ---------------------------------------------------------------------------
+   Nenhum arquivo exportado conta os conformes. O papel de trabalho conta
+   apontamentos e avaliações não concluídas; o total de avaliações não está
+   escrito em lugar nenhum. Como a página precisa dos TRÊS estados, o terceiro é
+   derivado — e a derivação fica impressa embaixo da figura, com os dois
+   fatores, em vez de escondida:
+
+       total de avaliações = itens auditados × regras do conjunto
+       conformes           = total − achados − não avaliados
+
+   Isso supõe que cada regra avalia cada item uma vez. Se a subtração der
+   negativo, a suposição está errada para aqueles dados e a página escreve
+   "(não derivável)" em vez de desenhar barra.
+   =========================================================================== */
+const estado = {papel:null, acuracia:null, totalManual:null, padroes:false, erros:{}};
+
+function montarModelo(){
+  const alertas = [];
+  const papel = estado.papel;
+  const acuracia = estado.acuracia;
+  if (papel) for (const a of papel.alertas) alertas.push(a);
+  if (!papel) return {papel:null, acuracia, alertas};
+
+  const itens = Number(papel.execucao.itens);
+  const quantidadeDeRegras = papel.regras.length;
+  const derivado = (Number.isFinite(itens) && quantidadeDeRegras > 0) ? itens * quantidadeDeRegras : null;
+  const informado = estado.totalManual;
+  const total = (informado !== null && informado !== undefined) ? informado : derivado;
+  const origem = (informado !== null && informado !== undefined) ? 'informado' : 'derivado';
+
+  let conformesTotal = null;
+  if (total !== null){
+    const resto = total - papel.totalAchados - papel.totalNaoAvaliadas;
+    if (resto < 0)
+      alertas.push('Achados e não avaliados somam ' + (papel.totalAchados + papel.totalNaoAvaliadas) +
+                   ', mais que o total de ' + total + ' avaliações. O conforme não foi derivado.');
+    else conformesTotal = resto;
+  }
+
+  let base = null;
+  if (total !== null && quantidadeDeRegras > 0 && total % quantidadeDeRegras === 0) base = total / quantidadeDeRegras;
+  const conformesPorRegra = {};
+  for (const regra of papel.regras){
+    if (base === null){ conformesPorRegra[regra] = null; continue; }
+    const resto = base - (papel.achadosPorRegra[regra] || 0) - (papel.naoAvaliadasPorRegra[regra] || 0);
+    conformesPorRegra[regra] = resto < 0 ? null : resto;
+  }
+
+  if (acuracia && acuracia.avaliacoesProduzidas !== undefined){
+    const medido = Number(acuracia.avaliacoesProduzidas);
+    if (Number.isFinite(medido) && total !== null && medido !== total)
+      alertas.push('O relatório de acurácia diz que o motor produziu ' + medido + ' avaliações, e aqui o total é ' +
+                   total + ' (' + origem + '). Confira se os dois arquivos são do mesmo acervo.');
+  }
+  if (acuracia && acuracia.conjunto && papel.execucao.versaoConjunto &&
+      normalizar(acuracia.conjunto) !== normalizar(papel.execucao.versaoConjunto))
+    alertas.push('O papel de trabalho é do conjunto de regras ' + papel.execucao.versaoConjunto +
+                 ' e o relatório de acurácia, do conjunto ' + acuracia.conjunto + '.');
+  if (acuracia && acuracia.catalogo && papel.execucao.versaoCatalogo &&
+      normalizar(acuracia.catalogo) !== normalizar(papel.execucao.versaoCatalogo))
+    alertas.push('O papel de trabalho é do catálogo ' + papel.execucao.versaoCatalogo +
+                 ' e o relatório de acurácia, do catálogo ' + acuracia.catalogo + '.');
+
+  return {
+    papel, acuracia, alertas,
+    execucao: papel.execucao, regras: papel.regras, severidades: papel.severidades,
+    itens, quantidadeDeRegras, total, derivado, origem, base,
+    totais: {ACHADO: papel.totalAchados, CONFORME: conformesTotal, NAO_AVALIADO: papel.totalNaoAvaliadas},
+    porRegra: {ACHADO: papel.achadosPorRegra, CONFORME: conformesPorRegra, NAO_AVALIADO: papel.naoAvaliadasPorRegra}
+  };
+}
+
+/* ===========================================================================
+   8. Construção de DOM e de SVG
+   ---------------------------------------------------------------------------
+   Nada aqui usa innerHTML: todo texto vindo dos arquivos entra por
+   textContent, então conteúdo de planilha nunca vira marcação.
+   =========================================================================== */
+const NS_SVG = 'http://www.w3.org/2000/svg';
+
+function aplicar(no, atributos){
+  if (!atributos) return;
+  for (const chave in atributos){
+    const valor = atributos[chave];
+    if (valor === null || valor === undefined) continue;
+    if (chave === 'texto') no.textContent = String(valor);
+    else no.setAttribute(chave, String(valor));
+  }
+}
+
+function anexar(no, filhos){
+  if (filhos === null || filhos === undefined || filhos === false) return;
+  const lista = Array.isArray(filhos) ? filhos : [filhos];
+  for (const filho of lista){
+    if (filho === null || filho === undefined || filho === false) continue;
+    no.appendChild(typeof filho === 'object' ? filho : document.createTextNode(String(filho)));
+  }
+}
+
+function el(tag, atributos, filhos){
+  const no = document.createElement(tag);
+  aplicar(no, atributos);
+  anexar(no, filhos);
+  return no;
+}
+
+function sv(tag, atributos, filhos){
+  const no = document.createElementNS(NS_SVG, tag);
+  aplicar(no, atributos);
+  anexar(no, filhos);
+  return no;
+}
+
+function svTexto(x, y, conteudo, atributos){
+  return sv('text', Object.assign({x:pos(x), y:pos(y), fill:PALETA.tinta2, 'font-size':12}, atributos || {}), String(conteudo));
+}
+
+/** Duas casas bastam: coordenada longa so engorda o SVG que vai para o texto. */
+function pos(v){ return Math.round(v * 100) / 100; }
+
+/** Barra horizontal com a ponta de dado arredondada e a base quadrada. */
+function barraH(x, y, largura, altura, raio){
+  const r = Math.max(0, Math.min(raio, largura, altura / 2));
+  if (largura <= 0) return '';
+  const dir = pos(x + largura), fim = pos(x + largura - r), ini = pos(x);
+  const cima = pos(y), baixo = pos(y + altura);
+  return 'M' + ini + ',' + cima + ' H' + fim +
+         ' Q' + dir + ',' + cima + ' ' + dir + ',' + pos(y + r) +
+         ' V' + pos(y + altura - r) +
+         ' Q' + dir + ',' + baixo + ' ' + fim + ',' + baixo +
+         ' H' + ini + ' Z';
+}
+
+/* Padrões de preenchimento: o canal que sobrevive à impressão em preto e
+   branco. Só entram quando a opção está marcada ou na hora de imprimir —
+   textura ligada o tempo todo vira ruído. Ângulos de 45° e 135°; o conforme
+   fica sólido e claro, para os três se separarem também por densidade. */
+const INCLINACAO = {ACHADO:45, CONFORME:0, NAO_AVALIADO:135};
+
+function defsDePadroes(prefixo){
+  const filhos = [];
+  for (const nome of ESTADOS){
+    const cor = PALETA[nome];
+    const conteudo = [sv('rect', {width:8, height:8, fill:PALETA.superficie})];
+    if (nome === 'CONFORME'){
+      conteudo.push(sv('rect', {width:8, height:8, fill:cor, 'fill-opacity':0.28}));
+      conteudo.push(sv('rect', {width:8, height:8, fill:'none', stroke:cor, 'stroke-width':0.6}));
+    } else {
+      conteudo.push(sv('path', {d:'M0,0 V8', stroke:cor, 'stroke-width':3.4}));
+    }
+    filhos.push(sv('pattern', {
+      id: prefixo + '-' + nome, width:8, height:8, patternUnits:'userSpaceOnUse',
+      patternTransform:'rotate(' + INCLINACAO[nome] + ')'
+    }, conteudo));
+  }
+  return sv('defs', null, filhos);
+}
+
+function preenchimento(nomeDoEstado, prefixo){
+  return estado.padroes ? 'url(#' + prefixo + '-' + nomeDoEstado + ')' : PALETA[nomeDoEstado];
+}
+
+/** Raiz de figura: carrega os próprios padrões, título e descrição, de modo
+    que o SVG copiado ou baixado abre sozinho fora desta página. */
+function figura(id, largura, altura, titulo, descricao){
+  const raiz = sv('svg', {
+    xmlns:NS_SVG,
+    viewBox:'0 0 ' + largura + ' ' + altura, width:largura, height:altura,
+    'font-family':FONTE_SVG, role:'img', 'aria-label':titulo
+  });
+  raiz.appendChild(sv('title', {texto:titulo}));
+  if (descricao) raiz.appendChild(sv('desc', {texto:descricao}));
+  raiz.appendChild(defsDePadroes(id));
+  raiz.appendChild(sv('rect', {x:0, y:0, width:largura, height:altura, fill:PALETA.superficie}));
+  return raiz;
+}
+
+function marcasDoEixo(maximo, alvo){
+  if (!(maximo > 0)) return [0, 1];
+  const bruto = maximo / (alvo || 5);
+  const potencia = Math.pow(10, Math.floor(Math.log10(bruto)));
+  let passo = potencia * 10;
+  for (const fator of [1, 2, 2.5, 5, 10]) if (potencia * fator >= bruto){ passo = potencia * fator; break; }
+  passo = Math.max(1, Math.round(passo));
+  const marcas = [];
+  for (let v = 0; v <= maximo + 1e-9; v += passo) marcas.push(v);
+  if (marcas[marcas.length - 1] < maximo) marcas.push(marcas[marcas.length - 1] + passo);
+  return marcas;
+}
+
+/** Legenda dentro do SVG: identidade nunca depende só da cor. */
+function legendaSvg(itens, largura){
+  const grupo = sv('g', null);
+  let x = 0, y = 11, altura = 18;
+  for (const item of itens){
+    const comprimento = 18 + String(item.rotulo).length * 6.3 + 20;
+    if (x > 0 && x + comprimento > largura){ x = 0; y += 18; altura += 18; }
+    grupo.appendChild(sv('rect', {x, y:y - 9, width:11, height:11, rx:2, fill:item.cor}));
+    grupo.appendChild(svTexto(x + 17, y, item.rotulo, {'font-size':12, fill:PALETA.tinta2}));
+    x += comprimento;
+  }
+  return {no:grupo, altura};
+}
+
+/* ===========================================================================
+   9. Gráfico de barras horizontais — agrupado ou empilhado
+   =========================================================================== */
+function graficoBarras(config){
+  const largura = config.largura || 900;
+  const categorias = config.categorias;
+  const series = config.series;
+  const modo = config.modo || 'agrupado';
+  const alturaBarra = config.alturaBarra || (modo === 'empilhado' ? 18 : 11);
+  const margemEsq = config.margemEsq || 52;
+  const margemDir = config.margemDir || 78;
+  const larguraDoDesenho = largura - margemEsq - margemDir;
+
+  const legenda = series.length > 1 ? legendaSvg(series.map(s => ({cor:s.cor, rotulo:s.rotulo})), largura) : null;
+  const topo = legenda ? legenda.altura + 10 : 4;
+  const vaoDaCategoria = modo === 'empilhado'
+    ? alturaBarra + 16
+    : series.length * alturaBarra + (series.length - 1) * 2 + 16;
+  const alturaDoDesenho = categorias.length * vaoDaCategoria;
+  const baseDoEixo = topo + alturaDoDesenho + 8;
+  const altura = baseDoEixo + 30;
+
+  let maximo = config.maximo;
+  if (!maximo){
+    maximo = 0;
+    for (const categoria of categorias){
+      if (modo === 'empilhado'){
+        let soma = 0;
+        for (const s of series) soma += s.valores[categoria] || 0;
+        maximo = Math.max(maximo, soma);
+      } else {
+        for (const s of series) maximo = Math.max(maximo, s.valores[categoria] || 0);
+      }
+    }
+  }
+  const marcas = marcasDoEixo(maximo, 5);
+  const limite = marcas[marcas.length - 1];
+  const escala = v => (limite > 0 ? (v / limite) * larguraDoDesenho : 0);
+
+  const raiz = figura(config.id, largura, altura, config.titulo, config.descricao);
+  if (legenda){ legenda.no.setAttribute('transform', 'translate(' + margemEsq + ',0)'); raiz.appendChild(legenda.no); }
+
+  const grade = sv('g', null);
+  for (const marca of marcas){
+    const x = margemEsq + escala(marca);
+    grade.appendChild(sv('line', {x1:pos(x), y1:topo, x2:pos(x), y2:baseDoEixo, stroke:marca === 0 ? PALETA.eixo : PALETA.grade, 'stroke-width':1}));
+    grade.appendChild(svTexto(x, baseDoEixo + 16, fmtInteiro.format(marca), {'text-anchor':'middle', 'font-size':11, fill:PALETA.tinta3}));
+  }
+  raiz.appendChild(grade);
+  if (config.rotuloEixo)
+    raiz.appendChild(svTexto(margemEsq, altura - 3, config.rotuloEixo, {'font-size':11, fill:PALETA.tinta3}));
+
+  categorias.forEach(function(categoria, indice){
+    const topoDaCategoria = topo + indice * vaoDaCategoria + 8;
+    const meio = topoDaCategoria + (vaoDaCategoria - 16) / 2;
+    raiz.appendChild(svTexto(margemEsq - 10, meio + 4, categoria,
+      {'text-anchor':'end', 'font-size':12, fill:PALETA.tinta2}));
+
+    if (modo === 'empilhado'){
+      let x = margemEsq, soma = 0, ultimo = -1;
+      for (let i = 0; i < series.length; i++) if ((series[i].valores[categoria] || 0) > 0) ultimo = i;
+      series.forEach(function(serie, i){
+        const valor = serie.valores[categoria] || 0;
+        if (valor <= 0) return;
+        soma += valor;
+        const comprimento = escala(valor);
+        const vao = i === ultimo ? comprimento : Math.max(0, comprimento - 2);
+        raiz.appendChild(sv('path', {
+          d: barraH(x, topoDaCategoria, vao, alturaBarra, i === ultimo ? 4 : 0),
+          fill: serie.padrao ? preenchimento(serie.padrao, config.id) : serie.cor
+        }, sv('title', {texto: categoria + ' · ' + serie.rotulo + ': ' + fmtInteiro.format(valor)})));
+        x += comprimento;
+      });
+      const rotulo = soma > 0 ? fmtInteiro.format(soma) : '0';
+      raiz.appendChild(svTexto(margemEsq + escala(soma) + 8, topoDaCategoria + alturaBarra - 4, rotulo,
+        {'font-size':11.5, fill:PALETA.tinta2}));
+    } else {
+      series.forEach(function(serie, i){
+        const y = topoDaCategoria + i * (alturaBarra + 2);
+        const valor = serie.valores[categoria];
+        if (valor === null || valor === undefined){
+          raiz.appendChild(svTexto(margemEsq + 6, y + alturaBarra - 1, NAO_DERIVAVEL,
+            {'font-size':11, fill:PALETA.tinta3, 'font-style':'italic'}));
+          return;
+        }
+        const comprimento = escala(valor);
+        if (comprimento > 0)
+          raiz.appendChild(sv('path', {
+            d: barraH(margemEsq, y, comprimento, alturaBarra, 4),
+            fill: serie.padrao ? preenchimento(serie.padrao, config.id) : serie.cor
+          }, sv('title', {texto: categoria + ' · ' + serie.rotulo + ': ' + fmtInteiro.format(valor)})));
+        raiz.appendChild(svTexto(margemEsq + comprimento + 7, y + alturaBarra - 1, fmtInteiro.format(valor),
+          {'font-size':11.5, fill: valor === 0 ? PALETA.tinta3 : PALETA.tinta2}));
+      });
+    }
+  });
+  return raiz;
+}
+
+/* ===========================================================================
+   10. Barra de composição dos três estados
+   =========================================================================== */
+function graficoComposicao(modelo, id){
+  const total = modelo.total;
+  if (total === null || modelo.totais.CONFORME === null) return null;
+  const largura = 900, alturaBarra = 46, margem = 1;
+  const itens = ESTADOS.map(nome => ({
+    nome, cor:PALETA[nome], valor:modelo.totais[nome],
+    rotulo: ROTULO_ESTADO[nome] + ' — ' + fmtInteiro.format(modelo.totais[nome]) +
+            ' (' + percentual(modelo.totais[nome], total) + ')'
+  }));
+  const legenda = legendaSvg(itens, largura);
+  const altura = alturaBarra + 18 + legenda.altura + 8;
+  const raiz = figura(id, largura, altura,
+    'Distribuição das avaliações entre os três estados',
+    'Barra de composição sobre ' + total + ' avaliações.');
+
+  const escala = v => (v / total) * (largura - margem * 2);
+  let x = margem;
+  let ultimo = -1;
+  itens.forEach((item, i) => { if (item.valor > 0) ultimo = i; });
+  itens.forEach(function(item, i){
+    if (item.valor <= 0) return;
+    const comprimento = escala(item.valor);
+    const vao = i === ultimo ? comprimento : Math.max(0, comprimento - 2);
+    raiz.appendChild(sv('path', {
+      d: barraH(x, 6, vao, alturaBarra, i === ultimo ? 4 : 0),
+      fill: preenchimento(item.nome, id)
+    }, sv('title', {texto:item.rotulo})));
+    x += comprimento;
+  });
+  legenda.no.setAttribute('transform', 'translate(0,' + (alturaBarra + 18) + ')');
+  raiz.appendChild(legenda.no);
+  return raiz;
+}
+
+/* ===========================================================================
+   11. Blocos da página: seção, tabela, exportação da figura
+   =========================================================================== */
+function celulaDeTexto(valor){
+  return (valor && typeof valor === 'object') ? valor : {texto:String(valor)};
+}
+
+function montarTabela(cabecalhos, linhas, legendaTexto){
+  const cabecalho = el('tr', null, cabecalhos.map(c => el('th', {texto:String(c)})));
+  const corpo = linhas.map(function(linha){
+    const dados = linha.celulas || linha;
+    return el('tr', linha.destacada ? {class:'destacada'} : null, dados.map(function(bruta){
+      const c = celulaDeTexto(bruta);
+      return el('td', {class:c.classe || null}, [c.marca || null, c.texto]);
+    }));
+  });
+  return el('table', null, [
+    legendaTexto ? el('caption', {texto:legendaTexto}) : null,
+    el('thead', null, cabecalho),
+    el('tbody', null, corpo)
+  ]);
+}
+
+function textoDaTabela(cabecalhos, linhas){
+  const partes = [cabecalhos.join('\t')];
+  for (const linha of linhas){
+    const dados = linha.celulas || linha;
+    partes.push(dados.map(b => celulaDeTexto(b).texto).join('\t'));
+  }
+  return partes.join('\n');
+}
+
+function copiar(texto, retorno){
+  const aviso = m => { retorno.textContent = m; setTimeout(() => { retorno.textContent = ''; }, 2600); };
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(texto).then(() => aviso('copiado'), () => copiarPorCampo(texto, aviso));
+  } else copiarPorCampo(texto, aviso);
+}
+
+function copiarPorCampo(texto, aviso){
+  const campo = el('textarea');
+  campo.value = texto;
+  campo.setAttribute('style', 'position:fixed;left:-9999px;top:0');
+  document.body.appendChild(campo);
+  campo.select();
+  let deuCerto = false;
+  try { deuCerto = document.execCommand('copy'); } catch (e) { deuCerto = false; }
+  document.body.removeChild(campo);
+  aviso(deuCerto ? 'copiado' : 'o navegador não deixou copiar; use "baixar .svg"');
+}
+
+function serializarSvg(no){
+  return '<?xml version="1.0" encoding="UTF-8"?>\n' + new XMLSerializer().serializeToString(no);
+}
+
+function baixar(texto, nome, tipo){
+  const url = URL.createObjectURL(new Blob([texto], {type:tipo}));
+  const ligacao = el('a', {href:url, download:nome});
+  document.body.appendChild(ligacao);
+  ligacao.click();
+  document.body.removeChild(ligacao);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+/** Figura com barra de ações: copiar SVG, baixar .svg e a tabela equivalente.
+    A tabela não é enfeite — é o caminho de leitura para quem não distingue as
+    cores, e é o que se cola no texto do TCC. */
+function blocoDeFigura(opcoes){
+  const retorno = el('span', {class:'retorno'});
+  const acoes = el('div', {class:'barra-acoes sem-impressao'});
+  const bloco = el('div');
+  if (opcoes.svg) bloco.appendChild(el('figure', {class:'figura'}, opcoes.svg));
+  if (opcoes.nota) bloco.appendChild(el('p', {class:'nota', texto:opcoes.nota}));
+
+  if (opcoes.svg){
+    const nome = (opcoes.nomeDoArquivo || 'figura') + '.svg';
+    acoes.appendChild(el('button', {type:'button', texto:'copiar SVG'},
+      null)).addEventListener('click', () => copiar(serializarSvg(opcoes.svg), retorno));
+    acoes.appendChild(el('button', {type:'button', texto:'baixar .svg'},
+      null)).addEventListener('click', () => baixar(serializarSvg(opcoes.svg), nome, 'image/svg+xml'));
+  }
+  if (opcoes.tabela){
+    const caixa = el('div', {class:'rolagem oculto'}, montarTabela(opcoes.tabela.cabecalhos, opcoes.tabela.linhas, opcoes.tabela.legenda));
+    const botao = el('button', {type:'button', texto:'ver tabela'});
+    botao.addEventListener('click', function(){
+      const escondida = caixa.classList.contains('oculto');
+      caixa.classList.toggle('oculto');
+      botao.textContent = escondida ? 'esconder tabela' : 'ver tabela';
+    });
+    acoes.appendChild(botao);
+    acoes.appendChild(el('button', {type:'button', texto:'copiar tabela'},
+      null)).addEventListener('click', () => copiar(textoDaTabela(opcoes.tabela.cabecalhos, opcoes.tabela.linhas), retorno));
+    acoes.appendChild(retorno);
+    bloco.appendChild(acoes);
+    bloco.appendChild(caixa);
+  } else {
+    acoes.appendChild(retorno);
+    bloco.appendChild(acoes);
+  }
+  return bloco;
+}
+
+function secao(titulo, legendaTexto){
+  const cartao = el('section', {class:'cartao'}, [
+    el('h2', {texto:titulo}),
+    legendaTexto ? el('p', {class:'legenda-secao', texto:legendaTexto}) : null
+  ]);
+  return cartao;
+}
+
+/* ===========================================================================
+   12. Seções
+   =========================================================================== */
+function secaoIdentificacao(modelo){
+  const e = modelo.execucao;
+  const campos = [
+    ['Execução', e.id, true],
+    ['Data e hora', e.dataHora, false],
+    ['Versão do catálogo', e.versaoCatalogo, false],
+    ['Versão do conjunto de regras', e.versaoConjunto, false],
+    ['Documentos auditados', inteiro(Number(e.documentos)), false],
+    ['Itens auditados', inteiro(Number(e.itens)), false],
+    ['Resumo da entrada', e.resumoDaEntrada, true]
+  ];
+  const cartao = secao('1. Identificação da execução',
+    'Sem isto, uma figura encontrada meses depois não diz contra qual catálogo nem com que versão de regras foi produzida.');
+  cartao.appendChild(el('dl', {class:'identificacao'}, campos.map(function(campo){
+    const valor = (campo[1] === null || campo[1] === undefined || campo[1] === '') ? '(não informado)' : String(campo[1]);
+    return el('div', null, [
+      el('dt', {texto:campo[0]}),
+      el('dd', {class:campo[2] ? 'longo' : null, texto:valor})
+    ]);
+  })));
+  return cartao;
+}
+
+function ladrilho(nome, valor, total){
+  const parte = percentual(valor, total);
+  return el('div', {class:'ladrilho'}, [
+    el('div', {class:'rotulo'}, [
+      el('span', {class:'marca', style:'background:' + PALETA[nome]}),
+      ROTULO_ESTADO[nome]
+    ]),
+    el('div', {class:'valor', texto:inteiro(valor)}),
+    el('div', {class:'parte', texto: parte ? parte + ' das avaliações' : 'sem total para comparar'})
+  ]);
+}
+
+function textoDaDerivacao(modelo){
+  const partes = [];
+  if (modelo.origem === 'derivado' && modelo.derivado !== null)
+    partes.push('Total de avaliações = ' + inteiro(modelo.itens) + ' itens auditados × ' +
+                inteiro(modelo.quantidadeDeRegras) + ' regras do conjunto = ' + inteiro(modelo.total) + '.');
+  else if (modelo.total !== null)
+    partes.push('Total de avaliações = ' + inteiro(modelo.total) + ', informado à mão no campo do topo da página.');
+  else
+    partes.push('Total de avaliações desconhecido: sem ele o conforme não é derivável.');
+
+  if (modelo.totais.CONFORME !== null)
+    partes.push('Conformes = ' + inteiro(modelo.total) + ' − ' + inteiro(modelo.totais.ACHADO) +
+                ' achados − ' + inteiro(modelo.totais.NAO_AVALIADO) + ' não avaliados = ' +
+                inteiro(modelo.totais.CONFORME) + '.');
+  partes.push('O conforme não é contado por nenhum arquivo exportado: é derivado por subtração, ' +
+              'supondo que cada regra avalia cada item uma vez.');
+  return partes.join(' ');
+}
+
+function secaoEstados(modelo){
+  const cartao = secao('2. Distribuição dos três estados',
+    'Não avaliado não é conformidade: a regra não teve como julgar. Ele nunca é somado ao conforme nem omitido — ' +
+    'tem categoria, cor e rótulo próprios em toda figura e em toda tabela desta página.');
+  cartao.appendChild(el('div', {class:'painel'}, ESTADOS.map(n => ladrilho(n, modelo.totais[n], modelo.total))));
+  const desenho = graficoComposicao(modelo, 'f2');
+  const linhas = ESTADOS.map(n => [
+    {texto:ROTULO_ESTADO[n], marca: el('span', {class:'marca-linha', style:'background:' + PALETA[n]})},
+    inteiro(modelo.totais[n]),
+    percentual(modelo.totais[n], modelo.total) || NAO_DERIVAVEL
+  ]);
+  linhas.push({destacada:true, celulas:['Total de avaliações', inteiro(modelo.total), modelo.total === null ? NAO_DERIVAVEL : '100,0%']});
+  cartao.appendChild(blocoDeFigura({
+    svg: desenho,
+    nomeDoArquivo: 'figura-2-estados',
+    nota: textoDaDerivacao(modelo),
+    tabela: {cabecalhos:['Estado', 'Avaliações', '% do total'], linhas, legenda:'Distribuição das avaliações da execução.'}
+  }));
+  if (!desenho)
+    cartao.appendChild(el('div', {class:'aviso', texto:
+      'A barra de composição não foi desenhada porque o conforme não é derivável com estes números. ' +
+      'Os achados e os não avaliados continuam nas seções 3 e 4.'}));
+  return cartao;
+}
+
+function secaoPorRegra(modelo){
+  const cartao = secao('3. Apontamentos por regra e por severidade',
+    'Cada regra aparece com os três estados lado a lado. É o que impede ler “zero apontamentos” como ' +
+    '“a regra aprovou tudo” quando na verdade ela não teve como julgar.');
+
+  const series = ESTADOS.map(n => ({chave:n, rotulo:ROTULO_ESTADO[n], cor:PALETA[n], padrao:n, valores:modelo.porRegra[n]}));
+  const porRegra = graficoBarras({
+    id:'f3a', largura:900, modo:'agrupado', categorias:modelo.regras, series,
+    maximo: modelo.base || undefined, rotuloEixo:'avaliações',
+    titulo:'Estados por regra',
+    descricao:'Barras agrupadas por regra, com achados, conformes derivados e não avaliados.'
+  });
+  const linhas = modelo.regras.map(regra => [
+    regra,
+    inteiro(modelo.porRegra.ACHADO[regra] || 0),
+    inteiro(modelo.porRegra.CONFORME[regra]),
+    inteiro(modelo.porRegra.NAO_AVALIADO[regra] || 0),
+    modelo.base === null ? NAO_DERIVAVEL : inteiro(modelo.base)
+  ]);
+  linhas.push({destacada:true, celulas:['Todas as regras',
+    inteiro(modelo.totais.ACHADO), inteiro(modelo.totais.CONFORME),
+    inteiro(modelo.totais.NAO_AVALIADO), inteiro(modelo.total)]});
+  cartao.appendChild(blocoDeFigura({
+    svg:porRegra, nomeDoArquivo:'figura-3-por-regra',
+    nota: modelo.base === null
+      ? 'O conforme por regra não é derivável: o total de avaliações não se divide em partes iguais entre as regras.'
+      : 'Conformes por regra = ' + inteiro(modelo.base) + ' avaliações da regra − achados − não avaliados.',
+    tabela:{cabecalhos:['Regra','Achados','Conformes (derivado)','Não avaliados','Avaliações da regra'], linhas,
+            legenda:'Estados por regra na execução.'}
+  }));
+
+  cartao.appendChild(el('h3', {texto:'Apontamentos por severidade'}));
+  cartao.appendChild(secaoSeveridade(modelo));
+  return cartao;
+}
+
+function secaoSeveridade(modelo){
+  const severidades = modelo.severidades;
+  const cruzado = modelo.papel.achadosPorRegraESeveridade;
+  if (!modelo.totais.ACHADO)
+    return el('p', {class:'nota', texto:'Nenhum apontamento nesta execução, então não há severidade a distribuir.'});
+  if (!severidades.length)
+    return el('p', {class:'nota', texto:'A planilha não trouxe as severidades.'});
+
+  const rampa = rampaSeveridade(severidades.length);
+  if (!cruzado){
+    const valores = {};
+    for (const s of severidades) valores[s] = modelo.papel.achadosPorSeveridade[s] || 0;
+    const desenho = graficoBarras({
+      id:'f3b', largura:900, modo:'agrupado', categorias:severidades,
+      series:[{chave:'ACHADO', rotulo:'Apontamentos', cor:PALETA.ACHADO, padrao:'ACHADO', valores}],
+      rotuloEixo:'apontamentos', margemEsq:110,
+      titulo:'Apontamentos por severidade', descricao:'Total de apontamentos em cada severidade.'
+    });
+    return blocoDeFigura({
+      svg:desenho, nomeDoArquivo:'figura-3b-severidade',
+      nota:'A aba Achados não trouxe o cruzamento por regra; a figura mostra os totais do Resumo. ' +
+           'As severidades estão na ordem da planilha, da mais grave para a menos grave.',
+      tabela:{cabecalhos:['Severidade','Apontamentos'], linhas:severidades.map(s => [s, inteiro(valores[s] || 0)]),
+              legenda:'Apontamentos por severidade.'}
+    });
+  }
+
+  const series = severidades.map(function(nome, i){
+    const valores = {};
+    for (const regra of modelo.regras) valores[regra] = (cruzado[regra] && cruzado[regra][nome]) || 0;
+    return {chave:nome, rotulo:nome, cor:rampa[i], valores};
+  });
+  const desenho = graficoBarras({
+    id:'f3b', largura:900, modo:'empilhado', categorias:modelo.regras, series,
+    rotuloEixo:'apontamentos',
+    titulo:'Apontamentos por regra e por severidade',
+    descricao:'Barras empilhadas por regra; o tom mais escuro é a severidade mais grave.'
+  });
+  const cabecalhos = ['Regra'].concat(severidades).concat(['Total']);
+  const linhas = modelo.regras.map(function(regra){
+    const celulas = [regra];
+    let soma = 0;
+    for (const s of severidades){
+      const v = (cruzado[regra] && cruzado[regra][s]) || 0;
+      soma += v;
+      celulas.push(inteiro(v));
+    }
+    celulas.push(inteiro(soma));
+    return celulas;
+  });
+  return blocoDeFigura({
+    svg:desenho, nomeDoArquivo:'figura-3b-severidade',
+    nota:'Severidade é escala ordenada, então a figura usa um só tom em degraus: mais escuro é mais grave. ' +
+         'A ordem é a da planilha, e não uma ordem inventada aqui.',
+    tabela:{cabecalhos, linhas, legenda:'Apontamentos por regra e severidade.'}
+  });
+}
+
+function secaoNaoAvaliadas(modelo){
+  const cartao = secao('4. Não avaliados, por regra e por motivo',
+    'Avaliação não concluída é fato da rodada: a regra não teve como julgar e escreveu por quê. ' +
+    'Os motivos vêm do próprio sistema, agrupados e contados.');
+
+  const valores = {};
+  for (const regra of modelo.regras) valores[regra] = modelo.porRegra.NAO_AVALIADO[regra] || 0;
+  const desenho = graficoBarras({
+    id:'f4', largura:900, modo:'agrupado', categorias:modelo.regras,
+    series:[{chave:'NAO_AVALIADO', rotulo:'Não avaliados', cor:PALETA.NAO_AVALIADO, padrao:'NAO_AVALIADO', valores}],
+    rotuloEixo:'avaliações não concluídas',
+    titulo:'Avaliações não concluídas por regra',
+    descricao:'Quantidade de avaliações que cada regra não conseguiu concluir.'
+  });
+  const linhas = modelo.regras.map(r => [r, inteiro(valores[r] || 0)]);
+  linhas.push({destacada:true, celulas:['Todas as regras', inteiro(modelo.totais.NAO_AVALIADO)]});
+  cartao.appendChild(blocoDeFigura({
+    svg:desenho, nomeDoArquivo:'figura-4-nao-avaliados',
+    nota: (modelo.papel.itensAtingidos !== undefined && !isNaN(modelo.papel.itensAtingidos))
+      ? 'As ' + inteiro(modelo.totais.NAO_AVALIADO) + ' avaliações não concluídas atingem ' +
+        inteiro(modelo.papel.itensAtingidos) + ' item(ns): a mesma regra pode não concluir sobre vários itens.'
+      : null,
+    tabela:{cabecalhos:['Regra','Avaliações não concluídas'], linhas, legenda:'Avaliações não concluídas por regra.'}
+  }));
+
+  cartao.appendChild(el('h3', {texto:'Motivos'}));
+  const motivos = modelo.papel.motivos.slice().sort(function(a, b){
+    if (b.quantidade !== a.quantidade) return b.quantidade - a.quantidade;
+    return String(a.regra).localeCompare(String(b.regra), 'pt-BR');
+  });
+  if (!motivos.length){
+    cartao.appendChild(el('p', {class:'nota', texto:'A planilha não trouxe motivos agrupados.'}));
+    return cartao;
+  }
+  const linhasDeMotivo = motivos.map(m => [m.regra, {texto:m.motivo || '(não informado)', classe:'texto'}, inteiro(m.quantidade)]);
+  cartao.appendChild(el('div', {class:'rolagem'},
+    montarTabela(['Regra','Motivo','Quantidade'], linhasDeMotivo, 'Motivos agrupados das avaliações não concluídas.')));
+  const retorno = el('span', {class:'retorno'});
+  const acoes = el('div', {class:'barra-acoes sem-impressao'});
+  acoes.appendChild(el('button', {type:'button', texto:'copiar tabela'}, null))
+    .addEventListener('click', () => copiar(textoDaTabela(['Regra','Motivo','Quantidade'], linhasDeMotivo), retorno));
+  acoes.appendChild(retorno);
+  cartao.appendChild(acoes);
+  return cartao;
+}
+
+function celulaDeMetrica(valor){
+  return (valor === null || valor === undefined) ? {texto:INDEFINIDA, classe:'indefinida'} : {texto:fmtMetrica.format(valor)};
+}
+
+function linhaDeAcuracia(registro){
+  return [registro.regra, inteiro(registro.vp), inteiro(registro.fp), inteiro(registro.fn), inteiro(registro.vn),
+          inteiro(registro.avaliados), inteiro(registro.naoAvaliados), inteiro(registro.semAvaliacao), inteiro(registro.total),
+          celulaDeMetrica(registro.precisao), celulaDeMetrica(registro.recall),
+          celulaDeMetrica(registro.f1), celulaDeMetrica(registro.cobertura)];
+}
+
+const CABECALHOS_DE_ACURACIA = ['Regra','VP','FP','FN','VN','Avaliados','Não avaliados','Sem avaliação','Total',
+                                'Precisão','Recall','F1','Cobertura'];
+
+function secaoAcuracia(acuracia){
+  const cartao = secao('5. Acurácia por regra, contra o gabarito',
+    'Não avaliado e sem avaliação ficam fora de precisão, recall e F1 — só entram na cobertura, que é ' +
+    'avaliados sobre o total. Métrica sem denominador é escrita como (indefinida): nunca zero, nunca um, ' +
+    'nunca célula vazia.');
+
+  const identificacao = [];
+  if (acuracia.catalogo) identificacao.push('catálogo ' + acuracia.catalogo);
+  if (acuracia.conjunto) identificacao.push('conjunto de regras ' + acuracia.conjunto);
+  if (acuracia.linhasGabarito !== undefined) identificacao.push(acuracia.linhasGabarito + ' linhas de gabarito');
+  if (acuracia.avaliacoesProduzidas !== undefined) identificacao.push(acuracia.avaliacoesProduzidas + ' avaliações produzidas pelo motor');
+  if (identificacao.length) cartao.appendChild(el('p', {class:'nota', texto:'Medição contra ' + identificacao.join(', ') + '.'}));
+
+  const linhas = acuracia.porRegra.map(linhaDeAcuracia);
+  if (acuracia.consolidado){
+    const consolidada = linhaDeAcuracia(acuracia.consolidado);
+    consolidada[0] = 'CONSOLIDADO (micro — soma de células)';
+    linhas.push({destacada:true, celulas:consolidada});
+  }
+  const macro = acuracia.macro;
+  const celulaMacro = function(campo){
+    if (macro[campo].valor === null) return {texto:INDEFINIDA, classe:'indefinida'};
+    return {texto: fmtMetrica.format(macro[campo].valor) + ' \u00b7 ' + macro[campo].n + '/' + macro.regras};
+  };
+  linhas.push({destacada:true, celulas:['MÉDIA MACRO (por regra)', '—','—','—','—','—','—','—','—',
+    celulaMacro('precisao'), celulaMacro('recall'), celulaMacro('f1'), celulaMacro('cobertura')]});
+
+  cartao.appendChild(el('div', {class:'rolagem'},
+    montarTabela(CABECALHOS_DE_ACURACIA, linhas, 'Acurácia do motor de regras contra o gabarito rotulado à mão.')));
+
+  const notas = [
+    'O consolidado é micro: soma as células e depois calcula, de modo que uma regra com muitas linhas rotuladas pesa mais.',
+    'A média macro é a média das regras em que a métrica existe — regra indefinida não entra como zero. ' +
+      'O "2/' + macro.regras + '" ao lado de cada média diz quantas das ' + macro.regras +
+      ' regras tinham aquela métrica definida e entraram na conta.',
+    'Traço nas contagens da linha macro: média de métricas não soma células.',
+    'Cobertura fica na mesma linha de precisão e recall de propósito: precisão 1,0000 com cobertura 0,0500 não ' +
+      'afirma o mesmo que precisão 1,0000 com cobertura 0,9000.'
+  ];
+  if (acuracia.enderecosNaoAvaliados)
+    notas.push('O relatório lista ' + acuracia.enderecosNaoAvaliados + ' endereço(s) do gabarito que o motor não avaliou. ' +
+               'Esta página conta essas linhas e não escreve as chaves de acesso: os dígitos da chave carregam o CNPJ do emitente.');
+  for (const nota of notas) cartao.appendChild(el('p', {class:'nota', texto:nota}));
+
+  const retorno = el('span', {class:'retorno'});
+  const acoes = el('div', {class:'barra-acoes sem-impressao'});
+  acoes.appendChild(el('button', {type:'button', texto:'copiar tabela'}, null))
+    .addEventListener('click', () => copiar(textoDaTabela(CABECALHOS_DE_ACURACIA, linhas), retorno));
+  acoes.appendChild(retorno);
+  cartao.appendChild(acoes);
+  return cartao;
+}
+
+/* ===========================================================================
+   13. Montagem da página
+   =========================================================================== */
+function cartaoDeEspera(titulo, mensagem){
+  const cartao = secao(titulo, null);
+  cartao.appendChild(el('p', {class:'nota', texto:mensagem}));
+  return cartao;
+}
+
+function mostrarAvisos(alertas){
+  const caixa = document.getElementById('avisos');
+  caixa.textContent = '';
+  for (const chave in estado.erros)
+    caixa.appendChild(el('div', {class:'aviso erro', texto:estado.erros[chave]}));
+  for (const alerta of alertas || [])
+    caixa.appendChild(el('div', {class:'aviso', texto:alerta}));
+}
+
+function desenhar(){
+  const modelo = montarModelo();
+  const conteudo = document.getElementById('conteudo');
+  conteudo.textContent = '';
+  mostrarAvisos(modelo.alertas);
+  if (modelo.papel){
+    conteudo.appendChild(secaoIdentificacao(modelo));
+    conteudo.appendChild(secaoEstados(modelo));
+    conteudo.appendChild(secaoPorRegra(modelo));
+    conteudo.appendChild(secaoNaoAvaliadas(modelo));
+  } else {
+    conteudo.appendChild(cartaoDeEspera('1 a 4. Execução, estados, regras e não avaliados',
+      'Escolha o papel de trabalho (.xlsx) exportado pelo comando exportar para desenhar estas seções.'));
+  }
+  if (modelo.acuracia) conteudo.appendChild(secaoAcuracia(modelo.acuracia));
+  else conteudo.appendChild(cartaoDeEspera('5. Acurácia por regra',
+    'Escolha o relatório de acurácia (.csv) do comando avaliar-acuracia para desenhar esta seção.'));
+}
+
+function escrever(id, texto){ document.getElementById(id).textContent = texto; }
+function marcarPronto(id, pronto){ document.getElementById(id).classList.toggle('pronto', !!pronto); }
+
+async function aoEscolherPlanilha(evento){
+  const arquivo = evento.target.files && evento.target.files[0];
+  if (!arquivo) return;
+  escrever('estado-xlsx', 'lendo...');
+  try {
+    const abas = await lerPlanilha(await arquivo.arrayBuffer());
+    estado.papel = interpretarPapelDeTrabalho(abas);
+    delete estado.erros.papel;
+    escrever('estado-xlsx', arquivo.name + ' — ' + estado.papel.regras.length + ' regra(s), ' +
+             estado.papel.totalAchados + ' apontamento(s), ' + estado.papel.totalNaoAvaliadas + ' não avaliado(s).');
+    marcarPronto('campo-xlsx', true);
+  } catch (erro){
+    estado.papel = null;
+    estado.erros.papel = 'Papel de trabalho: ' + (erro && erro.message ? erro.message : erro);
+    escrever('estado-xlsx', 'não foi possível ler este arquivo.');
+    marcarPronto('campo-xlsx', false);
+  }
+  desenhar();
+}
+
+async function aoEscolherAcuracia(evento){
+  const arquivo = evento.target.files && evento.target.files[0];
+  if (!arquivo) return;
+  escrever('estado-csv', 'lendo...');
+  try {
+    estado.acuracia = lerAcuraciaCsv(await arquivo.text());
+    delete estado.erros.acuracia;
+    escrever('estado-csv', arquivo.name + ' — ' + estado.acuracia.porRegra.length + ' regra(s) medida(s).');
+    marcarPronto('campo-csv', true);
+  } catch (erro){
+    estado.acuracia = null;
+    estado.erros.acuracia = 'Relatório de acurácia: ' + (erro && erro.message ? erro.message : erro);
+    escrever('estado-csv', 'não foi possível ler este arquivo.');
+    marcarPronto('campo-csv', false);
+  }
+  desenhar();
+}
+
+/** O bloco colado à mão vira o mesmo modelo que os leitores produzem. */
+function adotarEmbutidos(dados){
+  const regras = dados.regras || [];
+  const severidades = dados.severidades || [];
+  const cruzado = dados.achados || {};
+  const achadosPorRegra = {}, achadosPorSeveridade = {};
+  for (const regra of regras) achadosPorRegra[regra] = somar(cruzado[regra] || {});
+  for (const severidade of severidades){
+    let soma = 0;
+    for (const regra of regras) soma += (cruzado[regra] && cruzado[regra][severidade]) || 0;
+    achadosPorSeveridade[severidade] = soma;
+  }
+  const naoAvaliadasPorRegra = dados.naoAvaliadas || {};
+  estado.papel = {
+    execucao: dados.execucao || {}, regras, severidades,
+    achadosPorRegra, achadosPorSeveridade, achadosPorRegraESeveridade: cruzado,
+    totalAchados: somar(achadosPorRegra),
+    naoAvaliadasPorRegra, totalNaoAvaliadas: somar(naoAvaliadasPorRegra),
+    motivos: dados.motivos || [], itensAtingidos: dados.itensAtingidos, alertas: []
+  };
+  if (dados.acuracia){
+    const acuracia = Object.assign({enderecosNaoAvaliados:0}, dados.acuracia);
+    acuracia.porRegra = acuracia.porRegra || [];
+    if (!acuracia.macro) acuracia.macro = calcularMacro(acuracia.porRegra);
+    estado.acuracia = acuracia;
+  }
+}
+
+function iniciar(){
+  document.getElementById('arq-xlsx').addEventListener('change', aoEscolherPlanilha);
+  document.getElementById('arq-csv').addEventListener('change', aoEscolherAcuracia);
+
+  const campoTotal = document.getElementById('total-avaliacoes');
+  campoTotal.addEventListener('input', function(){
+    const bruto = campoTotal.value.trim();
+    const valor = Number(bruto);
+    estado.totalManual = (bruto === '' || isNaN(valor) || valor < 0) ? null : Math.round(valor);
+    escrever('retorno-opcoes', estado.totalManual === null ? '' : 'total informado à mão');
+    desenhar();
+  });
+
+  const opcaoPadroes = document.getElementById('opcao-padroes');
+  opcaoPadroes.addEventListener('change', function(){
+    estado.padroes = opcaoPadroes.checked;
+    desenhar();
+  });
+
+  /* Na impressão os padrões entram sozinhos: em preto e branco a cor some, e
+     as três categorias precisam continuar distintas. */
+  let padroesAntesDeImprimir = null;
+  window.addEventListener('beforeprint', function(){
+    padroesAntesDeImprimir = estado.padroes;
+    if (!estado.padroes){ estado.padroes = true; desenhar(); }
+  });
+  window.addEventListener('afterprint', function(){
+    if (padroesAntesDeImprimir !== null && estado.padroes !== padroesAntesDeImprimir){
+      estado.padroes = padroesAntesDeImprimir;
+      desenhar();
+    }
+    padroesAntesDeImprimir = null;
+  });
+
+  if (DADOS_EMBUTIDOS){
+    try {
+      adotarEmbutidos(DADOS_EMBUTIDOS);
+      document.getElementById('cartao-entrada').classList.add('oculto');
+    } catch (erro){
+      estado.erros.embutidos = 'Bloco de dados embutido: ' + (erro && erro.message ? erro.message : erro);
+    }
+  }
+  desenhar();
+}
+
+if (typeof document !== 'undefined' && document.getElementById) iniciar();
+if (typeof module !== 'undefined' && module.exports)
+  module.exports = {interpretarResumo, contarAchados, contarNaoAvaliadas, interpretarPapelDeTrabalho,
+                    lerAcuraciaCsv, calcularMacro, montarModelo, desenhar, estado, marcasDoEixo, somar,
+                    indiceDaColuna, dataDeSerial, normalizar, lerEntradasDoZip, extrair};
+</script>
+</body>
+</html>

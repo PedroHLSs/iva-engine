@@ -140,6 +140,31 @@ class ContagemDeAcuraciaTest {
         assertThat(contagem.total()).isEqualTo(8);
     }
 
+    /**
+     * Amarra a forma do registro à regra que {@link Desfecho#entraNaMetrica()}
+     * enuncia.
+     *
+     * <p>Quem garante que não avaliado fique fora de precisão e recall é a forma
+     * deste registro: quatro campos de matriz de confusão, dois campos à parte, e
+     * fórmulas que só mencionam os quatro. {@code entraNaMetrica()} escreve essa
+     * regra por extenso, e sem este teste as duas poderiam divergir em silêncio —
+     * bastaria alguém acrescentar um desfecho ao enum, ou mudar
+     * {@code avaliados()}, para que o texto e o comportamento discordassem.</p>
+     */
+    @Test
+    void avaliadosDeveContarExatamenteOsDesfechosQueEntramNaMetrica() {
+        for (Desfecho desfecho : Desfecho.values()) {
+            ContagemDeAcuracia contagem = ContagemDeAcuracia.contar(List.of(desfecho));
+
+            assertThat(contagem.avaliados())
+                    .as("%s: avaliados tem de acompanhar entraNaMetrica()", desfecho)
+                    .isEqualTo(desfecho.entraNaMetrica() ? 1 : 0);
+            assertThat(contagem.total())
+                    .as("%s: todo desfecho conta no total, entre na métrica ou não", desfecho)
+                    .isEqualTo(1);
+        }
+    }
+
     @Test
     void deveSomarContagensParaConsolidarRegras() {
         ContagemDeAcuracia primeira = new ContagemDeAcuracia(1, 2, 3, 4, 5, 6);

@@ -1,0 +1,200 @@
+/* ---------------------------------------------------------------------------
+   Componentes: cartoes, tabelas, chips, faixas de desfecho.
+
+   Regra que atravessa este arquivo inteiro: cor nunca e a unica codificacao.
+   Todo chip de desfecho tem simbolo; toda severidade tem triangulos; toda
+   barra de grafico tem hachura e rotulo numerico ao lado.
+   --------------------------------------------------------------------------- */
+
+.cartao{
+  background:var(--superficie);border:1px solid var(--borda);border-radius:10px;
+  padding:18px 20px;margin:0 0 16px;
+}
+.cartao-titulo{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.cartao-titulo h2{margin:0}
+
+.identificacao{
+  display:grid;gap:4px 18px;grid-template-columns:max-content 1fr;
+  font-size:13px;margin:12px 0 0;
+}
+.identificacao dt{color:var(--tinta3)}
+.identificacao dd{margin:0;font-family:var(--mono);font-size:12.5px;word-break:break-all}
+
+.acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.botao{
+  font:13px var(--sans);padding:5px 12px;border:1px solid var(--eixo);border-radius:6px;
+  background:var(--superficie);color:var(--tinta);cursor:pointer;text-decoration:none;
+  display:inline-block;line-height:1.5;
+}
+.botao:hover{background:var(--superficie2)}
+.botao.principal{border-color:var(--tinta2);font-weight:560}
+.voltar{font-size:13px;color:var(--tinta2);text-decoration:none;display:inline-block;margin:0 0 14px}
+.voltar:hover{color:var(--tinta)}
+
+.painel-comando{
+  border:1px solid var(--borda);border-radius:8px;background:var(--superficie2);
+  padding:14px 16px;margin:12px 0 0;
+}
+.painel-comando p{font-size:13px;color:var(--tinta2);margin:0 0 8px}
+.painel-comando pre{
+  margin:0 0 10px;padding:10px 12px;background:var(--superficie);border:1px solid var(--borda);
+  border-radius:6px;font:12.5px/1.6 var(--mono);white-space:pre-wrap;word-break:break-all;
+}
+
+/* --- chips de desfecho: cor + simbolo + rotulo --------------------------- */
+.chip{
+  display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:560;
+  padding:2px 9px;border-radius:20px;border:1px solid transparent;white-space:nowrap;
+}
+.chip::before{font-family:var(--mono);font-weight:700}
+.chip-achado{background:var(--achado-fraco);color:#8e2020;border-color:#eec4c4}
+.chip-achado::before{content:"\25CF"}
+.chip-naoavaliado{background:var(--naoavaliado-fraco);color:#8a5d00;border-color:#efd79a}
+.chip-naoavaliado::before{content:"\25B2"}
+.chip-conforme{background:var(--conforme-fraco);color:#1b5296;border-color:#bed4ef}
+.chip-conforme::before{content:"\25A0"}
+.chip-neutro{background:var(--superficie2);color:var(--tinta2);border-color:var(--grade)}
+.chip-neutro::before{content:"\2022"}
+
+/* --- regra: nome por extenso, codigo ao lado ------------------------------
+   Acrescentado depois da Etapa 11. O codigo fica menor, mas nao some: e ele que
+   a CLI, a planilha e o gabarito usam. */
+.regra-nome{font-weight:560}
+.regra-codigo{
+  font:12px var(--mono);color:var(--tinta3);margin-left:2px;white-space:nowrap;
+}
+
+/* --- severidade: cor + triangulos ---------------------------------------- */
+.sev{font-size:12.5px;font-weight:560;white-space:nowrap}
+.sev::after{font-family:var(--mono);margin-left:5px;letter-spacing:-1px}
+.sev-CRITICA{color:#8e2020}
+.sev-CRITICA::after{content:"\25B2\25B2\25B2\25B2"}
+.sev-GRAVE{color:#b4471f}
+.sev-GRAVE::after{content:"\25B2\25B2\25B2"}
+.sev-MODERADA{color:#8a5d00}
+.sev-MODERADA::after{content:"\25B2\25B2"}
+.sev-INFORMATIVA{color:var(--tinta2)}
+.sev-INFORMATIVA::after{content:"\25B2"}
+
+/* --- os tres desfechos, lado a lado -------------------------------------- */
+.desfechos{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin:0 0 6px}
+.desfecho{
+  border:1px solid var(--borda);border-radius:9px;padding:14px 16px;background:var(--superficie);
+  border-top-width:4px;
+}
+.desfecho.d-achado{border-top-color:var(--achado)}
+.desfecho.d-naoavaliado{border-top-color:var(--naoavaliado)}
+.desfecho.d-conforme{border-top-color:var(--conforme)}
+.desfecho .rotulo{
+  font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--tinta2);font-weight:640;
+}
+.desfecho .numero{font:640 30px/1.15 var(--sans);letter-spacing:-.02em;margin:6px 0 2px;
+  font-variant-numeric:tabular-nums}
+.desfecho .numero.ausente{font-size:19px;font-weight:500}
+.desfecho .procedencia{font-size:12px;color:var(--tinta3);margin:6px 0 0;font-family:var(--mono);
+  word-break:break-word}
+.desfecho .explicacao{font-size:12.5px;color:var(--tinta2);margin:6px 0 0}
+
+/* --- tabelas ------------------------------------------------------------- */
+.rolagem{overflow-x:auto;margin:0 0 4px}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+caption{text-align:left;font-size:12.5px;color:var(--tinta3);padding:0 0 8px}
+th,td{padding:7px 11px;text-align:left;border-bottom:1px solid var(--grade);vertical-align:top}
+thead th{
+  font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--tinta2);
+  border-bottom:1px solid var(--eixo);font-weight:640;white-space:nowrap;
+}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono);font-size:13px}
+tbody tr:hover{background:var(--superficie2)}
+.tabela-vazia{color:var(--tinta3);font-style:italic;padding:14px 0}
+
+/* --- filtros ------------------------------------------------------------- */
+.filtros{
+  display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end;
+  border:1px solid var(--borda);border-radius:9px;background:var(--superficie);
+  padding:13px 16px;margin:0 0 14px;
+}
+.filtro{display:flex;flex-direction:column;gap:4px}
+.filtro label{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--tinta2);font-weight:640}
+.filtro select,.filtro input[type=file]{
+  font:13.5px var(--sans);padding:5px 8px;border:1px solid var(--eixo);border-radius:6px;
+  background:var(--superficie);color:var(--tinta);
+}
+.filtro-caixa{display:flex;align-items:center;gap:7px;font-size:13.5px;padding-bottom:5px}
+.contagem-do-recorte{font-size:12.5px;color:var(--tinta2);margin:0 0 12px}
+.contagem-do-recorte strong{color:var(--tinta)}
+
+/* --- grupos de achados --------------------------------------------------- */
+.faixa-secao{
+  display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  margin:22px 0 10px;padding:8px 12px;border-radius:7px;background:var(--superficie2);
+  border-left:3px solid var(--eixo);
+}
+.faixa-secao h3{margin:0;text-transform:none;letter-spacing:0;font-size:14px;color:var(--tinta)}
+.faixa-secao .explicacao{font-size:12.5px;color:var(--tinta2);margin:0}
+.faixa-secao.sem-valor{border-left-color:var(--naoavaliado);background:var(--naoavaliado-fraco)}
+
+.grupo{border:1px solid var(--borda);border-radius:9px;background:var(--superficie);margin:0 0 10px}
+.grupo > summary{
+  cursor:pointer;padding:12px 16px;display:grid;gap:4px 14px;
+  grid-template-columns:1fr max-content;align-items:baseline;
+}
+.grupo > summary::-webkit-details-marker{display:none}
+.grupo-chave{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;font-size:14px}
+.grupo-chave .regra-nome{font-weight:660}
+.grupo-chave .campo{font-size:13px;color:var(--tinta2)}
+.grupo-chave .campo b{font-family:var(--mono);font-weight:600;color:var(--tinta)}
+.grupo-medida{text-align:right;white-space:nowrap}
+.grupo-medida .valor{font:640 16px/1.2 var(--sans);font-variant-numeric:tabular-nums}
+.grupo-medida .valor.ausente{font-size:13px;font-weight:500}
+.grupo-medida .ocorrencias{font-size:12.5px;color:var(--tinta2)}
+.grupo-nivel{
+  grid-column:1 / -1;display:flex;gap:8px;flex-wrap:wrap;align-items:center;
+  font-size:12px;color:var(--tinta2);
+}
+.selo-nivel{
+  font:11.5px var(--mono);padding:1px 7px;border-radius:4px;
+  background:var(--superficie2);border:1px solid var(--grade);color:var(--tinta2);
+}
+.selo-nivel.degradado{background:var(--naoavaliado-fraco);border-color:#efd79a;color:#8a5d00}
+.grupo-corpo{padding:0 16px 14px;border-top:1px solid var(--grade)}
+.grupo-corpo .nota{margin-top:10px}
+
+/* --- detalhe do achado --------------------------------------------------- */
+.cabecalho-achado{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin:0 0 6px}
+.cabecalho-achado .regra-nome{font:660 20px/1.25 var(--sans)}
+.cabecalho-achado .regra-codigo{font-size:14px}
+.pares{display:grid;gap:6px 20px;grid-template-columns:max-content 1fr;font-size:13.5px;margin:0}
+.pares dt{color:var(--tinta3)}
+.pares dd{margin:0}
+.bloco{margin:0 0 20px}
+.texto-normativo{
+  font-size:13.5px;background:var(--superficie2);border:1px solid var(--borda);
+  border-radius:7px;padding:11px 14px;margin:0;white-space:pre-wrap;
+}
+
+/* --- graficos ------------------------------------------------------------ */
+.grafico{display:block;max-width:100%;height:auto}
+.legenda{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--tinta2);margin:8px 0 0}
+.legenda span{display:inline-flex;align-items:center;gap:6px}
+.legenda i{width:13px;height:13px;border-radius:3px;display:inline-block;border:1px solid var(--borda)}
+
+/* --- regra que concluiu tudo x regra que nao concluiu -------------------- */
+/*
+   Esta dupla e a regra de apresentacao numero 2. "R04: 0 apontamentos" recebe
+   .selo-incompleto quando sobrou avaliacao nao concluida, e .selo-limpo quando
+   a regra avaliou tudo. Simbolo diferente, cor diferente, e texto diferente.
+*/
+.selo{
+  display:inline-flex;align-items:center;gap:6px;font-size:12.5px;padding:2px 9px;
+  border-radius:5px;border:1px solid transparent;white-space:nowrap;
+}
+.selo-limpo{background:var(--conforme-fraco);color:#1b5296;border-color:#bed4ef}
+.selo-limpo::before{content:"\2713";font-weight:700}
+.selo-incompleto{background:var(--naoavaliado-fraco);color:#8a5d00;border-color:#efd79a}
+.selo-incompleto::before{content:"\26A0";font-weight:700}
+
+@media print{
+  .topo,.rodape,.acoes,.filtros{display:none}
+  .cartao,.grupo{break-inside:avoid}
+}

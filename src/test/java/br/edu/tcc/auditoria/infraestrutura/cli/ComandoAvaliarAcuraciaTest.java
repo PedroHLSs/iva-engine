@@ -12,6 +12,8 @@ import br.edu.tcc.auditoria.aplicacao.auditoria.CatalogoParaAuditoria;
 import br.edu.tcc.auditoria.aplicacao.auditoria.DocumentoComItens;
 import br.edu.tcc.auditoria.aplicacao.auditoria.LoteDeDocumentos;
 import br.edu.tcc.auditoria.aplicacao.auditoria.MotorAuditoria;
+import br.edu.tcc.auditoria.aplicacao.catalogo.Natureza;
+import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
 import br.edu.tcc.auditoria.dominio.ChaveAcesso;
 import br.edu.tcc.auditoria.dominio.ItemDocumento;
 import br.edu.tcc.auditoria.dominio.acuracia.RotuloEsperado;
@@ -240,6 +242,12 @@ class ComandoAvaliarAcuraciaTest {
         return new CatalogoParaAuditoria(
                 "catalogo-ficticio-0",
                 CenarioFicticio.coberturaTotal(),
+                NaturezaDaCarga.deUmaSoProcedencia(
+                        Natureza.FICTICIO,
+                        List.of("uma classificacao ficticia"),
+                        List.of("um NCM ficticio"),
+                        List.of(),
+                        List.of()),
                 new RepositorioClassificacaoTributariaEmMemoria(List.of(
                         CenarioFicticio.classificacao(CenarioFicticio.CODIGO, CenarioFicticio.CST))),
                 new RepositorioNcmEmMemoria(List.of(CenarioFicticio.registroNcm(CenarioFicticio.NCM))),

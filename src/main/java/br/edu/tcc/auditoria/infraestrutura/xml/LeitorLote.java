@@ -56,17 +56,34 @@ public final class LeitorLote {
     private final LeitorDocumentoFiscal leitor;
     private final NormalizadorDocumento normalizador;
     private final RegistroDeFalhasDeLeitura registroDeFalhas;
+    private final RegistroDeDescricoesDeProduto registroDeDescricoes;
 
+    /*
+     * Emenda da etapa de conferência, sobre a Etapa 4.
+     *
+     * O construtor ganhou o registro de descrições, que é a segunda saída lateral
+     * desta leitura — a primeira são as falhas. Os dois têm escopo de lote, e não
+     * de processo: quem os cria é quem começa uma análise.
+     *
+     * Não há construtor sem ele. Um valor padrão faria um caminho de leitura
+     * deixar de registrar descrição sem que ninguém tivesse decidido isso; quem
+     * não quer registrar passa RegistroDeDescricoesDeProduto.DESCARTA, que é uma
+     * decisão escrita e localizável por busca.
+     */
     public LeitorLote(LeitorDocumentoFiscal leitor,
                       NormalizadorDocumento normalizador,
-                      RegistroDeFalhasDeLeitura registroDeFalhas) {
-        if (leitor == null || normalizador == null || registroDeFalhas == null) {
+                      RegistroDeFalhasDeLeitura registroDeFalhas,
+                      RegistroDeDescricoesDeProduto registroDeDescricoes) {
+        if (leitor == null || normalizador == null
+                || registroDeFalhas == null || registroDeDescricoes == null) {
             throw new IllegalArgumentException(
-                    "O leitor de lote exige leitor de documento, normalizador e registro de falhas.");
+                    "O leitor de lote exige leitor de documento, normalizador, registro de falhas e "
+                            + "registro de descrições.");
         }
         this.leitor = leitor;
         this.normalizador = normalizador;
         this.registroDeFalhas = registroDeFalhas;
+        this.registroDeDescricoes = registroDeDescricoes;
     }
 
     /**
@@ -129,7 +146,7 @@ public final class LeitorLote {
 
     private Optional<DocumentoComItens> documentoDoArquivo(Path caminho) {
         try (InputStream conteudo = new BufferedInputStream(Files.newInputStream(caminho))) {
-            return Optional.of(normalizador.normalizar(leitor.ler(conteudo)));
+            return Optional.of(normalizador.normalizar(leitor.ler(conteudo), registroDeDescricoes));
         } catch (IOException erro) {
             return registrar(caminho.toString(), erro);
         } catch (SalDeInstalacaoInvalido erro) {
@@ -142,7 +159,7 @@ public final class LeitorLote {
     private Optional<DocumentoComItens> documentoDaEntrada(ZipFile arquivoCompactado, ZipEntry entrada) {
         String origem = "%s!%s".formatted(arquivoCompactado.getName(), entrada.getName());
         try (InputStream conteudo = new BufferedInputStream(arquivoCompactado.getInputStream(entrada))) {
-            return Optional.of(normalizador.normalizar(leitor.ler(conteudo)));
+            return Optional.of(normalizador.normalizar(leitor.ler(conteudo), registroDeDescricoes));
         } catch (IOException erro) {
             return registrar(origem, erro);
         } catch (SalDeInstalacaoInvalido erro) {

@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Auditoria IBS/CBS — visão técnica</title>
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/componentes.css">
+</head>
+<!--
+  A interface da Etapa 9, inteira e sem alteração nos módulos dela.
+
+  Ela deixou de ser a porta de entrada — quem chega agora vai para a tela de
+  conferência, em index.html — mas continua existindo, com as mesmas seis telas,
+  porque é ela que mostra apontamento por regra e por severidade, e é ela que a
+  acurácia do trabalho usa.
+
+  O rótulo "visão técnica" é explícito de propósito: as duas interfaces contam a
+  mesma coisa com vocabulários diferentes, e alguém que chegasse aqui achando
+  que é a tela de conferência leria "achado" e "não avaliado" onde esperava
+  "possível divergência" e "não foi possível concluir".
+-->
+<body>
+
+<header class="topo">
+  <div class="topo-conteudo">
+    <a class="marca" href="#/">Auditoria IBS/CBS<span>visão técnica</span></a>
+    <nav class="navegacao">
+      <a href="#/" data-rota="execucoes">Execuções</a>
+      <a href="#/acuracia" data-rota="acuracia">Acurácia</a>
+      <a href="index.html#/">Voltar à conferência</a>
+    </nav>
+  </div>
+  <p class="topo-aviso">
+    Visão técnica, somente leitura: apontamentos por regra e por severidade, e a medição de
+    acurácia contra gabarito. Auditar, importar catálogo e registrar tratativa continuam na CLI.
+  </p>
+</header>
+
+<main id="tela" class="folha" tabindex="-1">
+  <p class="carregando">Carregando…</p>
+</main>
+
+<footer class="rodape">
+  <p>
+    Página estática servida pelo próprio sistema. Sem framework, sem CDN, sem rede:
+    consome apenas os quatro GET da API de leitura, na mesma origem.
+  </p>
+</footer>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

@@ -1,9 +1,9 @@
 # ATENCAO: DADOS INTEIRAMENTE FICTICIOS, CRIADOS SO PARA TESTE AUTOMATIZADO.
 # Nenhum codigo, CST, dispositivo, percentual ou data deste arquivo corresponde
 # a legislacao real. Nao use este arquivo como referencia normativa.
-codigo;cstsCompativeis;dispositivoLegal;indicadorDeBeneficio;percentualReducao;camposObrigatoriosCondicionados;vigenciaInicio;vigenciaFim;fonteNormativa
-XXX001;AAA|BBB;Dispositivo ficticio A;false;;;1900-01-01;1900-06-30;FONTE FICTICIA v0.0
+codigo;cstsCompativeis;dispositivoLegal;indicadorDeBeneficio;percentualReducao;camposObrigatoriosCondicionados;vigenciaInicio;vigenciaFim;fonteNormativa;natureza
+XXX001;AAA|BBB;Dispositivo ficticio A;false;;;1900-01-01;1900-06-30;FONTE FICTICIA v0.0;FICTICIO
 
 # A linha acima e a de baixo sao a mesma chave XXX001 em vigencias que nao se sobrepoem.
-XXX001;CCC;Dispositivo ficticio B;true;99,99;campoFicticioUm|campoFicticioDois;1900-07-01;;FONTE FICTICIA v0.1
-XXX002;AAA;"Dispositivo ficticio com ; separador e ""aspas"" no meio";false;;campoFicticioTres;1900-01-01;;FONTE FICTICIA v0.0
+XXX001;CCC;Dispositivo ficticio B;true;99,99;campoFicticioUm|campoFicticioDois;1900-07-01;;FONTE FICTICIA v0.1;FICTICIO
+XXX002;AAA;"Dispositivo ficticio com ; separador e ""aspas"" no meio";false;;campoFicticioTres;1900-01-01;;FONTE FICTICIA v0.0;FICTICIO

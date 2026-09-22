@@ -1,5 +1,7 @@
 package br.edu.tcc.auditoria.aplicacao.auditoria;
 
+import br.edu.tcc.auditoria.aplicacao.catalogo.Natureza;
+import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
 import br.edu.tcc.auditoria.dominio.Documento;
 import br.edu.tcc.auditoria.dominio.ItemDocumento;
 import br.edu.tcc.auditoria.dominio.Severidade;
@@ -150,6 +152,12 @@ class ServicoDeAuditoriaTest {
         return new CatalogoParaAuditoria(
                 "catalogo-ficticio",
                 CenarioFicticio.coberturaTotal(),
+                NaturezaDaCarga.deUmaSoProcedencia(
+                        Natureza.FICTICIO,
+                        List.of("uma classificacao ficticia"),
+                        List.of("um NCM ficticio"),
+                        List.of(),
+                        List.of()),
                 new RepositorioClassificacaoTributariaEmMemoria(List.of(
                         CenarioFicticio.classificacao(CenarioFicticio.CODIGO, CenarioFicticio.CST))),
                 new RepositorioNcmEmMemoria(List.of(

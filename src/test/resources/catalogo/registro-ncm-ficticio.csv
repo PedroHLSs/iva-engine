@@ -1,7 +1,7 @@
 # ATENCAO: DADOS INTEIRAMENTE FICTICIOS, CRIADOS SO PARA TESTE AUTOMATIZADO.
 # Nenhum NCM, descricao ou data deste arquivo corresponde a tabela real.
 # Nao use este arquivo como referencia normativa.
-ncm;descricao;vigenciaInicio;vigenciaFim;fonteNormativa
-00000000;Descricao ficticia de teste;1900-01-01;1900-06-30;FONTE FICTICIA v0.0
-00000000;Descricao ficticia de teste revisada;1900-07-01;;FONTE FICTICIA v0.1
-99999999;Outra descricao ficticia de teste;1900-01-01;;FONTE FICTICIA v0.0
+ncm;descricao;vigenciaInicio;vigenciaFim;fonteNormativa;natureza
+00000000;Descricao ficticia de teste;1900-01-01;1900-06-30;FONTE FICTICIA v0.0;FICTICIO
+00000000;Descricao ficticia de teste revisada;1900-07-01;;FONTE FICTICIA v0.1;FICTICIO
+99999999;Outra descricao ficticia de teste;1900-01-01;;FONTE FICTICIA v0.0;FICTICIO

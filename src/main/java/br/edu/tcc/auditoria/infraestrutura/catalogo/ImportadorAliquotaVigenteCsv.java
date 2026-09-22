@@ -33,13 +33,21 @@ public final class ImportadorAliquotaVigenteCsv {
     public static final String COLUNA_PERCENTUAL = "percentual";
     public static final String COLUNA_ABRANGENCIA = "abrangencia";
 
-    public List<AliquotaVigente> importar(Reader origem) throws IOException {
-        return LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new).stream()
-                .map(this::converter)
-                .toList();
+    /*
+     * Emenda da etapa de conferência, sobre a Etapa 2.
+     *
+     * O retorno passou de List para TabelaImportada porque a procedência das
+     * linhas é fato sobre elas, e precisa sair pelo mesmo caminho. Devolvê-la
+     * à parte permitiria ler os registros de um arquivo e a natureza de outro.
+     */
+    public TabelaImportada<AliquotaVigente> importar(Reader origem) throws IOException {
+        List<LinhaCsv> linhas = LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new);
+        return new TabelaImportada<>(
+                linhas.stream().map(this::converter).toList(),
+                NaturezaEmCsv.uniforme(linhas));
     }
 
-    public List<AliquotaVigente> importar(Path arquivo) throws IOException {
+    public TabelaImportada<AliquotaVigente> importar(Path arquivo) throws IOException {
         try (Reader origem = Files.newBufferedReader(arquivo, StandardCharsets.UTF_8)) {
             return importar(origem);
         }

@@ -1,8 +1,13 @@
 package br.edu.tcc.auditoria.infraestrutura.catalogo;
 
 import br.edu.tcc.auditoria.aplicacao.catalogo.CargaDeCatalogo;
+import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
 import br.edu.tcc.auditoria.aplicacao.catalogo.TabelaNormativa;
+import br.edu.tcc.auditoria.dominio.catalogo.AliquotaVigente;
+import br.edu.tcc.auditoria.dominio.catalogo.ClassificacaoTributaria;
+import br.edu.tcc.auditoria.dominio.catalogo.ItemAnexo;
 import br.edu.tcc.auditoria.dominio.catalogo.ProcedenciaNormativa;
+import br.edu.tcc.auditoria.dominio.catalogo.RegistroNcm;
 import br.edu.tcc.auditoria.dominio.regras.CoberturaDoCatalogo;
 import br.edu.tcc.auditoria.infraestrutura.csv.LeitorCsv;
 import br.edu.tcc.auditoria.infraestrutura.csv.LinhaCsv;
@@ -28,6 +33,19 @@ import java.util.Map;
  * nenhuma" de "esqueci de gerar o arquivo de alíquotas", e a diferença muda o
  * relatório inteiro. Para declarar tabela sem registros, forneça o arquivo só
  * com o cabeçalho — aí a ausência foi dita, e não suposta.</p>
+ *
+ * <h2>A coluna {@code natureza}, em todos os quatro arquivos de dados</h2>
+ *
+ * <p>Cada linha declara {@code FICTICIO} ou {@code NORMATIVO}. É o que permite à
+ * tela avisar que está exibindo dado de demonstração sem depender de ninguém
+ * lembrar de ligar uma propriedade. Linha sem a coluna recusa o arquivo inteiro,
+ * e linhas com naturezas diferentes no mesmo arquivo também — ver
+ * {@code NaturezaEmCsv}.</p>
+ *
+ * <p>{@code cobertura.csv} não a tem: ele declara período e fonte, não conteúdo,
+ * e tem três linhas contra as milhares dos outros. A natureza sai dos arquivos
+ * de dados, onde o conteúdo está — inclusive a de alíquota, que não tem linha de
+ * cobertura nenhuma e ficaria de fora se a marcação morasse lá.</p>
  *
  * <h2>O arquivo de cobertura</h2>
  *
@@ -76,17 +94,28 @@ public final class LeitorDeCatalogoEmCsv {
                     "\"%s\" não é um diretório.".formatted(diretorio));
         }
 
+        TabelaImportada<ClassificacaoTributaria> classificacoes =
+                new ImportadorClassificacaoTributariaCsv()
+                        .importar(exigir(diretorio, ARQUIVO_CLASSIFICACAO_TRIBUTARIA));
+        TabelaImportada<RegistroNcm> ncms = new ImportadorRegistroNcmCsv()
+                .importar(exigir(diretorio, ARQUIVO_REGISTRO_NCM));
+        TabelaImportada<ItemAnexo> anexos = new ImportadorItemAnexoCsv()
+                .importar(exigir(diretorio, ARQUIVO_ITEM_ANEXO));
+        TabelaImportada<AliquotaVigente> aliquotas = new ImportadorAliquotaVigenteCsv()
+                .importar(exigir(diretorio, ARQUIVO_ALIQUOTA_VIGENTE));
+
         return new CargaDeCatalogo(
                 versao,
                 lerCobertura(exigir(diretorio, ARQUIVO_COBERTURA)),
-                new ImportadorClassificacaoTributariaCsv()
-                        .importar(exigir(diretorio, ARQUIVO_CLASSIFICACAO_TRIBUTARIA)),
-                new ImportadorRegistroNcmCsv()
-                        .importar(exigir(diretorio, ARQUIVO_REGISTRO_NCM)),
-                new ImportadorItemAnexoCsv()
-                        .importar(exigir(diretorio, ARQUIVO_ITEM_ANEXO)),
-                new ImportadorAliquotaVigenteCsv()
-                        .importar(exigir(diretorio, ARQUIVO_ALIQUOTA_VIGENTE)));
+                new NaturezaDaCarga(
+                        classificacoes.natureza(),
+                        ncms.natureza(),
+                        anexos.natureza(),
+                        aliquotas.natureza()),
+                classificacoes.registros(),
+                ncms.registros(),
+                anexos.registros(),
+                aliquotas.registros());
     }
 
     private static CoberturaDoCatalogo lerCobertura(Path arquivo) throws IOException {

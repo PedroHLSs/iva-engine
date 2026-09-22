@@ -10,6 +10,7 @@ import br.edu.tcc.auditoria.dominio.ItemDocumento;
 import br.edu.tcc.auditoria.dominio.Ncm;
 import br.edu.tcc.auditoria.dominio.Uf;
 import br.edu.tcc.auditoria.dominio.excecao.ExcecaoDeDominio;
+import br.edu.tcc.auditoria.dominio.tratativa.HashDoItem;
 import br.edu.tcc.auditoria.infraestrutura.xml.gerado.TCIBS;
 import br.edu.tcc.auditoria.infraestrutura.xml.gerado.TEndereco;
 import br.edu.tcc.auditoria.infraestrutura.xml.gerado.TEnderEmi;
@@ -87,7 +88,25 @@ public final class NormalizadorDocumento {
      * @throws ExcecaoDeDominio        se algum valor declarado não tiver a forma
      *                                 que o domínio exige
      */
-    public DocumentoComItens normalizar(TNFe documentoLido) {
+    /*
+     * Emenda da etapa de conferência, sobre a Etapa 4.
+     *
+     * O método ganhou o registro de descrições. Não há sobrecarga sem ele de
+     * propósito: um valor padrão silencioso faria um caminho de leitura deixar de
+     * registrar descrição sem que ninguém decidisse isso. Quem não quer registrar
+     * passa RegistroDeDescricoesDeProduto.DESCARTA, que é uma decisão escrita.
+     *
+     * A descrição NÃO entra em ItemDocumento e NÃO chega ao domínio: nenhuma regra
+     * a examina, e o motor continua recebendo exatamente o que recebia.
+     */
+    public DocumentoComItens normalizar(
+            TNFe documentoLido, RegistroDeDescricoesDeProduto descricoes) {
+
+        if (descricoes == null) {
+            throw new DocumentoFiscalIlegivel(
+                    "Não há destino para as descrições de produto. Para descartá-las, passe "
+                            + "RegistroDeDescricoesDeProduto.DESCARTA.");
+        }
         if (documentoLido == null) {
             throw new DocumentoFiscalIlegivel("Não há documento a normalizar.");
         }
@@ -109,15 +128,41 @@ public final class NormalizadorDocumento {
                 pseudonimizador.pseudonimizar(identificadorDoEmitente(emitente)),
                 identificadorDoDestinatario(destinatario).map(pseudonimizador::pseudonimizar));
 
-        return new DocumentoComItens(documento, itens(informacoes));
+        return new DocumentoComItens(
+                documento, itens(documento.chaveAcesso(), informacoes, descricoes));
     }
 
-    private static List<ItemDocumento> itens(TNFe.InfNFe informacoes) {
+    /**
+     * Os itens do documento, registrando a descrição de cada um ao construí-lo.
+     *
+     * <p>O registro acontece aqui, e não num segundo laço depois, porque aqui o
+     * item e o {@code det} que o originou estão na mão ao mesmo tempo. Parear duas
+     * listas por índice depois funcionaria enquanto as duas fossem montadas na
+     * mesma ordem — e deixaria de funcionar no dia em que uma delas ganhasse um
+     * filtro, sem que nada acusasse.</p>
+     *
+     * <p>O endereço da descrição é {@code HashDoItem.de(chave, item)}: a mesma
+     * função, sobre as mesmas entradas, que o acervo usa para gravar o item.</p>
+     */
+    private static List<ItemDocumento> itens(
+            ChaveAcesso chaveAcesso,
+            TNFe.InfNFe informacoes,
+            RegistroDeDescricoesDeProduto descricoes) {
+
         List<ItemDocumento> itens = new ArrayList<>();
         for (TNFe.InfNFe.Det detalhamento : informacoes.getDet()) {
-            itens.add(item(detalhamento));
+            ItemDocumento item = item(detalhamento);
+            itens.add(item);
+            descricoes.registrar(DescricaoDeProdutoLida.de(
+                    HashDoItem.de(chaveAcesso, item), descricaoDeclarada(detalhamento)));
         }
         return itens;
+    }
+
+    /** O xProd como veio, ou nulo se o documento não o trouxe. */
+    private static String descricaoDeclarada(TNFe.InfNFe.Det detalhamento) {
+        TNFe.InfNFe.Det.Prod produto = detalhamento.getProd();
+        return produto == null ? null : produto.getXProd();
     }
 
     private static ItemDocumento item(TNFe.InfNFe.Det detalhamento) {

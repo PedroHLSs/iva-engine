@@ -48,6 +48,21 @@ import java.util.StringJoiner;
  * gravada em texto no repositório de documentos auditados — nada que este
  * resumo cobre é segredo. Dado pessoal do participante não entra aqui nem lá:
  * emitente e destinatário não fazem parte do item.</p>
+ *
+ * <p><strong>A ausência de sal é o que salva a tratativa quando o sal muda.</strong>
+ * Como este resumo não depende do segredo da instalação, trocar o sal de
+ * pseudonimização não altera nenhum valor calculado aqui — e a chave da
+ * tratativa, que é {@code (este resumo, regra, versão da regra)}, continua
+ * apontando para o mesmo item. A decisão humana sobrevive e se reaplica sozinha
+ * no reprocessamento.</p>
+ *
+ * <p>Está escrito porque não é óbvio de fora: quem encontrar um resumo sem sal
+ * ao lado de um pseudônimo com sal tende a ler descuido, e a "consertar"
+ * acrescentando sal aqui. Isso amarraria toda tratativa registrada ao segredo da
+ * instalação, e a primeira troca de sal apagaria o trabalho de auditoria
+ * acumulado. O guarda que recusa a subida com sal trocado
+ * ({@code infraestrutura.sal}) protege os pseudônimos justamente porque esta
+ * parte não precisa de proteção.</p>
  */
 public record HashDoItem(String valor) {
 

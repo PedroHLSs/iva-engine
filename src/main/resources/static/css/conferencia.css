@@ -1,0 +1,214 @@
+/* ---------------------------------------------------------------------------
+   A interface de conferencia.
+
+   Soma-se a base.css e componentes.css, que continuam sendo os da Etapa 9 e nao
+   foram alterados. Aqui entram os quatro estados da conferencia e as pecas que
+   so esta interface tem.
+
+   AS QUATRO REGRAS DE APRESENTACAO ESTAO NO CSS TAMBEM, E NAO SO NO JS:
+
+   1. Os quatro estados usam a MESMA caixa, a MESMA tipografia e o MESMO peso.
+      Nao ha regra que deixe "nao foi possivel concluir" menor, mais claro,
+      escondido ou colapsado. Procure por .estado-celula: e uma so.
+   2. Zero e desenhado como qualquer outro numero. Nao ha .estado-celula[data-zero]
+      nem opacity reduzida para contagem vazia.
+   3. Cor nunca e a unica codificacao. Toda cor de estado vem acompanhada de uma
+      marca de forma (.marca) e do rotulo por extenso, os dois vindos do servidor.
+   4. Nao existe nenhuma classe de "total", "resumo somado" ou "consolidado":
+      somar nao avaliado com sem divergencia nao e proibido por disciplina, e
+      impossivel porque nao ha onde escrever essa soma.
+   --------------------------------------------------------------------------- */
+
+:root{
+  /* Os tres desfechos da Etapa 9 seguem valendo; o quarto estado e novo.
+     Reaproveitar as tres cores existentes e deliberado: as figuras do TCC e a
+     tela precisam usar a mesma cor para o mesmo estado. */
+  --divergencia:var(--achado);
+  --divergencia-fraco:var(--achado-fraco);
+  --inconcluso:var(--naoavaliado);
+  --inconcluso-fraco:var(--naoavaliado-fraco);
+  --semdivergencia:var(--conforme);
+  --semdivergencia-fraco:var(--conforme-fraco);
+
+  /* Requer conferencia: o estado que a Etapa 9 nao tinha. Violeta acinzentado,
+     escolhido para nao se confundir nem com o vermelho nem com o azul. */
+  --conferencia:#6f5aa8;
+  --conferencia-fraco:#f1eef8;
+}
+
+/* --- topo desta interface -------------------------------------------------- */
+
+.topo-conteudo .marca span{ color:var(--tinta3); }
+
+/* --- tela de envio --------------------------------------------------------- */
+
+.area-de-envio{
+  border:2px dashed var(--eixo);
+  border-radius:10px;
+  background:var(--superficie);
+  padding:44px 24px;
+  text-align:center;
+  margin:0 0 16px;
+  transition:border-color .12s, background .12s;
+}
+.area-de-envio.recebendo{ border-color:var(--tinta2); background:var(--superficie2); }
+.area-titulo{ font-size:19px; font-weight:620; margin:0 0 6px; }
+.area-ou{ color:var(--tinta3); font-size:13px; margin:0 0 10px; }
+.area-de-envio .nota{ margin:14px auto 0; max-width:62ch; }
+
+/* O campo fica fora da tela, mas focavel: quem navega por teclado alcanca o
+   rotulo, que e o <label> estilizado como botao. display:none tiraria o campo
+   da ordem de foco e deixaria a tela inacessivel pelo teclado. */
+.campo-arquivo{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+label.botao{ cursor:pointer; display:inline-block; }
+
+.estado-do-envio{ color:var(--tinta2); font-style:italic; min-height:1.4em; }
+.atalhos-discretos{ display:flex; gap:18px; margin:26px 0 0; font-size:13.5px; }
+
+/* --- os quatro estados ----------------------------------------------------- */
+
+.estados{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(210px, 1fr));
+  gap:10px;
+}
+
+/* Uma regra so para as quatro celulas. Ver o cabecalho deste arquivo. */
+.estado-celula{
+  border:1px solid var(--borda);
+  border-top:3px solid var(--eixo);
+  border-radius:8px;
+  background:var(--superficie);
+  padding:14px 14px 12px;
+}
+.estado-numero{ font-size:30px; line-height:1.05; font-weight:660; font-variant-numeric:tabular-nums; }
+.estado-rotulo{ display:flex; align-items:center; gap:6px; font-weight:600; margin:4px 0 0; }
+.estado-explicacao{ color:var(--tinta2); font-size:12.5px; margin:8px 0 0; }
+
+.marca{ font-size:11px; line-height:1; }
+
+.est-divergencia{ border-top-color:var(--divergencia); }
+.est-divergencia .marca,.est-divergencia .estado-numero{ color:var(--divergencia); }
+.est-conferencia{ border-top-color:var(--conferencia); }
+.est-conferencia .marca,.est-conferencia .estado-numero{ color:var(--conferencia); }
+.est-inconcluso{ border-top-color:var(--inconcluso); }
+.est-inconcluso .marca,.est-inconcluso .estado-numero{ color:var(--inconcluso); }
+.est-semdivergencia{ border-top-color:var(--semdivergencia); }
+.est-semdivergencia .marca,.est-semdivergencia .estado-numero{ color:var(--semdivergencia); }
+
+.selo-estado{
+  display:inline-flex; align-items:center; gap:5px;
+  border:1px solid var(--borda); border-radius:999px;
+  padding:2px 10px 2px 8px; font-size:12.5px; font-weight:560;
+  background:var(--superficie2); white-space:nowrap;
+}
+.selo-estado.est-divergencia{ background:var(--divergencia-fraco); color:#8d2020; }
+.selo-estado.est-conferencia{ background:var(--conferencia-fraco); color:#4b3b77; }
+.selo-estado.est-inconcluso{ background:var(--inconcluso-fraco); color:#8a5d00; }
+.selo-estado.est-semdivergencia{ background:var(--semdivergencia-fraco); color:#1b4f8f; }
+.selo-estado .marca{ color:inherit; }
+
+.linha-pendencia{
+  border-left:3px solid var(--inconcluso);
+  background:var(--inconcluso-fraco);
+  padding:9px 12px; margin:10px 0 0; font-size:13.5px;
+}
+
+.contagens-inline{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+.contagem-estado{ display:inline-flex; align-items:center; gap:4px; font-size:13px; white-space:nowrap; }
+.legenda-estados{ display:flex; gap:16px; flex-wrap:wrap; color:var(--tinta2); font-size:12.5px; margin:0 0 10px; }
+
+.so-leitor-de-tela{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+
+/* --- faixa de procedencia e aviso de uso ----------------------------------- */
+
+.faixa-natureza{
+  border:1px solid var(--borda); border-left:4px solid var(--eixo);
+  border-radius:6px; background:var(--superficie2);
+  padding:11px 14px; margin:0 0 18px;
+}
+.faixa-natureza.avisa{ border-left-color:var(--inconcluso); background:var(--inconcluso-fraco); }
+.faixa-natureza strong{ display:block; margin-bottom:3px; }
+.faixa-natureza p{ margin:0; font-size:13px; color:var(--tinta2); }
+.faixa-natureza .nota{ margin-top:5px; }
+
+.aviso-de-uso{
+  margin:30px 0 0; padding:11px 0 0; border-top:1px solid var(--grade);
+  color:var(--tinta3); font-size:12.5px; max-width:92ch;
+}
+
+.cabecalho-resultado{ margin:0 0 18px; }
+.destaque-ausencia{ color:var(--inconcluso); font-weight:640; }
+.lista-ilegiveis{ margin:10px 0 0; padding-left:18px; }
+.lista-ilegiveis li{ margin:0 0 8px; }
+.aviso-reprocesso{ color:var(--inconcluso); }
+
+/* --- tabelas --------------------------------------------------------------- */
+
+td.numero,th.numero{
+  text-align:right; font-variant-numeric:tabular-nums;
+  font-family:var(--mono); font-size:13px;
+}
+.tabela-campos th{ width:38%; font-weight:560; color:var(--tinta2); }
+.tabela-evidencias td.origem{ color:var(--tinta2); font-size:12.5px; }
+.paginacao{ margin-top:10px; }
+.pseudonimo{ font-size:12px; word-break:break-all; }
+
+/* --- detalhe do produto ---------------------------------------------------- */
+
+.situacao-cabeca{ display:flex; align-items:flex-start; gap:12px; flex-wrap:wrap; }
+.situacao-cabeca p{ margin:0; max-width:78ch; }
+
+.lado-a-lado{ display:grid; grid-template-columns:repeat(auto-fit, minmax(260px,1fr)); gap:14px; }
+.lado{
+  border:1px solid var(--borda); border-radius:8px;
+  background:var(--superficie); padding:12px 14px;
+}
+.lado h3{ margin:0 0 6px; }
+
+.tributos{ display:grid; grid-template-columns:repeat(auto-fit, minmax(280px,1fr)); gap:14px; }
+.quadro-tributo{
+  border:1px solid var(--borda); border-radius:8px;
+  background:var(--superficie); padding:12px 14px;
+}
+.quadro-tributo h3{ margin:0 0 8px; }
+.tributo{ margin:0 0 12px; }
+.tributo-rotulo{ font-weight:600; margin:0 0 4px; font-size:13.5px; }
+.percentual{ font-weight:620; }
+
+.lista-catalogo{ margin:0; padding-left:18px; }
+.lista-catalogo li{ margin:0 0 9px; }
+.referencia{ margin:2px 0 0; color:var(--tinta2); font-size:12.5px; }
+
+.quem-julga{ font-style:italic; }
+
+.passos{ margin:0; padding-left:20px; }
+.passo{ margin:0 0 18px; }
+.passo-cabeca{ display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+.passo .regra-nome{ font-weight:640; }
+.explicacao{ margin:8px 0 0; }
+
+/* --- lote ------------------------------------------------------------------ */
+
+.grupos{ display:flex; flex-direction:column; gap:12px; }
+.grupo-rotulo{
+  font-size:11px; text-transform:uppercase; letter-spacing:.06em;
+  color:var(--tinta3); font-weight:640;
+}
+.grupo-medida{ display:flex; gap:26px; flex-wrap:wrap; margin:8px 0; }
+.grupo-medida strong{ font-size:17px; }
+.rotulo-do-valor{ color:var(--tinta2); font-size:13px; }
+.significado-da-ordem{ max-width:92ch; }
+
+/* --- campos de consulta ---------------------------------------------------- */
+
+.filtro input[type=text],.filtro input[type=date]{
+  border:1px solid var(--borda); border-radius:6px;
+  padding:6px 9px; font:inherit; font-size:13.5px; background:var(--superficie);
+}

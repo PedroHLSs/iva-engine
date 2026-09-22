@@ -15,6 +15,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class CargaDeCatalogoTest {
 
+    /** Uma tabela com registro, as outras tres vazias: o formato dos casos abaixo. */
+    private static final NaturezaDaCarga UMA_CLASSIFICACAO = new NaturezaDaCarga(
+            java.util.Optional.of(Natureza.FICTICIO),
+            java.util.Optional.empty(),
+            java.util.Optional.empty(),
+            java.util.Optional.empty());
     private static final ProcedenciaNormativa COBERTURA_PROCEDENCIA =
             CatalogoFicticio.procedencia(CatalogoFicticio.INICIO, CatalogoFicticio.FIM);
 
@@ -32,7 +38,8 @@ class CargaDeCatalogoTest {
     @Test
     void deveRecusarCargaSemVersao() {
         assertThatThrownBy(() -> new CargaDeCatalogo(
-                "  ", COBERTURA, List.of(classificacaoVigenteDeInicioAFim()),
+                "  ", COBERTURA, UMA_CLASSIFICACAO,
+                List.of(classificacaoVigenteDeInicioAFim()),
                 List.of(), List.of(), List.of()))
                 .isInstanceOf(CatalogoInvalido.class)
                 .hasMessageContaining("versão");
@@ -41,7 +48,8 @@ class CargaDeCatalogoTest {
     @Test
     void deveRecusarCargaSemCoberturaDeclarada() {
         assertThatThrownBy(() -> new CargaDeCatalogo(
-                "carga-ficticia", null, List.of(classificacaoVigenteDeInicioAFim()),
+                "carga-ficticia", null, UMA_CLASSIFICACAO,
+                List.of(classificacaoVigenteDeInicioAFim()),
                 List.of(), List.of(), List.of()))
                 .as("sem cobertura, silêncio do catálogo não se distingue de tabela não carregada")
                 .isInstanceOf(CatalogoInvalido.class);
@@ -81,13 +89,18 @@ class CargaDeCatalogoTest {
     @Test
     void deveRecusarListaNula() {
         assertThatThrownBy(() -> new CargaDeCatalogo(
-                "carga-ficticia", COBERTURA, null, List.of(), List.of(), List.of()))
+                "carga-ficticia", COBERTURA, UMA_CLASSIFICACAO,
+                null, List.of(), List.of(), List.of()))
                 .isInstanceOf(CatalogoInvalido.class);
     }
 
     private static CargaDeCatalogo carga(List<ClassificacaoTributaria> classificacoes) {
         return new CargaDeCatalogo(
-                "carga-ficticia", COBERTURA, classificacoes, List.of(), List.of(), List.of());
+                "carga-ficticia",
+                COBERTURA,
+                NaturezaDaCarga.deUmaSoProcedencia(
+                        Natureza.FICTICIO, classificacoes, List.of(), List.of(), List.of()),
+                classificacoes, List.of(), List.of(), List.of());
     }
 
     private static ClassificacaoTributaria classificacaoVigenteDeInicioAFim() {

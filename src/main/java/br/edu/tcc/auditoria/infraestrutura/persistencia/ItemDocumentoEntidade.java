@@ -123,6 +123,83 @@ class ItemDocumentoEntidade {
         this.valorCbs = valorCbs;
     }
 
+    /*
+     * Acessores de leitura, acrescentados na Etapa 11.
+     *
+     * A Etapa 5 escrevia esta entidade e nunca a lia de volta: o papel de
+     * trabalho e a API liam apontamento, não item. A tela de conferência de
+     * produto lê, e precisa de campo a campo.
+     *
+     * Nulo aqui significa "o documento não declarou o campo", e é traduzido para
+     * Optional.empty() no mapeamento — nunca para zero. É a mesma travessia que a
+     * D002 protege desde a leitura do XML, agora na volta.
+     *
+     * A Etapa 6 fez exatamente isto com DocumentoEntidade, pelo mesmo motivo.
+     */
+    String chaveAcesso() {
+        return chaveAcesso;
+    }
+
+    int numeroItem() {
+        return numeroItem;
+    }
+
+    String ncm() {
+        return ncm;
+    }
+
+    String cfop() {
+        return cfop;
+    }
+
+    BigDecimal valorItem() {
+        return valorItem;
+    }
+
+    String cstIbs() {
+        return cstIbs;
+    }
+
+    String cstCbs() {
+        return cstCbs;
+    }
+
+    String codigoClassificacaoTributaria() {
+        return codigoClassificacaoTributaria;
+    }
+
+    BigDecimal baseCalculoIbs() {
+        return baseCalculoIbs;
+    }
+
+    BigDecimal baseCalculoCbs() {
+        return baseCalculoCbs;
+    }
+
+    BigDecimal aliquotaIbsUf() {
+        return aliquotaIbsUf;
+    }
+
+    BigDecimal aliquotaIbsMunicipal() {
+        return aliquotaIbsMunicipal;
+    }
+
+    BigDecimal aliquotaCbs() {
+        return aliquotaCbs;
+    }
+
+    BigDecimal valorIbsUf() {
+        return valorIbsUf;
+    }
+
+    BigDecimal valorIbsMunicipal() {
+        return valorIbsMunicipal;
+    }
+
+    BigDecimal valorCbs() {
+        return valorCbs;
+    }
+
     UUID id() {
         return id;
     }

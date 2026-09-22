@@ -10,6 +10,8 @@ import br.edu.tcc.auditoria.aplicacao.consulta.FiltroDeAchados;
 import br.edu.tcc.auditoria.aplicacao.papeldetrabalho.PapelDeTrabalho;
 import br.edu.tcc.auditoria.aplicacao.papeldetrabalho.ServicoDeExportacao;
 import br.edu.tcc.auditoria.aplicacao.tratativa.ServicoDeTratativa;
+import br.edu.tcc.auditoria.aplicacao.catalogo.Natureza;
+import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
 import br.edu.tcc.auditoria.dominio.CodigoClassificacaoTributaria;
 import br.edu.tcc.auditoria.dominio.CodigoCst;
 import br.edu.tcc.auditoria.dominio.Ncm;
@@ -74,6 +76,12 @@ class PapelDeTrabalhoDePontaAPontaTest {
     @ServiceConnection
     static final PostgreSQLContainer<?> BANCO = new PostgreSQLContainer<>("postgres:16-alpine");
 
+    /** A carga destes testes é inteiramente de demonstração, e a faixa diz isso. */
+    private static final NaturezaDaCarga NATUREZA_FICTICIA = new NaturezaDaCarga(
+            java.util.Optional.of(Natureza.FICTICIO),
+            java.util.Optional.of(Natureza.FICTICIO),
+            java.util.Optional.empty(),
+            java.util.Optional.empty());
     private static final String DOCUMENTO_DE_TESTE = "/documentos/nfe-item-completo.xml";
     private static final String CHAVE_DO_DOCUMENTO = "1".repeat(44);
     private static final String FONTE_FICTICIA = "FONTE FICTICIA PARA TESTE v0.0";
@@ -261,6 +269,7 @@ class PapelDeTrabalhoDePontaAPontaTest {
         return new CargaDeCatalogo(
                 "carga-ficticia",
                 new CoberturaDoCatalogo(procedencia, procedencia, procedencia),
+                NATUREZA_FICTICIA,
                 List.of(new ClassificacaoTributaria(
                         new CodigoClassificacaoTributaria(CODIGO_FICTICIO),
                         Set.of(new CodigoCst(CST_FICTICIO_ADMITIDO)),

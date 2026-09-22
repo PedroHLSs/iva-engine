@@ -17,20 +17,29 @@ import java.util.List;
  * Importa registros de NCM de um CSV.
  *
  * <p>Colunas esperadas: {@code ncm}, {@code descricao}, mais
- * {@code vigenciaInicio}, {@code vigenciaFim} e {@code fonteNormativa}.</p>
+ * {@code vigenciaInicio}, {@code vigenciaFim} {@code fonteNormativa} e
+ * {@code natureza}.</p>
  */
 public final class ImportadorRegistroNcmCsv {
 
     public static final String COLUNA_NCM = "ncm";
     public static final String COLUNA_DESCRICAO = "descricao";
 
-    public List<RegistroNcm> importar(Reader origem) throws IOException {
-        return LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new).stream()
-                .map(this::converter)
-                .toList();
+    /*
+     * Emenda da etapa de conferência, sobre a Etapa 2.
+     *
+     * O retorno passou de List para TabelaImportada porque a procedência das
+     * linhas é fato sobre elas, e precisa sair pelo mesmo caminho. Devolvê-la
+     * à parte permitiria ler os registros de um arquivo e a natureza de outro.
+     */
+    public TabelaImportada<RegistroNcm> importar(Reader origem) throws IOException {
+        List<LinhaCsv> linhas = LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new);
+        return new TabelaImportada<>(
+                linhas.stream().map(this::converter).toList(),
+                NaturezaEmCsv.uniforme(linhas));
     }
 
-    public List<RegistroNcm> importar(Path arquivo) throws IOException {
+    public TabelaImportada<RegistroNcm> importar(Path arquivo) throws IOException {
         try (Reader origem = Files.newBufferedReader(arquivo, StandardCharsets.UTF_8)) {
             return importar(origem);
         }

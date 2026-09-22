@@ -107,6 +107,99 @@ class NenhumIdentificadorEmTextoClaroNaExportacaoTest {
                 .contains(pseudonimo);
     }
 
+    // -----------------------------------------------------------------------
+    // Descrição do produto. Acrescentado na etapa de conferência.
+    //
+    // xProd passou a ser o SEGUNDO campo de texto livre do sistema, e o primeiro
+    // que vem da fonte em escala e sem revisão: na prática traz nome de cliente,
+    // referência de pedido, "P/ OBRA FULANO". Ele é gravado no acervo da análise
+    // e pode ser exibido em tela por configuração — mas a planilha é o artefato
+    // que sai da máquina, e ele não vai junto.
+    //
+    // A verificação aqui é de forma, e não de conteúdo, porque não há conteúdo a
+    // plantar: a descrição não chega ao papel de trabalho. É isso que estes dois
+    // testes fixam. No dia em que alguém a trouxer para cá, eles quebram, e a
+    // quebra é a decisão sendo pedida em vez de tomada por descuido.
+    // -----------------------------------------------------------------------
+
+    @Test
+    void asLinhasDoPapelDeTrabalhoNaoPodemCarregarDescricaoDeProduto() {
+        List<Class<?>> tipos = List.of(
+                br.edu.tcc.auditoria.aplicacao.papeldetrabalho.LinhaDeAchado.class,
+                br.edu.tcc.auditoria.aplicacao.papeldetrabalho.LinhaNaoAvaliada.class,
+                PapelDeTrabalho.class);
+
+        List<String> acusacoes = new ArrayList<>();
+        int conferidos = 0;
+        for (Class<?> tipo : tipos) {
+            java.lang.reflect.RecordComponent[] componentes = tipo.getRecordComponents();
+            assertThat(componentes)
+                    .as("autoverificação: %s precisa ser record com componentes", tipo.getSimpleName())
+                    .isNotEmpty();
+            for (java.lang.reflect.RecordComponent componente : componentes) {
+                conferidos++;
+                String nome = componente.getName().toLowerCase(java.util.Locale.ROOT);
+                if (nome.contains("descricao") || nome.contains("xprod")) {
+                    acusacoes.add(tipo.getSimpleName() + "." + componente.getName());
+                }
+            }
+        }
+
+        assertThat(conferidos)
+                .as("autoverificação: a varredura precisa ter olhado alguma coisa")
+                .isGreaterThan(10);
+        assertThat(acusacoes)
+                .as("a planilha sai da máquina; o texto livre do emitente não sai com ela")
+                .isEmpty();
+    }
+
+    @Test
+    void oCodigoDaExportacaoNaoPodeMencionarADescricaoDoProduto() throws IOException {
+        List<Path> pacotes = List.of(
+                Path.of("src", "main", "java", "br", "edu", "tcc", "auditoria",
+                        "aplicacao", "papeldetrabalho"),
+                Path.of("src", "main", "java", "br", "edu", "tcc", "auditoria",
+                        "infraestrutura", "exportacao"));
+
+        List<String> acusacoes = new ArrayList<>();
+        int arquivosLidos = 0;
+        for (Path pacote : pacotes) {
+            try (var caminhos = java.nio.file.Files.walk(pacote)) {
+                for (Path arquivoJava : caminhos.filter(java.nio.file.Files::isRegularFile).toList()) {
+                    if (!arquivoJava.toString().endsWith(".java")) {
+                        continue;
+                    }
+                    arquivosLidos++;
+                    List<String> linhas =
+                            java.nio.file.Files.readAllLines(arquivoJava, StandardCharsets.UTF_8);
+                    for (int numero = 0; numero < linhas.size(); numero++) {
+                        String linha = linhas.get(numero);
+                        if (ehComentario(linha)) {
+                            continue;
+                        }
+                        if (linha.contains("DescricaoDoProduto") || linha.contains("descricao_produto")) {
+                            acusacoes.add("%s:%d — %s"
+                                    .formatted(arquivoJava, numero + 1, linha.strip()));
+                        }
+                    }
+                }
+            }
+        }
+
+        assertThat(arquivosLidos)
+                .as("autoverificação: a varredura precisa ter aberto arquivo")
+                .isGreaterThan(5);
+        assertThat(acusacoes)
+                .as("citar o tipo em comentário continua permitido; usá-lo, não")
+                .isEmpty();
+    }
+
+    /** Comentário e Javadoc podem citar o que o código não pode usar. */
+    private static boolean ehComentario(String linha) {
+        String limpa = linha.strip();
+        return limpa.startsWith("//") || limpa.startsWith("*") || limpa.startsWith("/*");
+    }
+
     /**
      * Concatena o conteúdo de todas as partes internas do xlsx.
      *

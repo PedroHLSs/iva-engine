@@ -8,6 +8,8 @@ import br.edu.tcc.auditoria.aplicacao.consulta.AchadoRegistrado;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeAchados;
 import br.edu.tcc.auditoria.aplicacao.consulta.FiltroDeAchados;
 import br.edu.tcc.auditoria.aplicacao.tratativa.ServicoDeTratativa;
+import br.edu.tcc.auditoria.aplicacao.catalogo.Natureza;
+import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
 import br.edu.tcc.auditoria.dominio.CodigoClassificacaoTributaria;
 import br.edu.tcc.auditoria.dominio.CodigoCst;
 import br.edu.tcc.auditoria.dominio.Ncm;
@@ -320,6 +322,12 @@ class PersistenciaDeAuditoriaTest {
         return new CargaDeCatalogo(
                 versao,
                 new CoberturaDoCatalogo(procedencia, procedencia, procedencia),
+                NaturezaDaCarga.deUmaSoProcedencia(
+                        Natureza.FICTICIO,
+                        List.of(classificacao),
+                        List.of(registroNcm),
+                        List.of(),
+                        List.of()),
                 List.of(classificacao),
                 List.of(registroNcm),
                 List.of(),

@@ -4,7 +4,9 @@ import br.edu.tcc.auditoria.dominio.excecao.ExcecaoDeDominio;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.format.ResolverStyle;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +32,14 @@ import java.util.function.Supplier;
 public record LinhaCsv(int numero, Map<String, String> valores, RecusaDeCsv recusa) {
 
     private static final String SEPARADOR_DE_LISTA = "|";
+
+    /*
+     * Estrito de propósito: no modo padrão do java.time, "31/02/1900" viraria
+     * 28/02/1900 sem aviso, e uma vigência errada resolve o documento contra o
+     * registro errado. Ano com quatro dígitos, dia e mês com dois.
+     */
+    private static final DateTimeFormatter DIA_MES_ANO =
+            DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT);
 
     public LinhaCsv {
         if (recusa == null) {
@@ -128,12 +138,24 @@ public record LinhaCsv(int numero, Map<String, String> valores, RecusaDeCsv recu
         }
     }
 
+    /*
+     * Emenda de 14/09/2026, sobre as Etapas 2 e 7.
+     *
+     * Até esta data só aceitava aaaa-mm-dd, e a mensagem dizia "deve estar no
+     * formato aaaa-mm-dd". Passou a aceitar também dd/mm/aaaa, que é como a
+     * planilha brasileira grava a data ao salvar em CSV. A barra escolhe o
+     * formato, e não uma tentativa em sequência: assim a recusa vem do formato
+     * que o arquivo de fato usou.
+     *
+     * O risco aceito, e registrado na D012: um arquivo em mm/dd/aaaa seria lido
+     * trocado sem aviso sempre que o dia fosse até 12.
+     */
     private LocalDate converterData(String coluna, String valor) {
         try {
-            return LocalDate.parse(valor);
+            return valor.contains("/") ? LocalDate.parse(valor, DIA_MES_ANO) : LocalDate.parse(valor);
         } catch (DateTimeParseException formatoInvalido) {
             throw recusa.de(
-                    "Linha %d: a coluna \"%s\" deve estar no formato aaaa-mm-dd, mas veio \"%s\"."
+                    "Linha %d: a coluna \"%s\" deve estar no formato aaaa-mm-dd ou dd/mm/aaaa, mas veio \"%s\"."
                             .formatted(numero, coluna, valor),
                     formatoInvalido);
         }

@@ -90,7 +90,10 @@ class NenhumIdentificadorOriginalNoDominioTest {
 
     private DocumentoComItens normalizar(String nomeDoDocumento) throws IOException {
         try (InputStream conteudo = DocumentoDeTeste.abrir(nomeDoDocumento)) {
-            return normalizador.normalizar(leitor.ler(conteudo));
+            // DESCARTA porque este teste olha o que chega ao domínio, e a
+            // descrição não chega: ela é registrada na infraestrutura.
+            return normalizador.normalizar(
+                    leitor.ler(conteudo), RegistroDeDescricoesDeProduto.DESCARTA);
         }
     }
 

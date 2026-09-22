@@ -44,9 +44,18 @@
     </properties>
 
     <!--
-        Nenhuma dependencia de web nesta etapa: a interface de uso e uma CLI
-        (D006). Nao ha spring-boot-starter-web nem spring-boot-starter-webflux,
-        e nao deve haver enquanto nao existir decisao registrada em contrario.
+        Ate a Etapa 7 este comentario dizia que nao havia dependencia de web
+        alguma, e que nao deveria haver "enquanto nao existir decisao registrada
+        em contrario". A decisao existe: D009, da Etapa 8, que expoe por HTTP e
+        SOMENTE PARA LEITURA o que o sistema ja gravou.
+
+        Entrou spring-boot-starter-web. Continua NAO havendo
+        spring-boot-starter-webflux.
+
+        A CLI segue sendo a interface de operacao: e ela que importa catalogo,
+        audita, trata achado e exporta. A API nao tem nenhum endpoint de escrita
+        (D009) e nem sobe por padrao — application.properties mantem
+        web-application-type=none, e so o perfil "api" o troca por servlet.
 
         As versoes de todas as dependencias vem do dependencyManagement do
         parent do Spring Boot, inclusive as de Testcontainers.
@@ -104,6 +113,23 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-postgresql</artifactId>
+        </dependency>
+
+        <!--
+            HTTP de leitura (Etapa 8, D009). Usado somente por
+            infraestrutura/api: o dominio e a aplicacao nao conhecem Spring MVC
+            nem Jackson, e ha teste que verifica isso
+            (SpringWebNaoVazaDaApiTest, alem do guarda de D001).
+
+            Traz o Jackson junto, que e o que serializa os DTOs de resposta. Os
+            objetos de dominio NAO sao serializados: os DTOs sao tipos proprios
+            da fronteira, sem anotacao no dominio (D001).
+
+            Traz tambem o Tomcat embutido, mas ele so sobe sob o perfil "api".
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
         <!--
@@ -179,16 +205,28 @@
                 Geracao das classes de leiaute a partir dos XSD oficiais do
                 Portal Nacional da NF-e.
 
-                Os XSD NAO estao no repositorio: quem clona o projeto precisa
-                baixa-los e coloca-los em src/main/resources/schemas. A lista
-                exata dos arquivos esta em src/main/resources/schemas/LEIAME.md.
-                Sem eles, este plugin nao gera nada e a compilacao falha
-                apontando o pacote inexistente.
+                Os cinco XSD ESTAO no repositorio, em src/main/resources/schemas,
+                e por isso "mvn test" funciona logo depois do clone, sem download
+                nenhum. Nao sao dado fiscal: sao esquemas publicos do leiaute, e o
+                .gitignore explica por que nao os bloqueia.
 
-                Somente os dois esquemas raiz sao listados como fonte. Os demais
-                entram por xs:include a partir deles; lista-los tambem faria o
-                XJC compilar o mesmo esquema duas vezes e falhar com colisao de
-                nomes na ObjectFactory.
+                Ate 03/09/2026 este comentario afirmava o contrario: os arquivos
+                estavam versionados desde a Etapa 4 enquanto cinco textos diziam
+                que nao estavam — este, o LEIAME.md, o README.md, a D005 e o
+                CLAUDE.md.
+
+                Somente nfe_v4.00.xsd e listado como fonte. Os demais entram por
+                xs:include a partir dele; lista-los tambem faria o XJC compilar o
+                mesmo esquema duas vezes e falhar com colisao de nomes na
+                ObjectFactory.
+
+                procNFe_v4.00.xsd NAO e fonte de geracao, e por isso nao aparece
+                aqui. Ele so declara o elemento raiz nfeProc; o tipo TNfeProc, que
+                e o que este projeto usa, ja vem do leiauteNFe_v4.00.xsd. E
+                LeitorDocumentoFiscal le o nome do elemento raiz por StAX e
+                desserializa por tipo declarado, sem depender de @XmlRootElement.
+                Ate 03/09/2026 o arquivo estava listado aqui sem existir na pasta,
+                e o plugin o ignorava em silencio a cada build.
 
                 As classes geradas ficam num pacote separado e sao tratadas como
                 detalhe de infraestrutura: so infraestrutura/xml as enxerga.
@@ -207,7 +245,6 @@
                 </executions>
                 <configuration>
                     <sources>
-                        <source>src/main/resources/schemas/procNFe_v4.00.xsd</source>
                         <source>src/main/resources/schemas/nfe_v4.00.xsd</source>
                     </sources>
                     <packageName>${pacote.das.classes.geradas}</packageName>

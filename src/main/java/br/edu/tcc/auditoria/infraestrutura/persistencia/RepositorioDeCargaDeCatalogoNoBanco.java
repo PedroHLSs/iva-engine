@@ -1,6 +1,7 @@
 package br.edu.tcc.auditoria.infraestrutura.persistencia;
 
 import br.edu.tcc.auditoria.aplicacao.catalogo.CargaDeCatalogo;
+import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
 import br.edu.tcc.auditoria.aplicacao.catalogo.RepositorioDeCargaDeCatalogo;
 import br.edu.tcc.auditoria.aplicacao.catalogo.TabelaNormativa;
 import br.edu.tcc.auditoria.dominio.catalogo.ProcedenciaNormativa;
@@ -32,6 +33,7 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
 
     private final CargaCatalogoJpa cargas;
     private final CoberturaCatalogoJpa coberturas;
+    private final NaturezaDaCargaJpa naturezas;
     private final ClassificacaoTributariaJpa classificacoes;
     private final RegistroNcmJpa ncms;
     private final ItemAnexoJpa itensDeAnexo;
@@ -41,6 +43,7 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
     RepositorioDeCargaDeCatalogoNoBanco(
             CargaCatalogoJpa cargas,
             CoberturaCatalogoJpa coberturas,
+            NaturezaDaCargaJpa naturezas,
             ClassificacaoTributariaJpa classificacoes,
             RegistroNcmJpa ncms,
             ItemAnexoJpa itensDeAnexo,
@@ -48,6 +51,7 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
             Clock relogio) {
         this.cargas = cargas;
         this.coberturas = coberturas;
+        this.naturezas = naturezas;
         this.classificacoes = classificacoes;
         this.ncms = ncms;
         this.itensDeAnexo = itensDeAnexo;
@@ -68,6 +72,7 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
         UUID cargaId = UUID.randomUUID();
         cargas.save(new CargaCatalogoEntidade(cargaId, carga.versao(), relogio.instant()));
         coberturas.saveAll(coberturaDe(carga.cobertura(), cargaId));
+        naturezas.saveAll(naturezaDe(carga.natureza(), cargaId));
 
         classificacoes.saveAll(carga.classificacoesTributarias().stream()
                 .map(registro -> MapeadorDeCatalogo.paraEntidade(registro, cargaId))
@@ -87,6 +92,21 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
     @Transactional(readOnly = true)
     public Optional<String> versaoDaCargaMaisRecente() {
         return cargas.findTopByOrderByImportadoEmDescVersaoDesc().map(CargaCatalogoEntidade::versao);
+    }
+
+    /*
+     * Uma linha por tabela que TEM registro. Tabela vazia não gera linha: a
+     * natureza é declarada linha a linha no CSV, e arquivo só com cabeçalho não
+     * tem onde declará-la. Ausência aqui é lida como ausência, nunca como
+     * normativo — ver SituacaoDaNatureza.
+     */
+    private static List<NaturezaDaCargaEntidade> naturezaDe(
+            NaturezaDaCarga natureza, UUID cargaId) {
+
+        List<NaturezaDaCargaEntidade> linhas = new ArrayList<>();
+        natureza.declaradas().forEach((tabela, declarada) ->
+                linhas.add(new NaturezaDaCargaEntidade(cargaId, tabela, declarada.name())));
+        return linhas;
     }
 
     private static List<CoberturaCatalogoEntidade> coberturaDe(

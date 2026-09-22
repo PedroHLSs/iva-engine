@@ -1,8 +1,11 @@
 # Esquemas XSD da NF-e / NFC-e
 
-Este diretório guarda os esquemas XSD oficiais do leiaute da NF-e. **Eles não
-vêm no clone**: precisam ser baixados do Portal Nacional da NF-e e copiados
-para cá antes do primeiro `mvn test`.
+Este diretório guarda os esquemas XSD oficiais do leiaute da NF-e. **Eles vêm no
+clone**: os cinco arquivos necessários estão versionados, e `mvn test` funciona
+sem baixar nada.
+
+As instruções de download abaixo servem para **atualizar** os esquemas para um
+Pacote de Liberação mais novo, não para o primeiro build.
 
 O projeto não escreve parser de XML à mão e não descreve o leiaute em código.
 As classes de leitura são geradas pelo `jaxb2-maven-plugin` a partir dos
@@ -30,23 +33,38 @@ que este sistema audita.
 
 O pacote vem com mais de cento e cinquenta arquivos — consulta de status,
 eventos, inutilização, distribuição de DFe. Nada disso é usado aqui. Copie para
-este diretório **exatamente estes seis**:
+este diretório **exatamente estes cinco**:
 
 | Arquivo | Por que é necessário |
 |---|---|
-| `procNFe_v4.00.xsd` | raiz `nfeProc` — documento com o protocolo de autorização |
-| `nfe_v4.00.xsd` | raiz `NFe` — documento sem o envelope de autorização |
-| `leiauteNFe_v4.00.xsd` | leiaute da NF-e; incluído pelos dois acima |
+| `nfe_v4.00.xsd` | raiz `NFe`; é a única fonte listada no `pom.xml` |
+| `leiauteNFe_v4.00.xsd` | leiaute da NF-e; incluído pelo acima |
 | `tiposBasico_v4.00.xsd` | tipos básicos do leiaute |
 | `DFeTiposBasicos_v1.00.xsd` | tipos do grupo IBS/CBS (NT 2025.002) |
 | `xmldsig-core-schema_v1.01.xsd` | assinatura digital |
 
-Os quatro últimos entram por `xs:include` a partir dos dois primeiros, e por
-isso não aparecem na configuração do plugin no `pom.xml` — mas precisam estar
-neste diretório, com estes nomes, ao lado dos outros.
+Os quatro últimos entram por `xs:include` a partir do primeiro, e por isso não
+aparecem na configuração do plugin no `pom.xml` — mas precisam estar neste
+diretório, com estes nomes, ao lado dele.
 
 Não renomeie, não edite e não recorte nenhum deles. O `schemaLocation` de cada
 `xs:include` é relativo e usa o nome original do arquivo.
+
+## `procNFe_v4.00.xsd` não é necessário
+
+Até 03/09/2026 este arquivo era o sexto da lista e aparecia como fonte no
+`pom.xml`. Ele nunca esteve no repositório, e o plugin o ignorava em silêncio a
+cada build, com a linha `Ignored given or default sources`.
+
+Ele só declara o elemento raiz `nfeProc`. O tipo `TNfeProc`, que é o que este
+projeto usa, é um `xs:complexType` do `leiauteNFe_v4.00.xsd` e vem de lá.
+`LeitorDocumentoFiscal` lê o nome do elemento raiz por StAX e desserializa por
+tipo declarado, sem depender de `@XmlRootElement` — de modo que documento com
+envelope de autorização é lido normalmente sem este esquema.
+
+Verificado gerando do zero, fora do OneDrive, com os cinco arquivos acima: as
+mesmas 52 classes, `TNfeProc` entre elas, e os testes de leitura de XML verdes,
+inclusive o que lê documento com envelope `nfeProc`.
 
 ## O caminho do projeto não pode ter acento
 
@@ -60,7 +78,7 @@ because 1) could not find the document; ...
 src-resolve: Cannot resolve the name 'TNfeProc' to a(n) 'type definition' component.
 ```
 
-Os seis arquivos estão no lugar certo; o que não resolve é o caminho. Não é
+Os cinco arquivos estão no lugar certo; o que não resolve é o caminho. Não é
 defeito do `jaxb2-maven-plugin` — o XJC chamado direto falha igual. Espaço no
 caminho é inofensivo; acento não.
 
@@ -78,11 +96,25 @@ Devem aparecer, entre outras, `TNfeProc.java`, `TNFe.java` e `TTribNFe.java`
 — esta última é o grupo `IBSCBS` do item, e a sua ausência indica pacote de
 esquemas anterior à NT 2025.002.
 
-## Versionar ou não
+## Versionar ou não: decidido em 03/09/2026
 
-O `.gitignore` do projeto bloqueia dados fiscais, não esquemas: `.xsd` entra no
-Git normalmente se você mandar. Versioná-los torna o build reprodutível e
-registra contra qual versão do leiaute o TCC foi escrito; não versioná-los
-mantém o repositório menor e obriga cada clone a baixar do Portal. A escolha é
-sua — só não deixe o repositório num meio-termo, com parte dos seis arquivos
-versionada e parte não.
+**Os cinco arquivos são versionados.** A escolha é essa, e está registrada no
+`.gitignore`, no comentário do plugin no `pom.xml`, no `README.md` e na D005.
+
+O `.gitignore` bloqueia dado fiscal, não esquema, e por isso `.xsd` nunca esteve
+na lista de bloqueio. Versioná-los torna o build reprodutível — quem clona roda
+`mvn test` de imediato, o que importa para quem for avaliar este trabalho — e
+registra contra qual versão do leiaute ele foi escrito. O custo é o tamanho do
+repositório, que com cinco esquemas é irrelevante.
+
+### Como o repositório chegou aqui
+
+Os arquivos entraram no Git na Etapa 4, no commit `9a9a8be`, enquanto cinco
+textos continuavam dizendo que eles não vinham no clone: este arquivo, o
+`README.md`, o `pom.xml`, a D005 e o `CLAUDE.md`. A divergência durou até a
+revisão de conformidade de 03/09/2026, que optou por ratificar o fato em vez de
+desfazê-lo.
+
+Havia também o meio-termo contra o qual este arquivo advertia: `procNFe_v4.00.xsd`
+era pedido aqui e listado no `pom.xml` sem nunca ter entrado no repositório. Ele
+foi removido das duas listas por não ser necessário — ver a seção acima.

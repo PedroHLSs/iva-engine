@@ -49,9 +49,17 @@ public enum Desfecho {
     /**
      * Indica se este desfecho entra na matriz de confusão.
      *
-     * <p>Verdadeiro apenas para os quatro primeiros. É o único ponto do sistema
-     * em que se decide o que conta como medição, e existe isolado justamente
-     * para que a decisão não fique espalhada em somas pelo código.</p>
+     * <p>Verdadeiro apenas para os quatro primeiros. <strong>Escreve por extenso
+     * a regra que decide o que conta como medição</strong>, para que ela possa ser
+     * lida numa linha em vez de deduzida das fórmulas.</p>
+     *
+     * <p>Não é este método que garante a regra: quem garante é a forma de
+     * {@code ContagemDeAcuracia} — quatro campos de matriz de confusão, dois
+     * campos à parte, e fórmulas de precisão e recall que só mencionam os quatro.
+     * Nenhum código de produção chama este método, e é assim de propósito; o que
+     * impede os dois de divergirem é
+     * {@code ContagemDeAcuraciaTest.avaliadosDeveContarExatamenteOsDesfechosQueEntramNaMetrica},
+     * que confronta o que este método afirma com o que aquele registro conta.</p>
      */
     public boolean entraNaMetrica() {
         return this == VERDADEIRO_POSITIVO

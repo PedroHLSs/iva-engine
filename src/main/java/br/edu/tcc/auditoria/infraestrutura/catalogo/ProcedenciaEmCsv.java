@@ -6,6 +6,7 @@ import br.edu.tcc.auditoria.infraestrutura.csv.LinhaCsv;
 
 import java.time.LocalDate;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Leitura das três colunas que todo CSV de catálogo tem obrigatoriamente.
@@ -27,9 +28,21 @@ final class ProcedenciaEmCsv {
     }
 
     static ProcedenciaNormativa ler(LinhaCsv linha) {
+        return ler(linha, lida -> lida.textoObrigatorio(COLUNA_FONTE_NORMATIVA));
+    }
+
+    /*
+     * Emenda de 14/09/2026, sobre a Etapa 2.
+     *
+     * A fonte deixou de ser sempre a coluna fonteNormativa: o CSV de
+     * classificação pode trazê-la por tributo, e quem sabe juntar as duas é o
+     * importador dele. As vigências continuam lidas só aqui, e antes da fonte,
+     * como eram — a primeira recusa de uma linha com os dois defeitos não mudou.
+     */
+    static ProcedenciaNormativa ler(LinhaCsv linha, Function<LinhaCsv, String> leituraDaFonte) {
         LocalDate inicio = linha.dataObrigatoria(COLUNA_VIGENCIA_INICIO);
         Optional<LocalDate> fim = linha.data(COLUNA_VIGENCIA_FIM);
-        String fonteNormativa = linha.textoObrigatorio(COLUNA_FONTE_NORMATIVA);
+        String fonteNormativa = leituraDaFonte.apply(linha);
 
         return linha.converterCom(() ->
                 new ProcedenciaNormativa(new PeriodoVigencia(inicio, fim), fonteNormativa));

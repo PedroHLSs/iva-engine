@@ -4,9 +4,16 @@ import br.edu.tcc.auditoria.aplicacao.acuracia.ComparadorDeGabarito;
 import br.edu.tcc.auditoria.aplicacao.acuracia.EscritorDeRelatorioDeAcuracia;
 import br.edu.tcc.auditoria.aplicacao.acuracia.FonteDeGabarito;
 import br.edu.tcc.auditoria.aplicacao.acuracia.ServicoDeAvaliacaoDeAcuracia;
+import br.edu.tcc.auditoria.aplicacao.analise.FabricaDeLeituraDeLote;
+import br.edu.tcc.auditoria.aplicacao.analise.ConsultaDoAcervoDaAnalise;
+import br.edu.tcc.auditoria.aplicacao.analise.RegistroDoAcervoDaAnalise;
+import br.edu.tcc.auditoria.aplicacao.analise.ServicoDeAnalise;
+import br.edu.tcc.auditoria.aplicacao.conferencia.ConsultaDaBaseTributaria;
+import br.edu.tcc.auditoria.aplicacao.conferencia.MontadorDaConferencia;
 import br.edu.tcc.auditoria.aplicacao.auditoria.FonteDeLoteDeDocumentos;
 import br.edu.tcc.auditoria.aplicacao.auditoria.MotorAuditoria;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ProvedorDeCatalogo;
+import br.edu.tcc.auditoria.aplicacao.auditoria.ProvedorDeCatalogoPorVersao;
 import br.edu.tcc.auditoria.aplicacao.auditoria.RepositorioDaAuditoria;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ServicoDeAuditoria;
 import br.edu.tcc.auditoria.aplicacao.catalogo.RepositorioDeCargaDeCatalogo;
@@ -15,6 +22,7 @@ import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeAchados;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeAchadosDaExecucao;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeDocumentos;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeExecucoes;
+import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeItensDaExecucao;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeNaoAvaliadas;
 import br.edu.tcc.auditoria.aplicacao.papeldetrabalho.ExportadorDePapelDeTrabalho;
 import br.edu.tcc.auditoria.aplicacao.papeldetrabalho.MontadorDePapelDeTrabalho;
@@ -22,12 +30,16 @@ import br.edu.tcc.auditoria.aplicacao.papeldetrabalho.PseudonimizadorDeChave;
 import br.edu.tcc.auditoria.aplicacao.papeldetrabalho.ServicoDeExportacao;
 import br.edu.tcc.auditoria.aplicacao.tratativa.ServicoDeTratativa;
 import br.edu.tcc.auditoria.dominio.regras.ToleranciaDeValor;
+import br.edu.tcc.auditoria.infraestrutura.xml.RegistroDeDescricoesDeProduto;
 import br.edu.tcc.auditoria.dominio.tratativa.RepositorioTratativa;
 import br.edu.tcc.auditoria.infraestrutura.xml.FalhasDeLeituraEmMemoria;
 import br.edu.tcc.auditoria.infraestrutura.xml.LeitorDocumentoFiscal;
 import br.edu.tcc.auditoria.infraestrutura.xml.LeitorLote;
 import br.edu.tcc.auditoria.infraestrutura.xml.NormalizadorDocumento;
 import br.edu.tcc.auditoria.infraestrutura.xml.Pseudonimizador;
+import br.edu.tcc.auditoria.infraestrutura.sal.ArquivoDeSalLocal;
+import br.edu.tcc.auditoria.infraestrutura.sal.ResolvedorDeSal;
+import br.edu.tcc.auditoria.infraestrutura.sal.SalResolvido;
 import br.edu.tcc.auditoria.infraestrutura.xml.SalDeInstalacao;
 
 import org.springframework.context.annotation.Bean;
@@ -68,22 +80,38 @@ public class ConfiguracaoDaAuditoria {
     }
 
     /**
-     * Sal de pseudonimização.
+     * Sal de pseudonimização, resolvido em cascata.
      *
-     * <p><strong>Não há valor padrão, e não pode haver.</strong> Sal conhecido
-     * torna o pseudônimo reversível por força bruta — são poucos bilhões de CNPJ
-     * possíveis. Sem o sal configurado, o sistema para na subida com a
-     * explicação de como configurá-lo, em vez de processar com um valor fraco.</p>
+     * <p><strong>Continua sem sal fixo em código, e não pode ter.</strong> Sal
+     * conhecido torna o pseudônimo reversível por força bruta — são poucos bilhões
+     * de CNPJ possíveis. O que a Etapa 10 acrescentou não é um padrão em código:
+     * é um sal sorteado de 256 bits na primeira subida, gravado fora do
+     * repositório, tão secreto quanto um escolhido à mão. Ver
+     * {@link ResolvedorDeSal}.</p>
+     *
+     * <p>A precedência entre a propriedade e a variável de ambiente é a mesma que
+     * a Etapa 4 já usava, de propósito: quem instalou antes continua com o mesmo
+     * sal, e ninguém é surpreendido por uma troca que o guarda de subida
+     * recusaria.</p>
      */
     @Bean
-    SalDeInstalacao salDeInstalacao(Environment ambiente) {
-        String configurado = ambiente.getProperty(PROPRIEDADE_DO_SAL);
-        if (configurado != null && !configurado.isBlank()) {
-            return new SalDeInstalacao(configurado);
-        }
-        // Sem valor no ambiente do Spring, cai na leitura própria da etapa 4, que
-        // traz a mensagem completa de como configurar.
-        return SalDeInstalacao.daConfiguracaoExterna();
+    SalResolvido salResolvido(Environment ambiente) {
+        return new ResolvedorDeSal(ArquivoDeSalLocal.doSistemaOperacional())
+                .resolver(
+                        ambiente.getProperty(PROPRIEDADE_DO_SAL),
+                        System.getenv(ResolvedorDeSal.VARIAVEL_DE_AMBIENTE));
+    }
+
+    /**
+     * O sal em si, para quem só precisa dele.
+     *
+     * <p>{@code Pseudonimizador} e {@code PseudonimizadorDeChaveComSal} não têm
+     * por que saber de onde o sal veio. A procedência interessa ao guarda de
+     * subida e ao diagnóstico, que recebem {@link SalResolvido}.</p>
+     */
+    @Bean
+    SalDeInstalacao salDeInstalacao(SalResolvido resolvido) {
+        return resolvido.sal();
     }
 
     /**
@@ -142,7 +170,11 @@ public class ConfiguracaoDaAuditoria {
             LeitorDocumentoFiscal leitor,
             NormalizadorDocumento normalizador,
             FalhasDeLeituraEmMemoria falhas) {
-        return new LeitorLote(leitor, normalizador, falhas);
+        // A CLI nao grava item_da_execucao, entao nao ha linha onde a descricao
+        // caberia. Guarda-la em memoria aqui seria acumular pelo tempo do
+        // processo um texto que ninguem le. Ver RegistroDeDescricoesDeProduto.
+        return new LeitorLote(
+                leitor, normalizador, falhas, RegistroDeDescricoesDeProduto.DESCARTA);
     }
 
     @Bean
@@ -159,6 +191,65 @@ public class ConfiguracaoDaAuditoria {
             ToleranciaDeValor tolerancia,
             Clock relogio) {
         return new ServicoDeAuditoria(fonte, provedorDeCatalogo, repositorio, motor, tolerancia, relogio);
+    }
+
+    /**
+     * Analisar é auditar mais duas coisas.
+     *
+     * <p><strong>Emenda da Etapa 11 a este arquivo, que é da Etapa 5.</strong> O
+     * {@code @Bean} acima continua idêntico e continua servindo o comando
+     * {@code auditar}: nada da CLI mudou. Este aqui é outro ponto de entrada,
+     * para a análise enviada pela web, e reusa o mesmo pipeline — ele não
+     * constrói leitor, normalizador, motor nem repositório próprios.</p>
+     *
+     * <p>Repare que ele <em>não</em> recebe {@code FonteDeLoteDeDocumentos}, e
+     * sim uma fábrica: cada análise precisa da própria, para que os arquivos
+     * ilegíveis de um lote não apareçam no resultado do seguinte. Ver
+     * {@code LeituraDeLote}.</p>
+     */
+    @Bean
+    ServicoDeAnalise servicoDeAnalise(
+            FabricaDeLeituraDeLote leituras,
+            ProvedorDeCatalogo provedorDeCatalogo,
+            RepositorioDaAuditoria repositorio,
+            MotorAuditoria motor,
+            ToleranciaDeValor tolerancia,
+            Clock relogio,
+            RegistroDoAcervoDaAnalise acervo) {
+        return new ServicoDeAnalise(
+                leituras, provedorDeCatalogo, repositorio, motor, tolerancia, relogio, acervo);
+    }
+
+    /**
+     * Reconstrói os quatro estados a partir do que foi gravado.
+     *
+     * <p>Acrescentado na Etapa 11. Não roda o motor de novo: lê apontamento,
+     * pendência e a lista de regras aplicadas, e deriva o conforme por
+     * subtração sobre conjuntos integralmente gravados.</p>
+     */
+    @Bean
+    MontadorDaConferencia montadorDaConferencia(
+            ConsultaDeExecucoes execucoes,
+            ConsultaDeItensDaExecucao itens,
+            ConsultaDeAchadosDaExecucao achados,
+            ConsultaDeNaoAvaliadas naoAvaliadas,
+            ConsultaDoAcervoDaAnalise acervo,
+            ConsultaDeDocumentos documentos,
+            ProvedorDeCatalogoPorVersao catalogos) {
+        return new MontadorDaConferencia(
+                execucoes, itens, achados, naoAvaliadas, acervo, documentos, catalogos);
+    }
+
+    /**
+     * A consulta da base tributária carregada, resolvida numa data explícita.
+     *
+     * <p>Acrescentado na Etapa 11. É o caso de uso separado que a D003 admitiu:
+     * a data vem de quem pergunta, e nunca de dentro.</p>
+     */
+    @Bean
+    ConsultaDaBaseTributaria consultaDaBaseTributaria(
+            RepositorioDeCargaDeCatalogo cargas, ProvedorDeCatalogoPorVersao catalogos) {
+        return new ConsultaDaBaseTributaria(cargas, catalogos);
     }
 
     @Bean

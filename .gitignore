@@ -16,6 +16,20 @@ dados/
 # explicita adicionada aqui, uma linha por arquivo, com justificativa.
 !pom.xml
 
+# Os esquemas .xsd NAO sao bloqueados, e isso e deliberado (03/09/2026).
+#
+# Nao sao dado fiscal: sao os esquemas publicos do leiaute da NF-e, publicados
+# pelo Portal Nacional da NF-e. O bloqueio deste arquivo existe para impedir que
+# documento de uma empresa entre no historico, e esquema nao e documento.
+#
+# Versiona-los torna o build reprodutivel: quem clona roda "mvn test" sem baixar
+# nada, e o repositorio registra contra qual versao do leiaute o TCC foi escrito.
+# Sao cinco arquivos, listados em src/main/resources/schemas/LEIAME.md.
+#
+# NAO acrescente "*.xsd" a lista de bloqueio acima sem antes ler o LEIAME.md: o
+# build passa a exigir download manual, e o avaliador que clonar o projeto nao
+# consegue compilar.
+
 # Outros formatos comuns de carga de dado fiscal / normativo
 *.csv
 *.txt.gz

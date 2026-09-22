@@ -14,43 +14,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 
-/**
- * Confronta o que o motor concluiu com o que o gabarito afirma.
- *
- * <p>É o coração do harness, e é deliberadamente uma função pura: recebe duas
- * listas, devolve contagens. Não lê arquivo, não roda motor e não escreve nada.
- * Assim as métricas podem ser conferidas à mão, com listas montadas em teste, e
- * um erro de aritmética não se esconde atrás de leitura de XML.</p>
- *
- * <h2>O gabarito manda no que é medido</h2>
- *
- * <p>A varredura é sobre as linhas do gabarito, nunca sobre as avaliações. Uma
- * avaliação que o gabarito não rotula não entra em métrica nenhuma — ninguém
- * disse qual era a resposta certa para ela —, e só é contada em
- * {@link RelatorioDeAcuracia#avaliacoesSemLinhaNoGabarito()}, para que quem lê
- * saiba que parte do acervo ficou fora da medição.</p>
- *
- * <h2>Regra citada que não existe é recusa</h2>
- *
- * <p>Um {@code regra_id} digitado errado no gabarito viraria, em silêncio,
- * dezenas de {@code SEM_AVALIACAO} — e quem lesse o relatório concluiria que o
- * acervo está desalinhado, quando o que há é um erro de digitação. A comparação
- * falha, listando as regras que o conjunto conhece.</p>
- */
+//Classe de comparação entre o gabarito rotulado a mão e as avaliações do motor de regras, gerando o relatorio de acurácia.
 public final class ComparadorDeGabarito {
 
-    /**
-     * Compara e monta o relatório.
-     *
-     * @param gabarito                 a verdade de referência
-     * @param avaliacoes               tudo o que o motor produziu, sem filtro
-     * @param regrasDoConjunto         identificadores na ordem de aplicação; cada
-     *                                 uma delas ganha linha no relatório
-     * @param versaoDoCatalogo         carga de catálogo da rodada
-     * @param versaoDoConjuntoDeRegras versão do conjunto da rodada
-     * @param documentosAuditados      documentos lidos da origem
-     * @param itensAuditados           itens somados de todos os documentos
-     */
     public RelatorioDeAcuracia comparar(
             Gabarito gabarito,
             List<Avaliacao> avaliacoes,
@@ -68,8 +34,10 @@ public final class ComparadorDeGabarito {
         }
         exigirRegrasConhecidas(gabarito, regrasDoConjunto);
 
+        // Garante a não duplicidade para que não haja aleatoriedade na medição
         Map<EnderecoDaAvaliacao, ResultadoAvaliacao> porEndereco = indexar(avaliacoes);
 
+        // Agrupa os desfechos por regra, para depois contar acertos e erros
         Map<String, List<Desfecho>> desfechosPorRegra = new LinkedHashMap<>();
         regrasDoConjunto.forEach(regraId -> desfechosPorRegra.put(regraId, new ArrayList<>()));
         List<EnderecoDaAvaliacao> semAvaliacao = new ArrayList<>();
@@ -99,15 +67,7 @@ public final class ComparadorDeGabarito {
                 porRegra,
                 semAvaliacao);
     }
-
-    /**
-     * Indexa as avaliações do motor por endereço.
-     *
-     * <p>Duas avaliações no mesmo endereço seriam a mesma regra concluindo duas
-     * coisas sobre o mesmo item. O motor não faz isso — percorre item por item,
-     * regra por regra —, mas se algum dia fizer, a medição não pode escolher uma
-     * delas em silêncio: seria o gabarito medindo um sorteio.</p>
-     */
+    // Garantir que não haja duplicidade de endereços nas avaliações do motor, para que não haja aleatoriedade na medição.
     private static Map<EnderecoDaAvaliacao, ResultadoAvaliacao> indexar(List<Avaliacao> avaliacoes) {
         Map<EnderecoDaAvaliacao, ResultadoAvaliacao> indice = new LinkedHashMap<>();
         for (Avaliacao avaliacao : avaliacoes) {
@@ -132,6 +92,7 @@ public final class ComparadorDeGabarito {
         return indice;
     }
 
+    // Conta quantas avaliações não corresponde ao gabarito
     private static int contarSemLinhaNoGabarito(List<Avaliacao> avaliacoes, Gabarito gabarito) {
         return (int) avaliacoes.stream()
                 .filter(avaliacao -> EnderecoDaAvaliacao.de(avaliacao)
@@ -139,7 +100,7 @@ public final class ComparadorDeGabarito {
                         .orElse(true))
                 .count();
     }
-
+    // Garante que o gabarito não cite regras que não estão no conjunto de regras, para evitar erros de digitação.
     private static void exigirRegrasConhecidas(Gabarito gabarito, List<String> regrasDoConjunto) {
         Set<String> desconhecidas = new TreeSet<>(gabarito.regrasCitadas());
         desconhecidas.removeAll(regrasDoConjunto);
@@ -152,7 +113,7 @@ public final class ComparadorDeGabarito {
                         + "acusaria o acervo em vez do arquivo.")
                         .formatted(String.join(", ", desconhecidas), String.join(", ", regrasDoConjunto)));
     }
-
+    // Garante que os parâmetros não sejam nulos, para evitar erros de execução.
     private static void exigir(Object valor, String oQueFalta) {
         if (valor == null) {
             throw new AvaliacaoDeAcuraciaInvalida("A comparação precisa de %s.".formatted(oQueFalta));

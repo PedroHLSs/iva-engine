@@ -2,6 +2,8 @@ package br.edu.tcc.auditoria.infraestrutura.persistencia;
 
 import br.edu.tcc.auditoria.aplicacao.auditoria.CatalogoParaAuditoria;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ProvedorDeCatalogo;
+import br.edu.tcc.auditoria.aplicacao.auditoria.ProvedorDeCatalogoPorVersao;
+import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
 import br.edu.tcc.auditoria.aplicacao.catalogo.TabelaNormativa;
 import br.edu.tcc.auditoria.dominio.catalogo.ProcedenciaNormativa;
 import br.edu.tcc.auditoria.dominio.excecao.CatalogoInvalido;
@@ -16,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -33,12 +36,25 @@ import java.util.UUID;
  * <p>O custo é aceitável porque um catálogo normativo é pequeno perto de um lote
  * de documentos, e porque ele é carregado uma vez por rodada, não uma vez por
  * documento.</p>
+ *
+ * <h2>Emenda da etapa de conferência: a segunda porta</h2>
+ *
+ * <p>Até a Etapa 10 esta classe respondia uma pergunta só — qual é o catálogo de
+ * agora —, que é a pergunta de quem vai auditar. A tela de conferência faz outra:
+ * qual era o catálogo <em>daquela</em> análise. Por isso a classe passou a
+ * implementar também {@link ProvedorDeCatalogoPorVersao}.</p>
+ *
+ * <p>A montagem é a mesma, e de propósito: fossem dois carregadores, o tratamento
+ * exibido na tela poderia divergir do que a auditoria usou por diferença de
+ * implementação, e ninguém veria. O que muda entre os dois métodos é só qual linha
+ * de {@code carga_catalogo} se busca.</p>
  */
 @Component
-class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo {
+class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalogoPorVersao {
 
     private final CargaCatalogoJpa cargas;
     private final CoberturaCatalogoJpa coberturas;
+    private final NaturezaDaCargaNoBanco naturezas;
     private final ClassificacaoTributariaJpa classificacoes;
     private final RegistroNcmJpa ncms;
     private final ItemAnexoJpa itensDeAnexo;
@@ -47,12 +63,14 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo {
     ProvedorDeCatalogoNoBanco(
             CargaCatalogoJpa cargas,
             CoberturaCatalogoJpa coberturas,
+            NaturezaDaCargaNoBanco naturezas,
             ClassificacaoTributariaJpa classificacoes,
             RegistroNcmJpa ncms,
             ItemAnexoJpa itensDeAnexo,
             AliquotaVigenteJpa aliquotas) {
         this.cargas = cargas;
         this.coberturas = coberturas;
+        this.naturezas = naturezas;
         this.classificacoes = classificacoes;
         this.ncms = ncms;
         this.itensDeAnexo = itensDeAnexo;
@@ -68,10 +86,30 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo {
                                 + "auditar: sem catálogo toda regra responderia não avaliado, e o "
                                 + "relatório teria aparência de auditoria feita."));
 
+        return montar(carga);
+    }
+
+    /**
+     * A carga daquela versão, vazio se ela não está mais gravada.
+     *
+     * <p>Não cai na mais recente quando não encontra. Cair seria mostrar, ao lado
+     * de um apontamento de março, a tabela de setembro que não o produziu.</p>
+     */
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<CatalogoParaAuditoria> daVersao(String versao) {
+        if (versao == null || versao.isBlank()) {
+            return Optional.empty();
+        }
+        return cargas.findByVersao(versao).map(this::montar);
+    }
+
+    private CatalogoParaAuditoria montar(CargaCatalogoEntidade carga) {
         UUID cargaId = carga.id();
         return new CatalogoParaAuditoria(
                 carga.versao(),
                 cobertura(cargaId, carga.versao()),
+                naturezas.porCargaId(cargaId),
                 new RepositorioClassificacaoTributariaEmMemoria(
                         classificacoes.findByCargaId(cargaId).stream()
                                 .map(MapeadorDeCatalogo::paraDominio)
