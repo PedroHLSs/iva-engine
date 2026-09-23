@@ -38,29 +38,7 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Traduz o que as portas de leitura devolvem nos DTOs de resposta.
- *
- * <h2>Não há caminho novo até o banco</h2>
- *
- * <p>Tudo aqui entra pelas portas que a Etapa 5 e a Etapa 6 já publicaram, e
- * portanto pelos mesmos adaptadores {@code ConsultaDe...NoBanco}. Nenhuma query
- * nova, nenhum repositório novo, nenhum mapeador novo: a API é uma segunda saída
- * para os mesmos dados, e não um segundo acesso a eles.</p>
- *
- * <h2>Por que o detalhe da execução passa pelo papel de trabalho</h2>
- *
- * <p>O agrupamento dos motivos de não conclusão já existe, em
- * {@link MontadorDePapelDeTrabalho}. Reimplementá-lo aqui criaria duas respostas
- * para "o que esta rodada não conseguiu julgar", com risco de divergirem — o mesmo
- * risco que a D006 recusou ao manter a resolução de vigência num lugar só. Passando
- * por ele, a planilha e o JSON da mesma execução contam a mesma coisa por
- * construção, e não por coincidência.</p>
- *
- * <p>O custo é conhecido e aceito: o detalhe carrega também os apontamentos da
- * execução, para servir contagens que o recibo já tem. Num acervo grande isso é
- * trabalho a mais numa resposta de leitura.</p>
- */
+// Classe que converte o que as consultas de leitura devolvem nas respostas da API das execuções. Não cria caminho novo até o banco, e os motivos de não avaliação são agrupados pelo mesmo montador do papel de trabalho, para a planilha e a API contarem igual.
 @Component
 class MontadorDeRespostas {
 
@@ -72,6 +50,7 @@ class MontadorDeRespostas {
     private final MontadorDePapelDeTrabalho papelDeTrabalho;
     private final PoliticaDeExposicao politica;
 
+    // Construtor que recebe as consultas de leitura, o pseudonimizador, o montador do papel de trabalho e a política de exposição.
     MontadorDeRespostas(
             ConsultaDeExecucoes execucoes,
             ConsultaDeAchadosDaExecucao achadosDaExecucao,
@@ -89,6 +68,7 @@ class MontadorDeRespostas {
         this.politica = politica;
     }
 
+    // Devolve as execuções mais recentes, resumidas.
     RespostaDeExecucoes execucoes(int limite) {
         List<ExecucaoResumida> resumidas = execucoes.ultimas(limite).stream()
                 .map(MontadorDeRespostas::resumir)
@@ -96,6 +76,7 @@ class MontadorDeRespostas {
         return RespostaDeExecucoes.de(resumidas, limite);
     }
 
+    // Devolve o detalhe de uma execução, com os três resultados e uma linha por regra; o conforme é calculado como total - achados - não avaliados.
     RespostaDaExecucao execucao(UUID id) {
         ExecucaoAuditoria execucao = exigirExecucao(id);
         PapelDeTrabalho papel = papelDeTrabalho.montar(execucao);
@@ -129,6 +110,7 @@ class MontadorDeRespostas {
                 papel.itensNaoAvaliados());
     }
 
+    // Devolve uma página dos achados de uma execução, filtrados por regra, gravidade e situação da tratativa.
     RespostaDeAchados achados(
             UUID id,
             Optional<String> regraId,
@@ -167,6 +149,7 @@ class MontadorDeRespostas {
                 daPagina.stream().map(registrado -> expor(registrado, dados)).toList());
     }
 
+    // Devolve uma página dos não avaliados de uma execução, podendo filtrar por regra.
     RespostaDeNaoAvaliados naoAvaliados(
             UUID id, Optional<String> regraId, int pagina, int tamanho) {
 
@@ -191,10 +174,12 @@ class MontadorDeRespostas {
                 daPagina.stream().map(registrada -> expor(registrada, dados)).toList());
     }
 
+    // Método auxiliar que busca a execução; recusa se ela não existir.
     private ExecucaoAuditoria exigirExecucao(UUID id) {
         return execucoes.porId(id).orElseThrow(() -> new ExecucaoNaoEncontrada(id));
     }
 
+    // Método auxiliar que converte a execução para a linha da listagem.
     private static ExecucaoResumida resumir(ExecucaoAuditoria execucao) {
         return new ExecucaoResumida(
                 execucao.id().toString(),
@@ -208,14 +193,7 @@ class MontadorDeRespostas {
                 porSeveridade(execucao));
     }
 
-    /**
-     * Contagem por severidade na ordem de declaração do enum.
-     *
-     * <p>{@code LinkedHashMap} de propósito, e sem {@code Map.copyOf}: aquele
-     * método devolve mapa sem ordem definida, e duas chamadas iguais da API
-     * responderiam com as severidades embaralhadas. É o defeito que a D007
-     * registrou no {@code ComandoAuditar}, e que não se repete aqui.</p>
-     */
+    // Método auxiliar que conta os achados por gravidade, na ordem do enum. Usa LinkedHashMap, e não Map.copyOf, para a ordem não mudar de uma chamada para outra.
     private static Map<String, Integer> porSeveridade(ExecucaoAuditoria execucao) {
         Map<String, Integer> contagem = new LinkedHashMap<>();
         for (Severidade severidade : Severidade.values()) {
@@ -224,15 +202,7 @@ class MontadorDeRespostas {
         return Collections.unmodifiableMap(contagem);
     }
 
-    /**
-     * Uma linha por regra, ordenada pelo identificador.
-     *
-     * <p>Parte das regras que a execução registrou como aplicadas, e acrescenta
-     * qualquer regra que apareça só nos motivos de não conclusão. Essa união não
-     * deveria ter efeito — as duas fontes vêm da mesma rodada —, mas se tiver, a
-     * linha extra aparece na resposta em vez de fazer a soma por regra divergir do
-     * total e derrubar o pedido.</p>
-     */
+    // Método auxiliar que monta uma linha por regra, ordenada pelo código. Junta as regras aplicadas com as que aparecem só nos motivos, para a soma por regra não divergir do total.
     private static List<RespostaDaExecucao.PorRegra> porRegra(
             ExecucaoAuditoria execucao, List<MotivoAgrupado> motivos) {
 
@@ -267,6 +237,7 @@ class MontadorDeRespostas {
                 .toList();
     }
 
+    // Método auxiliar que converte um achado gravado para a resposta.
     private AchadoExposto expor(
             AchadoRegistrado registrado, Map<ChaveAcesso, DadosDoDocumento> dados) {
 
@@ -300,6 +271,7 @@ class MontadorDeRespostas {
                 registrado.tratativa().map(this::expor).orElse(null));
     }
 
+    // Método auxiliar que converte a tratativa, respeitando a política de exposição da justificativa.
     private AchadoExposto.TratativaExposta expor(Tratativa tratativa) {
         return new AchadoExposto.TratativaExposta(
                 tratativa.decisao().name(),
@@ -308,6 +280,7 @@ class MontadorDeRespostas {
                 politica.motivoDaJustificativaOmitida());
     }
 
+    // Método auxiliar que converte uma evidência para a resposta.
     private static AchadoExposto.EvidenciaExposta expor(Evidencia evidencia) {
         return new AchadoExposto.EvidenciaExposta(
                 evidencia.campoAnalisado(),
@@ -316,6 +289,7 @@ class MontadorDeRespostas {
                 expor(evidencia.origem()));
     }
 
+    // Método auxiliar que converte a origem da evidência, de acordo com o tipo.
     private static AchadoExposto.OrigemExposta expor(OrigemEvidencia origem) {
         return switch (origem) {
             case OrigemEvidencia.DoDocumento doDocumento -> new AchadoExposto.OrigemExposta(
@@ -327,6 +301,7 @@ class MontadorDeRespostas {
         };
     }
 
+    // Método auxiliar que converte uma avaliação não concluída para a resposta.
     private NaoAvaliadaExposta expor(
             NaoAvaliadaRegistrada registrada, Map<ChaveAcesso, DadosDoDocumento> dados) {
 
@@ -342,6 +317,7 @@ class MontadorDeRespostas {
                 registrada.motivo());
     }
 
+    // Método auxiliar que monta o documento da resposta, com o pseudônimo, e com a chave só se a política deixar.
     private DocumentoExposto documentoDe(
             ChaveAcesso chaveAcesso, Map<ChaveAcesso, DadosDoDocumento> dados) {
 
@@ -363,17 +339,9 @@ class MontadorDeRespostas {
                 documento.ufEmitente().name());
     }
 
-    /**
-     * Recorta a página pedida de uma lista já ordenada.
-     *
-     * <p>O filtro e o recorte acontecem em memória, sobre o que a porta da Etapa 6
-     * devolve — e não numa consulta nova ao banco. É o que mantém a promessa de não
-     * haver segundo caminho de acesso a dados, e o preço é carregar os apontamentos
-     * da execução para servir uma página deles.</p>
-     */
+    // Método auxiliar que corta a página pedida de uma lista já ordenada, em memória, sem consulta nova ao banco.
     private static <T> List<T> recortar(List<T> todos, int pagina, int tamanho) {
-        // Em long: uma página muito alta multiplicada pelo tamanho estoura int, e
-        // um índice negativo viraria IndexOutOfBounds em vez de página vazia.
+        // Em long, porque página alta vezes tamanho estoura int e daria erro em vez de página vazia.
         long primeiro = (long) pagina * tamanho;
         if (primeiro >= todos.size()) {
             return List.of();

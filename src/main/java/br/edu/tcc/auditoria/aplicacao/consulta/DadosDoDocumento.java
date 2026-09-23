@@ -5,15 +5,7 @@ import br.edu.tcc.auditoria.dominio.Uf;
 
 import java.time.LocalDate;
 
-/**
- * O que identifica um documento auditado sem identificar ninguém.
- *
- * <p>Modelo, série e número são a numeração do próprio emitente; a data e a UF
- * situam a operação. Nenhum deles é dado de participante, e juntos permitem
- * localizar a nota no sistema da empresa sem que o CNPJ apareça em lugar
- * nenhum — que é o ponto de existir este tipo em vez de expor a chave de
- * acesso, cujos dígitos carregam o CNPJ do emitente.</p>
- */
+// Representa os dados que identificam um documento auditado sem identificar ninguém: modelo, série, número, data e UF, no lugar da chave de acesso.
 public record DadosDoDocumento(
         ChaveAcesso chaveAcesso,
         String modelo,
@@ -22,6 +14,7 @@ public record DadosDoDocumento(
         LocalDate dataEmissao,
         Uf ufEmitente) {
 
+    // Valida que os dados do documento tenham chave de acesso, data de emissão e UF do emitente.
     public DadosDoDocumento {
         if (chaveAcesso == null) {
             throw new ConsultaInvalida("Os dados do documento precisam da chave de acesso.");

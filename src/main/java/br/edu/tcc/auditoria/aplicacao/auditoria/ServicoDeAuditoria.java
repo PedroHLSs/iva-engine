@@ -17,33 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Caso de uso central: auditar um lote de documentos e gravar o resultado.
- *
- * <p>A sequência é fixa e cada passo existe por um motivo:</p>
- *
- * <ol>
- *   <li><strong>Ler a origem</strong> — diretório ou ZIP — obtendo documentos de
- *       domínio já normalizados e pseudonimizados, mais o resumo do conjunto de
- *       arquivos que entrou.</li>
- *   <li><strong>Carregar o catálogo</strong> gravado, com a cobertura que a carga
- *       declarou.</li>
- *   <li><strong>Montar o conjunto de regras</strong> com essa cobertura e com a
- *       tolerância de valor configurada. A cobertura entra aqui porque é ela que
- *       decide se o silêncio do catálogo vira apontamento ou vira não
- *       avaliado.</li>
- *   <li><strong>Rodar o motor</strong>, que monta o contexto normativo de cada
- *       documento na data de emissão <em>daquele</em> documento.</li>
- *   <li><strong>Localizar cada apontamento</strong> no item que o originou, para
- *       calcular o resumo que liga o apontamento à sua tratativa.</li>
- *   <li><strong>Gravar</strong> documentos, itens, apontamentos e o recibo da
- *       execução, numa só operação.</li>
- * </ol>
- *
- * <p>Este serviço não filtra nada e não decide nada sobre os apontamentos. Ele
- * também não aplica tratativa: tratativa é decisão humana registrada depois, e
- * consultá-la é assunto de quem lista apontamentos.</p>
- */
+// Serviço que audita um lote de documentos, usando o motor de auditoria e registrando os resultados.
 public final class ServicoDeAuditoria {
 
     private final FonteDeLoteDeDocumentos fonte;
@@ -53,6 +27,7 @@ public final class ServicoDeAuditoria {
     private final ToleranciaDeValor tolerancia;
     private final Clock relogio;
 
+    // Construtor do serviço de auditoria, que recebe as dependências necessárias para realizar a auditoria.
     public ServicoDeAuditoria(
             FonteDeLoteDeDocumentos fonte,
             ProvedorDeCatalogo provedorDeCatalogo,
@@ -69,7 +44,7 @@ public final class ServicoDeAuditoria {
         this.relogio = exigir(relogio, "o relógio");
     }
 
-    /** Audita tudo o que houver na origem indicada e grava o resultado. */
+    // Audita um lote de documentos a partir de uma origem, registrando os resultados e arquivos ilegíveis.
     public ResultadoDaAuditoria auditar(Path origem) {
         if (origem == null) {
             throw new AuditoriaInvalida("Não há origem de documentos a auditar.");
@@ -108,15 +83,7 @@ public final class ServicoDeAuditoria {
         repositorio.persistir(resultado);
         return resultado;
     }
-
-    /**
-     * Recolhe as avaliações que não concluíram, com o motivo de cada uma.
-     *
-     * <p>Os motivos vão para o papel de trabalho. Guardar só a contagem faria o
-     * relatório dizer "trinta não avaliadas" sem dizer se faltou campo no
-     * documento ou tabela no catálogo — que são problemas de quem lê o relatório
-     * e de quem carrega o catálogo, respectivamente.</p>
-     */
+    // Método auxiliar para filtrar avaliações que não foram concluídas, retornando uma lista de avaliações não avaliadas.
     private static List<Avaliacao.NaoAvaliada> naoConcluidas(List<Avaliacao> avaliacoes) {
         return avaliacoes.stream()
                 .filter(avaliacao -> avaliacao.resultado() == ResultadoAvaliacao.NAO_AVALIADO)
@@ -124,14 +91,7 @@ public final class ServicoDeAuditoria {
                 .toList();
     }
 
-    /**
-     * Liga cada apontamento ao item que o originou e calcula o resumo do item.
-     *
-     * <p>O motor devolve as avaliações numa lista plana, identificadas por chave
-     * de acesso e número de item. O índice abaixo reencontra o item para que o
-     * resumo seja calculado sobre o conteúdo declarado, e não sobre o que o
-     * apontamento por acaso citou.</p>
-     */
+    // Método auxiliar para localizar achados em avaliações, associando cada achado ao seu item correspondente no lote de documentos.
     private static List<AchadoLocalizado> localizar(List<Avaliacao> avaliacoes, LoteDeDocumentos lote) {
         Map<String, ItemDocumento> itensPorChaveEItem = indexar(lote);
         List<AchadoLocalizado> achados = new ArrayList<>();
@@ -145,10 +105,7 @@ public final class ServicoDeAuditoria {
                             .formatted(avaliacao.regraId())));
 
             if (achado.numeroItem().isEmpty()) {
-                // Nenhuma regra do conjunto atual aponta sobre o documento inteiro:
-                // o motor percorre itens. Se isso mudar, a gravação precisa de uma
-                // identidade própria para apontamento de documento, e a falha aqui
-                // é explícita em vez de virar violação de restrição no banco.
+                // A regra apontou sobre o documento inteiro, sem item. Isso não é permitido, pois a gravação de apontamento ainda não existe para documentos inteiros.
                 throw new AuditoriaInvalida(
                         ("A regra %s apontou sobre o documento %s inteiro, sem item. A gravação de "
                                 + "apontamento de documento ainda não existe: hoje a identidade do "
@@ -167,7 +124,7 @@ public final class ServicoDeAuditoria {
         }
         return List.copyOf(achados);
     }
-
+    // Método auxiliar para criar um índice de itens de documento a partir do lote de documentos, usando uma chave composta pela chave de acesso do documento e o número do item.
     private static Map<String, ItemDocumento> indexar(LoteDeDocumentos lote) {
         Map<String, ItemDocumento> indice = new LinkedHashMap<>();
         for (DocumentoComItens documento : lote.documentos()) {

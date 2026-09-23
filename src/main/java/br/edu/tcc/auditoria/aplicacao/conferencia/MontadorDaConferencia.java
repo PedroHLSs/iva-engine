@@ -24,33 +24,7 @@ import java.util.Optional;
 import java.util.TreeSet;
 import java.util.UUID;
 
-/**
- * Reconstrói, a partir do que foi gravado, os quatro estados de cada produto.
- *
- * <h2>O conforme é derivado, e a derivação é exata</h2>
- *
- * <p>O banco não guarda avaliação conforme (D009). Guarda apontamento e
- * avaliação não concluída, ambos endereçados por documento, item e regra; e a
- * execução registra <strong>todas</strong> as regras aplicadas, inclusive as que
- * não apontaram nada.</p>
- *
- * <p>Como o motor produz exatamente uma avaliação por par (item, regra), a
- * conta fecha por construção: as regras da execução, menos as que deixaram
- * apontamento para este item, menos as que deixaram pendência, são exatamente as
- * que concluíram sem encontrar violação. Não é estimativa — é subtração sobre
- * conjuntos integralmente gravados, e o motivo vai escrito em cada verificação
- * derivada.</p>
- *
- * <p>O que a derivação <em>não</em> recupera é a versão da regra, que só existe
- * nas linhas gravadas. Ver {@link VersaoDaRegra}.</p>
- *
- * <h2>Um produto sem nenhuma verificação não existe</h2>
- *
- * <p>Se a execução não registrou regra nenhuma, cada item ficaria sem
- * verificações, e {@link SituacaoDoProduto} recusa. É o comportamento certo:
- * item sem verificação não tem situação, e inventar uma seria a apresentação
- * afirmando auditoria que não houve.</p>
- */
+// Classe que reconstrói, a partir do que foi gravado, os quatro estados de cada produto; o sem divergência é derivado por subtração.
 public final class MontadorDaConferencia {
 
     private final ConsultaDeExecucoes execucoes;
@@ -61,6 +35,7 @@ public final class MontadorDaConferencia {
     private final ConsultaDeDocumentos documentos;
     private final ProvedorDeCatalogoPorVersao catalogos;
 
+    // Construtor do montador, que recebe as consultas de leitura e o provedor de catálogo por versão.
     public MontadorDaConferencia(
             ConsultaDeExecucoes execucoes,
             ConsultaDeItensDaExecucao itens,
@@ -79,7 +54,7 @@ public final class MontadorDaConferencia {
         this.catalogos = exigir(catalogos, "o provedor de catálogo por versão");
     }
 
-    /** A análise inteira, ou vazio se ela não existe. */
+    // Retorna a conferência da análise inteira, ou vazio se ela não existe.
     public Optional<ConferenciaDaAnalise> daExecucao(UUID execucaoId) {
         if (execucaoId == null) {
             throw new ConferenciaInvalida("Não há análise a montar.");
@@ -87,19 +62,7 @@ public final class MontadorDaConferencia {
         return execucoes.porId(execucaoId).map(this::montar);
     }
 
-    /**
-     * O detalhe de um produto, ou vazio se a análise ou o produto não existem.
-     *
-     * <p>Monta a conferência inteira para depois achar um produto nela, e isso é
-     * deliberado: é a mesma montagem que produziu a situação exibida na lista, de
-     * modo que as duas telas não têm como discordar. Um caminho curto, que fosse
-     * direto ao item, seria um segundo cálculo da mesma coisa — e o dia em que os
-     * dois divergissem, quem estaria certo?</p>
-     *
-     * <p>O tratamento é resolvido contra a carga que <strong>esta</strong> execução
-     * registrou, na data de emissão <strong>deste</strong> documento. Ver
-     * {@link ProvedorDeCatalogoPorVersao}.</p>
-     */
+    // Retorna o detalhe de um produto, montado a partir da mesma conferência da lista e resolvido na carga e na data daquela análise.
     public Optional<DetalheDoProduto> detalhe(UUID execucaoId, String endereco) {
         if (endereco == null || endereco.isBlank()) {
             throw new ConferenciaInvalida("Não há endereço de produto a detalhar.");
@@ -129,6 +92,7 @@ public final class MontadorDaConferencia {
                 PassoDaConferencia.de(produto)));
     }
 
+    // Método auxiliar que busca o documento do produto, necessário para a data de emissão.
     private DadosDoDocumento documentoDe(ProdutoConferido produto) {
         ChaveAcesso chave = produto.dados().chaveAcesso();
         DadosDoDocumento documento = documentos.porChaves(List.of(chave)).get(chave);
@@ -142,6 +106,7 @@ public final class MontadorDaConferencia {
         return documento;
     }
 
+    // Método auxiliar que monta a conferência, agrupando apontamentos e pendências por item.
     private ConferenciaDaAnalise montar(ExecucaoAuditoria execucao) {
         UUID id = execucao.id();
 
@@ -178,9 +143,7 @@ public final class MontadorDaConferencia {
                 acervo.arquivosIlegiveis(id));
     }
 
-    /**
-     * As verificações de um item: as gravadas, mais as derivadas por subtração.
-     */
+    // Método auxiliar que monta as verificações de um item: as gravadas, mais as derivadas por subtração.
     private static SituacaoDoProduto situacaoDe(
             ExecucaoAuditoria execucao,
             List<AchadoRegistrado> doItem,
@@ -204,8 +167,7 @@ public final class MontadorDaConferencia {
                     TraducaoDeDesfecho.de(ResultadoAvaliacao.NAO_AVALIADO, Optional.empty())));
         }
 
-        // Ordenado para que a derivação saia sempre na mesma sequência, e com
-        // TreeSet porque o que interessa é o conjunto, não a ordem de chegada.
+        // Percorre as regras num TreeSet para que a derivação saia sempre na mesma sequência.
         for (String regraId : new TreeSet<>(execucao.achadosPorRegra().keySet())) {
             if (jaTemVerificacao(verificacoes, regraId)) {
                 continue;
@@ -219,10 +181,12 @@ public final class MontadorDaConferencia {
         return new SituacaoDoProduto(verificacoes);
     }
 
+    // Método auxiliar que verifica se a regra já tem verificação neste item.
     private static boolean jaTemVerificacao(List<VerificacaoDoProduto> verificacoes, String regraId) {
         return verificacoes.stream().anyMatch(verificacao -> verificacao.regraId().equals(regraId));
     }
 
+    // Método auxiliar que escreve por que a versão da regra não está registrada no resultado derivado.
     private static String motivoDaVersaoAusente(String regraId) {
         return ("A regra %s foi aplicada nesta execução e não deixou apontamento nem avaliação não "
                 + "concluída para este item, então ela concluiu sem encontrar violação. O banco não "
@@ -231,10 +195,12 @@ public final class MontadorDaConferencia {
                 + "código de hoje ainda montar aquele conjunto.").formatted(regraId);
     }
 
+    // Método auxiliar que monta o endereço interno do item, pela chave de acesso e o número do item.
     private static String endereco(String chaveAcesso, int numeroItem) {
         return chaveAcesso + "#" + numeroItem;
     }
 
+    // Método auxiliar para verificar se um valor é nulo e lançar uma exceção com uma mensagem apropriada.
     private static <T> T exigir(T valor, String oQueFalta) {
         if (valor == null) {
             throw new ConferenciaInvalida("O montador da conferência precisa de %s.".formatted(oQueFalta));

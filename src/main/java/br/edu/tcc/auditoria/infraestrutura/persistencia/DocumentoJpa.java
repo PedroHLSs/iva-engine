@@ -2,6 +2,6 @@ package br.edu.tcc.auditoria.infraestrutura.persistencia;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 
-/** Acesso aos documentos auditados, chaveados pela chave de acesso. */
+// Repositório utilizado para acessar os documentos auditados, pela chave de acesso.
 interface DocumentoJpa extends JpaRepository<DocumentoEntidade, String> {
 }

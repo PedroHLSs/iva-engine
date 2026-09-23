@@ -1,8 +1,8 @@
 package br.edu.tcc.auditoria.dominio.excecao;
 
-/** Sinaliza tentativa de construir um documento sem os dados que o identificam. */
 public class DocumentoInvalido extends ExcecaoDeDominio {
 
+    // Construtor que recebe a mensagem de erro e chama RuntimeException com essa mensagem.
     public DocumentoInvalido(String mensagem) {
         super(mensagem);
     }

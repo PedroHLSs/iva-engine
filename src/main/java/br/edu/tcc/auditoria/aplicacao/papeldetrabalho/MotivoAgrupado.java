@@ -1,16 +1,9 @@
 package br.edu.tcc.auditoria.aplicacao.papeldetrabalho;
 
-/**
- * Um motivo de não avaliação e quantas vezes ele apareceu, numa regra.
- *
- * <p>Agrupado por regra e por texto do motivo. É o que transforma "quatro mil
- * não avaliadas" em algo acionável: quase sempre são poucos motivos distintos
- * repetidos muitas vezes, e cada um aponta para um dono — falta de campo no
- * documento é problema de quem emite, falta de tabela no catálogo é de quem
- * importa.</p>
- */
+// Representa um motivo de não avaliação e quantas vezes ele apareceu numa regra, para mostrar a quem cabe resolver.
 public record MotivoAgrupado(String regraId, String motivo, int quantidade) {
 
+    // Valida que o motivo agrupado tenha regra, texto e quantidade de ao menos 1.
     public MotivoAgrupado {
         if (regraId == null || regraId.isBlank()) {
             throw new PapelDeTrabalhoInvalido("O motivo agrupado precisa dizer de que regra veio.");

@@ -1,41 +1,15 @@
 package br.edu.tcc.auditoria.infraestrutura.sal;
 
-/**
- * O que no banco depende do sal, e portanto deixa de fazer sentido quando ele
- * muda.
- *
- * <h2>O que é salgado, e o que não é</h2>
- *
- * <p>Salgado é o documento: {@code emitente_pseudonimizado} e
- * {@code destinatario_pseudonimizado} saem do sal. As execuções e os
- * apontamentos vão junto por dependerem dos documentos, não por serem salgados.</p>
- *
- * <p><strong>Tratativa não é salgada e não é apagada.</strong> A chave dela é
- * {@code (hash do item, regra, versão da regra)}, e o hash do item não leva sal —
- * é identidade reproduzível entre instalações, não sigilo. Uma decisão humana
- * registrada continua válida depois da troca de sal, e se reaplica sozinha
- * quando o mesmo lote for reprocessado. Apagá-la aqui destruiria trabalho de
- * auditoria que o problema do sal nunca tocou.</p>
- */
+// Interface que representa o que no banco depende do sal: os documentos, e com eles as execuções e os apontamentos. A tratativa não leva sal e nunca é apagada, porque a chave dela é o hash do item, que não usa sal.
 public interface AcervoSalgado {
 
-    /**
-     * Quantos documentos existem.
-     *
-     * <p>É a medida de "o banco já tem dados" que interessa ao guarda. Catálogo
-     * importado não entra: ele não tem sal nenhum, e travar a subida por causa
-     * dele seria recusar por um motivo que não existe.</p>
-     */
+    // Retorna quantos documentos existem; é o que diz se o banco já tem dados. O catálogo não conta, porque não tem sal.
     long quantidadeDeDocumentos();
 
-    /**
-     * Apaga documentos, itens, execuções e apontamentos, preservando tratativas.
-     *
-     * @return o que foi apagado, para o comando poder dizer o que fez
-     */
+    // Apaga documentos, itens, execuções e apontamentos, e preserva as tratativas; devolve o que foi apagado.
     Apagamento apagar();
 
-    /** O que o apagamento removeu, e o que deliberadamente não removeu. */
+    // Representa o que o apagamento removeu e quantas tratativas ficaram.
     record Apagamento(long documentos, long execucoes, long tratativasPreservadas) {
     }
 }

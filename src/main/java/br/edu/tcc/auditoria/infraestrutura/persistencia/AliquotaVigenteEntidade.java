@@ -13,16 +13,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/**
- * Percentual importado para um tributo numa abrangência e numa vigência.
- *
- * <p>O percentual é {@code numeric} sem precisão declarada: a escala com que o
- * valor foi importado é preservada. Nenhum percentual está escrito em código,
- * aqui ou em qualquer outro lugar do sistema.</p>
- *
- * <p>{@code tributo} é gravado pelo nome da constante, e não pelo ordinal:
- * reordenar o enum não pode reescrever o significado de linha já gravada.</p>
- */
+// Representa um percentual importado para um tributo, numa abrangência e num período. O percentual mantém as casas decimais da importação, e o tributo é gravado pelo nome, e não pela posição no enum, para reordenar o enum não mudar linha gravada.
 @Entity
 @Table(name = "aliquota_vigente")
 class AliquotaVigenteEntidade {
@@ -53,10 +44,11 @@ class AliquotaVigenteEntidade {
     @Column(name = "fonte_normativa", nullable = false)
     private String fonteNormativa;
 
+    // Construtor vazio exigido pelo JPA.
     protected AliquotaVigenteEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe todos os campos da linha.
     AliquotaVigenteEntidade(
             UUID id,
             UUID cargaId,

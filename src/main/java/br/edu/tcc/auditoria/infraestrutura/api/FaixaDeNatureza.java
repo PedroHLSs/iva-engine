@@ -7,23 +7,7 @@ import br.edu.tcc.auditoria.aplicacao.catalogo.SituacaoDaNatureza;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * A faixa que diz de onde veio o que a tela está mostrando.
- *
- * <h2>Vai em toda resposta de resultado, e não só onde o catálogo aparece</h2>
- *
- * <p>A situação de um produto foi produzida contra uma carga. Se a carga era de
- * demonstração, a situação é de demonstração — mesmo que a tela de lista não
- * mostre uma linha sequer do catálogo. Pôr a faixa só na tela que exibe a tabela
- * deixaria de fora justamente as telas que as pessoas mais olham.</p>
- *
- * <h2>Lista quais tabelas, e não só que há mistura</h2>
- *
- * <p>No caso parcialmente fictício, {@code tabelasFicticias} nomeia as tabelas de
- * demonstração. É o que permite a quem lê saber em que parte da tela pode
- * confiar — um aviso genérico de "há dado fictício aqui" desqualifica a tela
- * inteira e não ajuda a usar a parte boa.</p>
- */
+// Representa a faixa que diz de onde veio o catálogo usado: dado de demonstração ou normativo. Vai em toda resposta de resultado, e no caso misto lista quais tabelas são de demonstração.
 public record FaixaDeNatureza(
         String situacao,
         String rotulo,
@@ -33,6 +17,7 @@ public record FaixaDeNatureza(
         List<TabelaExposta> porTabela,
         List<String> tabelasFicticias) {
 
+    // Valida que a faixa tenha código, rótulo, explicação e versão do catálogo, e que as listas não venham nulas.
     public FaixaDeNatureza {
         if (situacao == null || situacao.isBlank()
                 || rotulo == null || rotulo.isBlank()
@@ -52,6 +37,7 @@ public record FaixaDeNatureza(
         tabelasFicticias = List.copyOf(tabelasFicticias);
     }
 
+    // Método estático que monta a faixa a partir da procedência da carga.
     static FaixaDeNatureza de(NaturezaDaCarga natureza, String versaoDoCatalogo) {
         SituacaoDaNatureza situacao = natureza.situacao();
 
@@ -69,9 +55,10 @@ public record FaixaDeNatureza(
                 natureza.tabelasFicticias());
     }
 
-    /** Uma tabela da carga e a procedência declarada dela. */
+    // Representa uma tabela da carga e a procedência que ela declarou.
     public record TabelaExposta(String tabela, String natureza, String rotulo) {
 
+        // Valida que a tabela tenha nome, procedência e rótulo.
         public TabelaExposta {
             if (tabela == null || tabela.isBlank()) {
                 throw new RespostaInvalida("A linha da faixa precisa dizer de que tabela ela é.");

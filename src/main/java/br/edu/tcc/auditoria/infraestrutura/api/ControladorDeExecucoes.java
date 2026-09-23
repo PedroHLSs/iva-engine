@@ -8,28 +8,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-/**
- * As execuções gravadas: a listagem e o detalhe de uma.
- *
- * <h2>Só GET</h2>
- *
- * <p>Não há endpoint que dispare auditoria, importe catálogo ou registre
- * tratativa, e isso não é uma etapa faltando: é a decisão D009. Auditar tem
- * efeito colateral gravado e demora minutos; importar catálogo decide o que o
- * sistema vai afirmar sobre a norma; tratar achado é ato de uma pessoa
- * identificada. Nenhum dos três cabe atrás de uma porta sem autenticação, e a
- * autenticação está fora do escopo desta etapa. Quem escreve é a CLI.</p>
- */
+// Controlador que responde, só por GET, a lista das execuções gravadas e o detalhe de uma. Importar catálogo e tratar achado continuam só na linha de comando.
 @RestController
 @RequestMapping("/api/execucoes")
 class ControladorDeExecucoes {
 
     private final MontadorDeRespostas respostas;
 
+    // Construtor que recebe o montador de respostas.
     ControladorDeExecucoes(MontadorDeRespostas respostas) {
         this.respostas = respostas;
     }
 
+    // Lista as execuções mais recentes; recusa limite menor que 1 ou maior que o máximo.
     @GetMapping
     RespostaDeExecucoes listar(
             @RequestParam(defaultValue = "" + RespostaDeExecucoes.LIMITE_PADRAO) int limite) {
@@ -46,6 +37,7 @@ class ControladorDeExecucoes {
         return respostas.execucoes(limite);
     }
 
+    // Devolve o detalhe de uma execução pelo identificador.
     @GetMapping("/{id}")
     RespostaDaExecucao detalhar(@PathVariable UUID id) {
         return respostas.execucao(id);

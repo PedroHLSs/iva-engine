@@ -18,23 +18,14 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Tradução entre os registros do catálogo no domínio e as linhas gravadas.
- *
- * <p>Existe porque o domínio não tem anotação de JPA e não vai ter (D001).
- * O preço é este arquivo; o retorno é que trocar de banco, de ORM ou de esquema
- * não toca em nenhuma regra de negócio.</p>
- *
- * <p>A tradução é literal: nada é convertido, arredondado, normalizado ou
- * completado no caminho. Um percentual gravado com três casas volta com três
- * casas, e vigência sem fim volta como {@code Optional.empty()}, nunca como uma
- * data escolhida por conveniência.</p>
- */
+// Classe que converte os registros do catálogo entre o domínio e as linhas gravadas, porque o domínio não tem anotação de JPA. A conversão é literal: nada é arredondado nem completado, e vigência sem fim volta como Optional vazio.
 final class MapeadorDeCatalogo {
 
+    // Construtor privado: ninguém cria objeto desta classe, só usa os métodos estáticos.
     private MapeadorDeCatalogo() {
     }
 
+    // Método estático que converte uma classificação tributária para gravar.
     static ClassificacaoTributariaEntidade paraEntidade(ClassificacaoTributaria registro, UUID cargaId) {
         Set<String> csts = new LinkedHashSet<>();
         registro.cstsCompativeis().forEach(cst -> csts.add(cst.valor()));
@@ -53,6 +44,7 @@ final class MapeadorDeCatalogo {
                 registro.camposObrigatoriosCondicionados());
     }
 
+    // Método estático que remonta a classificação tributária do domínio.
     static ClassificacaoTributaria paraDominio(ClassificacaoTributariaEntidade entidade) {
         Set<CodigoCst> csts = new LinkedHashSet<>();
         entidade.cstsCompativeis().forEach(cst -> csts.add(new CodigoCst(cst)));
@@ -67,6 +59,7 @@ final class MapeadorDeCatalogo {
                 procedencia(entidade.vigenciaInicio(), entidade.vigenciaFim(), entidade.fonteNormativa()));
     }
 
+    // Método estático que converte um registro de NCM para gravar.
     static RegistroNcmEntidade paraEntidade(RegistroNcm registro, UUID cargaId) {
         return new RegistroNcmEntidade(
                 UUID.randomUUID(),
@@ -78,6 +71,7 @@ final class MapeadorDeCatalogo {
                 registro.fonteNormativa());
     }
 
+    // Método estático que remonta o registro de NCM do domínio.
     static RegistroNcm paraDominio(RegistroNcmEntidade entidade) {
         return new RegistroNcm(
                 new Ncm(entidade.ncm()),
@@ -85,6 +79,7 @@ final class MapeadorDeCatalogo {
                 procedencia(entidade.vigenciaInicio(), entidade.vigenciaFim(), entidade.fonteNormativa()));
     }
 
+    // Método estático que converte um vínculo de NCM e anexo para gravar.
     static ItemAnexoEntidade paraEntidade(ItemAnexo registro, UUID cargaId) {
         return new ItemAnexoEntidade(
                 UUID.randomUUID(),
@@ -97,6 +92,7 @@ final class MapeadorDeCatalogo {
                 registro.fonteNormativa());
     }
 
+    // Método estático que remonta o vínculo de NCM e anexo do domínio.
     static ItemAnexo paraDominio(ItemAnexoEntidade entidade) {
         return new ItemAnexo(
                 new Ncm(entidade.ncm()),
@@ -105,6 +101,7 @@ final class MapeadorDeCatalogo {
                 procedencia(entidade.vigenciaInicio(), entidade.vigenciaFim(), entidade.fonteNormativa()));
     }
 
+    // Método estático que converte uma alíquota para gravar.
     static AliquotaVigenteEntidade paraEntidade(AliquotaVigente registro, UUID cargaId) {
         return new AliquotaVigenteEntidade(
                 UUID.randomUUID(),
@@ -117,6 +114,7 @@ final class MapeadorDeCatalogo {
                 registro.fonteNormativa());
     }
 
+    // Método estático que remonta a alíquota do domínio.
     static AliquotaVigente paraDominio(AliquotaVigenteEntidade entidade) {
         return new AliquotaVigente(
                 entidade.tributo(),
@@ -125,6 +123,7 @@ final class MapeadorDeCatalogo {
                 procedencia(entidade.vigenciaInicio(), entidade.vigenciaFim(), entidade.fonteNormativa()));
     }
 
+    // Método estático que monta a procedência com o período e a fonte.
     static ProcedenciaNormativa procedencia(LocalDate inicio, LocalDate fim, String fonteNormativa) {
         return new ProcedenciaNormativa(
                 new PeriodoVigencia(inicio, Optional.ofNullable(fim)), fonteNormativa);

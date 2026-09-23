@@ -13,34 +13,16 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Supplier;
 
-/**
- * Uma linha de dados de um CSV, com acesso por nome de coluna.
- *
- * <p>Guarda o número da linha física no arquivo — contando comentários e linhas
- * em branco — para que toda recusa possa apontar onde corrigir.</p>
- *
- * <p>A distinção entre coluna ausente e valor vazio é intencional e vale as duas
- * como erros diferentes: coluna que não existe no cabeçalho é arquivo errado,
- * e falha sempre; valor em branco é ausência de dado, e vira
- * {@code Optional.empty()} — quem exigir o dado chama a variante obrigatória.</p>
- *
- * @param numero   linha física no arquivo, começando em 1
- * @param valores  valores por nome de coluna, já sem aspas
- * @param recusa   como nomear a falha quando o valor lido não servir; vem de
- *                 quem abriu o arquivo, porque só ele sabe de que assunto ele é
- */
+// Representa uma linha de dados do CSV, com acesso pelo nome da coluna e o número da linha no arquivo, para o erro dizer onde corrigir. Coluna que não existe no cabeçalho é erro sempre; valor em branco vira Optional vazio.
 public record LinhaCsv(int numero, Map<String, String> valores, RecusaDeCsv recusa) {
 
     private static final String SEPARADOR_DE_LISTA = "|";
 
-    /*
-     * Estrito de propósito: no modo padrão do java.time, "31/02/1900" viraria
-     * 28/02/1900 sem aviso, e uma vigência errada resolve o documento contra o
-     * registro errado. Ano com quatro dígitos, dia e mês com dois.
-     */
+    // Formato dd/mm/aaaa estrito: sem ele, 31/02/1900 viraria 28/02/1900 sem aviso.
     private static final DateTimeFormatter DIA_MES_ANO =
             DateTimeFormatter.ofPattern("dd/MM/uuuu").withResolverStyle(ResolverStyle.STRICT);
 
+    // Valida que haja a forma de recusar e guarda uma cópia dos valores.
     public LinhaCsv {
         if (recusa == null) {
             throw new IllegalArgumentException(
@@ -49,7 +31,7 @@ public record LinhaCsv(int numero, Map<String, String> valores, RecusaDeCsv recu
         valores = Map.copyOf(valores);
     }
 
-    /** Valor da coluna, vazio quando o campo veio em branco. */
+    // Devolve o valor da coluna, ou vazio quando veio em branco; recusa se a coluna não existe.
     public Optional<String> texto(String coluna) {
         if (!valores.containsKey(coluna)) {
             throw recusa.de(
@@ -60,21 +42,23 @@ public record LinhaCsv(int numero, Map<String, String> valores, RecusaDeCsv recu
         return valor == null || valor.isBlank() ? Optional.empty() : Optional.of(valor.strip());
     }
 
-    /** Valor da coluna, recusando a linha quando o campo veio em branco. */
+    // Devolve o valor da coluna; recusa a linha quando veio em branco.
     public String textoObrigatorio(String coluna) {
         return texto(coluna).orElseThrow(() -> recusa.de(
                 "Linha %d: a coluna \"%s\" é obrigatória e veio em branco.".formatted(numero, coluna)));
     }
 
+    // Devolve a data da coluna, ou vazio quando veio em branco.
     public Optional<LocalDate> data(String coluna) {
         return texto(coluna).map(valor -> converterData(coluna, valor));
     }
 
+    // Devolve a data da coluna; recusa a linha quando veio em branco.
     public LocalDate dataObrigatoria(String coluna) {
         return converterData(coluna, textoObrigatorio(coluna));
     }
 
-    /** Decimal aceitando vírgula ou ponto como separador. */
+    // Devolve o número decimal da coluna, aceitando vírgula ou ponto, ou vazio quando veio em branco.
     public Optional<BigDecimal> decimal(String coluna) {
         return texto(coluna).map(valor -> {
             try {
@@ -87,7 +71,7 @@ public record LinhaCsv(int numero, Map<String, String> valores, RecusaDeCsv recu
         });
     }
 
-    /** Inteiro da coluna, recusando a linha quando o campo veio em branco ou não for número. */
+    // Devolve o número inteiro da coluna; recusa a linha quando veio em branco ou não é número.
     public int inteiroObrigatorio(String coluna) {
         String valor = textoObrigatorio(coluna);
         try {
@@ -100,6 +84,7 @@ public record LinhaCsv(int numero, Map<String, String> valores, RecusaDeCsv recu
         }
     }
 
+    // Devolve true ou false da coluna; recusa qualquer outro valor.
     public boolean booleanoObrigatorio(String coluna) {
         String valor = textoObrigatorio(coluna);
         if ("true".equalsIgnoreCase(valor)) {
@@ -113,7 +98,7 @@ public record LinhaCsv(int numero, Map<String, String> valores, RecusaDeCsv recu
                         .formatted(numero, coluna, valor));
     }
 
-    /** Lista de valores separados por {@code |} dentro de um único campo; vazia quando o campo veio em branco. */
+    // Devolve a lista de valores separados por | dentro do campo, ou lista vazia quando veio em branco.
     public List<String> lista(String coluna) {
         return texto(coluna)
                 .map(valor -> Arrays.stream(valor.split("\\" + SEPARADOR_DE_LISTA))
@@ -123,12 +108,7 @@ public record LinhaCsv(int numero, Map<String, String> valores, RecusaDeCsv recu
                 .orElseGet(List::of);
     }
 
-    /**
-     * Converte usando o domínio, acrescentando o número da linha se o domínio recusar.
-     *
-     * <p>Sem isto, um NCM malformado na linha 40 produziria "O NCM deve ter 8
-     * dígitos" sem dizer onde.</p>
-     */
+    // Converte usando o domínio e, se o domínio recusar, põe o número da linha na mensagem.
     public <T> T converterCom(Supplier<T> conversao) {
         try {
             return conversao.get();
@@ -138,18 +118,7 @@ public record LinhaCsv(int numero, Map<String, String> valores, RecusaDeCsv recu
         }
     }
 
-    /*
-     * Emenda de 14/09/2026, sobre as Etapas 2 e 7.
-     *
-     * Até esta data só aceitava aaaa-mm-dd, e a mensagem dizia "deve estar no
-     * formato aaaa-mm-dd". Passou a aceitar também dd/mm/aaaa, que é como a
-     * planilha brasileira grava a data ao salvar em CSV. A barra escolhe o
-     * formato, e não uma tentativa em sequência: assim a recusa vem do formato
-     * que o arquivo de fato usou.
-     *
-     * O risco aceito, e registrado na D012: um arquivo em mm/dd/aaaa seria lido
-     * trocado sem aviso sempre que o dia fosse até 12.
-     */
+    // Método auxiliar que lê a data em aaaa-mm-dd ou dd/mm/aaaa, escolhendo pela barra. Aceita dd/mm/aaaa desde 14/09/2026; risco registrado na D012: arquivo em mm/dd/aaaa seria lido trocado quando o dia for até 12.
     private LocalDate converterData(String coluna, String valor) {
         try {
             return valor.contains("/") ? LocalDate.parse(valor, DIA_MES_ANO) : LocalDate.parse(valor);

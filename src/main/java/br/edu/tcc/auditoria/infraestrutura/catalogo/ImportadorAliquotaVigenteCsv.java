@@ -16,30 +16,14 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 
-/**
- * Importa alíquotas de um CSV.
- *
- * <p>Colunas esperadas: {@code tributo}, {@code percentual},
- * {@code abrangencia}, mais {@code vigenciaInicio}, {@code vigenciaFim} e
- * {@code fonteNormativa}.</p>
- *
- * <p>{@code tributo} aceita apenas os nomes de {@link Tributo}. O percentual
- * aceita vírgula ou ponto como separador decimal e mantém a escala declarada no
- * arquivo.</p>
- */
+// Classe que importa as alíquotas de um CSV, com as colunas tributo, percentual e abrangencia, mais vigenciaInicio, vigenciaFim, fonteNormativa e natureza. O percentual aceita vírgula ou ponto e mantém as casas decimais do arquivo.
 public final class ImportadorAliquotaVigenteCsv {
 
     public static final String COLUNA_TRIBUTO = "tributo";
     public static final String COLUNA_PERCENTUAL = "percentual";
     public static final String COLUNA_ABRANGENCIA = "abrangencia";
 
-    /*
-     * Emenda da etapa de conferência, sobre a Etapa 2.
-     *
-     * O retorno passou de List para TabelaImportada porque a procedência das
-     * linhas é fato sobre elas, e precisa sair pelo mesmo caminho. Devolvê-la
-     * à parte permitiria ler os registros de um arquivo e a natureza de outro.
-     */
+    // Lê o CSV e devolve os registros junto com a procedência. Mudou na Etapa 11: antes devolvia só a lista.
     public TabelaImportada<AliquotaVigente> importar(Reader origem) throws IOException {
         List<LinhaCsv> linhas = LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new);
         return new TabelaImportada<>(
@@ -47,12 +31,14 @@ public final class ImportadorAliquotaVigenteCsv {
                 NaturezaEmCsv.uniforme(linhas));
     }
 
+    // Abre o arquivo em UTF-8 e importa.
     public TabelaImportada<AliquotaVigente> importar(Path arquivo) throws IOException {
         try (Reader origem = Files.newBufferedReader(arquivo, StandardCharsets.UTF_8)) {
             return importar(origem);
         }
     }
 
+    // Método auxiliar que transforma uma linha do CSV numa alíquota; percentual em branco é recusado.
     private AliquotaVigente converter(LinhaCsv linha) {
         ProcedenciaNormativa procedencia = ProcedenciaEmCsv.ler(linha);
 
@@ -67,6 +53,7 @@ public final class ImportadorAliquotaVigenteCsv {
                 new AliquotaVigente(tributo, percentual, new Abrangencia(abrangencia), procedencia));
     }
 
+    // Método auxiliar que converte o texto no tributo; só aceita os nomes do enum Tributo.
     private static Tributo converterTributo(LinhaCsv linha) {
         String informado = linha.textoObrigatorio(COLUNA_TRIBUTO);
         return Arrays.stream(Tributo.values())

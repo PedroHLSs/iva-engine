@@ -4,32 +4,7 @@ import br.edu.tcc.auditoria.aplicacao.analise.DescricaoDoProduto;
 import br.edu.tcc.auditoria.aplicacao.conferencia.DescricaoDeNcm;
 import br.edu.tcc.auditoria.aplicacao.conferencia.LeituraDoCatalogo;
 
-/**
- * A descrição que o emitente escreveu, ao lado da que o catálogo dá ao NCM.
- *
- * <h2>As duas juntas dizem o que nenhuma diz sozinha</h2>
- *
- * <p>Se a nota descreve "TUBO PVC SOLDAVEL 50MM" e o catálogo descreve outra
- * coisa para o NCM declarado, o sinal é de classificação errada. Não é
- * apontamento de regra nenhuma — nenhuma das sete olha texto — e é informação que
- * quem responde pelo fiscal usa.</p>
- *
- * <h2>O sistema não compara os textos</h2>
- *
- * <p>Ele põe os dois lado a lado. Comparar automaticamente exigiria decidir o que
- * conta como "parecido", e um "não conferem" errado sobre descrição de produto
- * mandaria alguém investigar classificação correta. Pelo mesmo motivo o quadro de
- * declarado e indicado não emite veredito: quem julga são as regras, e sobre
- * texto elas não julgam nada.</p>
- *
- * <h2>A da nota é opt-in; a do catálogo não é</h2>
- *
- * <p>A do catálogo veio de arquivo que alguém importou deliberadamente. A da nota
- * é texto livre do emitente, em escala, sem revisão — ver
- * {@link PoliticaDeExposicao}. Desligada, o campo sai nulo com o motivo da
- * política; ligada e ausente, sai nulo com o motivo do documento. A tela nunca
- * recebe branco sem explicação, qualquer que seja a razão.</p>
- */
+// Representa a descrição que o emitente escreveu ao lado da que o catálogo dá ao NCM. O sistema não compara os textos, só mostra os dois: diferença entre eles pode indicar NCM errado, e quem julga é a pessoa. A da nota só aparece se a instalação ligar a descrição do produto.
 public record DescricaoComparadaExposta(
         String naNota,
         String motivoSemDescricaoNaNota,
@@ -37,12 +12,14 @@ public record DescricaoComparadaExposta(
         String motivoSemDescricaoNoCatalogo,
         String comoLer) {
 
+    // Texto que a tela mostra para explicar como ler as duas descrições.
     static final String COMO_LER =
             "As duas descrições são mostradas lado a lado para leitura. Divergência entre elas "
                     + "costuma indicar classificação errada, mas o sistema não as compara: nenhuma "
                     + "das regras cadastradas examina texto, e um veredito automático aqui não teria "
                     + "de onde sair.";
 
+    // Valida que cada lado tenha texto ou motivo, e que haja o texto de como ler.
     public DescricaoComparadaExposta {
         exigirPar(naNota, motivoSemDescricaoNaNota, "naNota");
         exigirPar(noCatalogo, motivoSemDescricaoNoCatalogo, "noCatalogo");
@@ -53,6 +30,7 @@ public record DescricaoComparadaExposta(
         }
     }
 
+    // Método estático que monta o bloco com a descrição da nota, respeitando a política de exposição, e a do catálogo.
     static DescricaoComparadaExposta de(
             DescricaoDoProduto daNota,
             LeituraDoCatalogo<DescricaoDeNcm> doCatalogo,
@@ -61,10 +39,7 @@ public record DescricaoComparadaExposta(
         String textoDaNota = politica.descricaoOuNulo(daNota.texto().orElse(null));
         String motivoDaNota = textoDaNota != null
                 ? null
-                // Ordem importa: se a instalação não expõe, o motivo é da política,
-                // e não do documento. Dizer "o emitente não descreveu" quando foi a
-                // configuração que omitiu seria pôr no documento uma falta que não
-                // é dele.
+                // Se a instalação não mostra a descrição, o motivo é da configuração, e não do documento.
                 : primeiroNaoNulo(
                         politica.motivoDaDescricaoOmitida(),
                         daNota.motivoDaAusencia().orElse(null));
@@ -82,10 +57,12 @@ public record DescricaoComparadaExposta(
                 COMO_LER);
     }
 
+    // Método auxiliar que devolve o primeiro valor que não for null.
     private static String primeiroNaoNulo(String preferido, String alternativo) {
         return preferido != null ? preferido : alternativo;
     }
 
+    // Método auxiliar que exige exatamente um dos dois: o texto ou o motivo.
     private static void exigirPar(String valor, String motivo, String nomeDoCampo) {
         if ((valor == null) == (motivo == null)) {
             throw new RespostaInvalida(

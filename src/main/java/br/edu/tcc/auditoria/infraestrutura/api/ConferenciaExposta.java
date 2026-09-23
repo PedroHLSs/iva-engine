@@ -4,24 +4,7 @@ import br.edu.tcc.auditoria.aplicacao.conferencia.EstadoDeConferencia;
 
 import java.util.List;
 
-/**
- * Os quatro estados de uma análise, nos dois níveis em que eles existem.
- *
- * <h2>Por que dois níveis, e por que o terceiro número</h2>
- *
- * <p>{@code produtosPorSituacao} conta produtos pela verificação mais forte de
- * cada um. É o número que a tela mostra, e ele tem um efeito colateral
- * aritmético: um produto com uma divergência e três pendências é contado como
- * divergência, e some da contagem de não concluídos.</p>
- *
- * <p>Por isso vêm junto {@code produtosComAlgumaVerificacaoNaoConcluida}, que
- * conta produto a produto e não pela situação, e
- * {@code verificacoesPorEstado}, que é o mesmo total sem precedência nenhuma
- * aplicada. Os três juntos não deixam pendência sumir.</p>
- *
- * <p>Arquivo ilegível não está aqui, e é de propósito: ele não é um dos quatro
- * estados. Fica no bloco de leitura, com nome próprio.</p>
- */
+// Representa as contagens dos quatro estados de uma análise, por produto e por verificação. Vem junto quantos produtos têm alguma verificação sem conclusão, para uma pendência não sumir atrás de uma divergência.
 public record ConferenciaExposta(
         int quantidadeDeNotas,
         int quantidadeDeProdutos,
@@ -30,6 +13,7 @@ public record ConferenciaExposta(
         List<EstadoContado> verificacoesPorEstado,
         String comoFoiObtido) {
 
+    // Valida que as duas listas tragam os quatro estados, que haja a explicação de como os números saíram e que as contagens façam sentido.
     public ConferenciaExposta {
         exigirOsQuatro(produtosPorSituacao, "produtosPorSituacao");
         exigirOsQuatro(verificacoesPorEstado, "verificacoesPorEstado");
@@ -51,6 +35,7 @@ public record ConferenciaExposta(
         verificacoesPorEstado = List.copyOf(verificacoesPorEstado);
     }
 
+    // Método auxiliar que exige os quatro estados na lista, inclusive os que ficaram em zero.
     private static void exigirOsQuatro(List<EstadoContado> contagem, String nomeDoCampo) {
         if (contagem == null || contagem.size() != EstadoDeConferencia.values().length) {
             throw new RespostaInvalida(

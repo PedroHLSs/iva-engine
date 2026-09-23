@@ -17,22 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * O sal guardado em arquivo local, fora do repositório.
- *
- * <h2>Onde o arquivo fica, e por que não fica no projeto</h2>
- *
- * <p>No Windows, sob {@code %APPDATA%}; no Linux e no macOS, sob
- * {@code $XDG_CONFIG_HOME} ou {@code ~/.config}. São os lugares que cada sistema
- * reserva para configuração de usuário, e têm duas propriedades que importam
- * aqui: já são privados do usuário, e não são varridos por ferramenta de build
- * nem por sincronizador de pasta de projeto.</p>
- *
- * <p>Guardar o sal dentro do repositório seria versioná-lo no primeiro
- * {@code git add} distraído, e sal versionado é sal público — o que torna o
- * pseudônimo reversível por força bruta, que é justamente o que
- * {@code SalDeInstalacao} existe para impedir.</p>
- */
+// Classe que guarda o sal num arquivo local, fora do repositório: em %APPDATA% no Windows e em $XDG_CONFIG_HOME ou ~/.config nos outros sistemas. Dentro do repositório ele acabaria versionado, e sal público deixa descobrir o CNPJ por força bruta.
 public final class ArquivoDeSalLocal {
 
     static final String PASTA = "auditoria-ibs-cbs";
@@ -40,16 +25,17 @@ public final class ArquivoDeSalLocal {
 
     private final Path caminho;
 
+    // Construtor que recebe o caminho do arquivo.
     ArquivoDeSalLocal(Path caminho) {
         this.caminho = caminho;
     }
 
-    /** O arquivo no lugar que o sistema operacional reserva para configuração. */
+    // Método estático que aponta para o arquivo na pasta de configuração do sistema operacional.
     public static ArquivoDeSalLocal doSistemaOperacional() {
         return new ArquivoDeSalLocal(pastaDeConfiguracao().resolve(PASTA).resolve(NOME_DO_ARQUIVO));
     }
 
-    /** O arquivo num caminho indicado — usado em teste, para não tocar a máquina. */
+    // Método estático que aponta para um arquivo num caminho informado; usado em teste, para não mexer na máquina.
     public static ArquivoDeSalLocal em(Path caminho) {
         return new ArquivoDeSalLocal(caminho);
     }
@@ -58,14 +44,7 @@ public final class ArquivoDeSalLocal {
         return caminho;
     }
 
-    /**
-     * O sal gravado, se o arquivo existir e tiver conteúdo.
-     *
-     * <p>Arquivo existente e vazio devolve vazio, e não texto em branco: um
-     * arquivo truncado por interrupção de escrita não deve virar um sal de zero
-     * caractere, que seria recusado mais adiante com uma mensagem que não aponta
-     * para a causa.</p>
-     */
+    // Lê o sal gravado; devolve vazio se o arquivo não existe ou está vazio, para arquivo cortado no meio da escrita não virar sal vazio.
     public Optional<String> ler() {
         if (!Files.isRegularFile(caminho)) {
             return Optional.empty();
@@ -79,13 +58,7 @@ public final class ArquivoDeSalLocal {
         }
     }
 
-    /**
-     * Grava o sal, criando o diretório e restringindo a permissão onde o sistema
-     * operacional permitir.
-     *
-     * @return o que se conseguiu fazer de restrição, para o diagnóstico poder
-     *         dizer a verdade em vez de afirmar que o arquivo está protegido
-     */
+    // Grava o sal, criando a pasta e restringindo a permissão onde o sistema deixar; devolve o que conseguiu restringir, para o diagnóstico dizer a verdade.
     public Restricao gravar(String sal) {
         try {
             Path pasta = caminho.getParent();
@@ -101,31 +74,27 @@ public final class ArquivoDeSalLocal {
         }
     }
 
-    /** O que a restrição de permissão conseguiu fazer, e como. */
+    // Representa o que a restrição de permissão conseguiu fazer, e como.
     public record Restricao(boolean aplicada, String comoFoiFeita) {
 
+        // Método estático que registra a restrição POSIX 600: só o dono lê e escreve.
         static Restricao posix() {
             return new Restricao(true, "permissão POSIX 600: só o dono lê e escreve");
         }
 
+        // Método estático que registra a ACL do Windows reescrita só para o dono.
         static Restricao acl(String dono) {
             return new Restricao(true,
                     "ACL do Windows reescrita para conceder acesso somente a \"%s\"".formatted(dono));
         }
 
+        // Método estático que registra que a restrição não foi aplicada, com o motivo.
         static Restricao naoAplicada(String motivo) {
             return new Restricao(false, motivo);
         }
     }
 
-    /**
-     * A pasta de configuração do usuário, conforme o sistema operacional.
-     *
-     * <p>No Windows, {@code %APPDATA%}, com {@code ~/AppData/Roaming} como
-     * segunda opção para o caso de a variável não estar definida. Fora do
-     * Windows, {@code $XDG_CONFIG_HOME} quando declarado, e {@code ~/.config}
-     * quando não — que é o padrão que a especificação XDG manda assumir.</p>
-     */
+    // Método estático que devolve a pasta de configuração do usuário: %APPDATA%, ou ~/AppData/Roaming, no Windows, e $XDG_CONFIG_HOME, ou ~/.config, nos outros sistemas.
     static Path pastaDeConfiguracao() {
         String lar = System.getProperty("user.home");
         if (ehWindows()) {
@@ -142,10 +111,12 @@ public final class ArquivoDeSalLocal {
         return Path.of(lar, ".config");
     }
 
+    // Método estático que diz se o sistema operacional é Windows.
     static boolean ehWindows() {
         return System.getProperty("os.name", "").toLowerCase(java.util.Locale.ROOT).contains("win");
     }
 
+    // Método auxiliar que restringe a pasta ao dono, quando o sistema tem permissão POSIX.
     private static void restringirPasta(Path pasta) {
         PosixFileAttributeView posix = Files.getFileAttributeView(pasta, PosixFileAttributeView.class);
         if (posix == null) {
@@ -157,21 +128,11 @@ public final class ArquivoDeSalLocal {
                     PosixFilePermission.OWNER_WRITE,
                     PosixFilePermission.OWNER_EXECUTE));
         } catch (IOException naoDeuParaRestringir) {
-            // A pasta pode ser de outro dono, ou estar em sistema de arquivos que
-            // não guarda permissão. O arquivo ainda será restringido em seguida, e
-            // o diagnóstico dirá o que se conseguiu fazer.
+            // Se não der para restringir a pasta, segue: o arquivo é restringido em seguida, e o diagnóstico diz o que foi feito.
         }
     }
 
-    /**
-     * Restringe o arquivo ao dono.
-     *
-     * <p>Em POSIX é 600. No Windows, a ACL herdada da pasta é substituída por uma
-     * entrada única para o dono — o que remove qualquer herança que desse acesso
-     * a outro grupo. Onde nenhuma das duas visões existir, a restrição não é
-     * aplicada e isso é <strong>devolvido</strong>, nunca engolido: dizer que o
-     * arquivo está protegido sem ter protegido seria pior do que não tentar.</p>
-     */
+    // Método auxiliar que restringe o arquivo ao dono: 600 em POSIX, ou ACL só do dono no Windows. Se nenhum dos dois der, devolve isso, em vez de dizer que o arquivo está protegido.
     private static Restricao restringirArquivo(Path arquivo) throws IOException {
         PosixFileAttributeView posix = Files.getFileAttributeView(arquivo, PosixFileAttributeView.class);
         if (posix != null) {

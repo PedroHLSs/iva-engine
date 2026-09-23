@@ -1,22 +1,13 @@
 package br.edu.tcc.auditoria.infraestrutura.api;
 
-/**
- * O resultado de uma análise: o que foi lido, e o que a conferência concluiu.
- *
- * <p>Dois blocos nomeados, e não um punhado de campos irmãos. A separação é o
- * ponto: {@code leitura} fala de arquivos — quantos entraram, quantos não
- * puderam ser abertos — e {@code conferencia} fala de produtos. Misturar os dois
- * é como um lote com três arquivos ilegíveis vira "lote quase limpo".</p>
- *
- * <p>{@code aviso} acompanha toda resposta de resultado, e vem do servidor para
- * que nenhuma tela precise lembrar de escrevê-lo — ver {@link AvisoDeUso}.</p>
- */
+// Representa o resultado de uma análise em dois blocos: a leitura, que fala de arquivos, e a conferência, que fala de produtos. Separar os dois impede que arquivo ilegível passe por lote limpo.
 public record RespostaDaConferencia(
         ReciboDaAnalise leitura,
         ConferenciaExposta conferencia,
         FaixaDeNatureza natureza,
         String aviso) {
 
+    // Valida que a resposta tenha os dois blocos, a faixa de procedência e o aviso de uso.
     public RespostaDaConferencia {
         if (leitura == null) {
             throw new RespostaInvalida("A resposta precisa do bloco de leitura.");

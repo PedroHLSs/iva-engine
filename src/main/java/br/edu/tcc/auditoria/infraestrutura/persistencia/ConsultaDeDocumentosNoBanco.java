@@ -13,23 +13,18 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-/**
- * Lê os dados de identificação dos documentos auditados.
- *
- * <p>Devolve apenas o que identifica o documento — modelo, série, número, data e
- * UF do emitente. As colunas de pseudônimo de participante existem na tabela e
- * <strong>não</strong> passam por aqui: o papel de trabalho não precisa delas, e
- * dado que não é carregado não é dado que vaza.</p>
- */
+// Classe que lê do banco os dados que identificam os documentos: modelo, série, número, data e UF do emitente. Os pseudônimos dos participantes não são lidos aqui, porque quem usa esta consulta não precisa deles.
 @Component
 class ConsultaDeDocumentosNoBanco implements ConsultaDeDocumentos {
 
     private final DocumentoJpa documentos;
 
+    // Construtor que recebe o repositório de documentos.
     ConsultaDeDocumentosNoBanco(DocumentoJpa documentos) {
         this.documentos = documentos;
     }
 
+    // Busca os dados dos documentos das chaves informadas.
     @Override
     @Transactional(readOnly = true)
     public Map<ChaveAcesso, DadosDoDocumento> porChaves(Collection<ChaveAcesso> chaves) {

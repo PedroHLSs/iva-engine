@@ -2,14 +2,7 @@ package br.edu.tcc.auditoria.aplicacao.consulta;
 
 import br.edu.tcc.auditoria.dominio.ChaveAcesso;
 
-/**
- * Uma avaliação que não concluiu, como foi gravada.
- *
- * <p>O motivo é o texto que a própria regra escreveu ao desistir. Ele diz se
- * faltou campo no documento, se faltou tabela no catálogo ou se a data ficou
- * fora da cobertura declarada — três problemas de donos diferentes, e é por isso
- * que a contagem sozinha não bastaria.</p>
- */
+// Representa uma avaliação que não concluiu, como foi gravada, com o motivo que a própria regra escreveu.
 public record NaoAvaliadaRegistrada(
         ChaveAcesso chaveAcesso,
         int numeroItem,
@@ -17,6 +10,7 @@ public record NaoAvaliadaRegistrada(
         String regraVersao,
         String motivo) {
 
+    // Valida que a avaliação tenha chave de acesso, número do item, regra, versão e motivo.
     public NaoAvaliadaRegistrada {
         if (chaveAcesso == null) {
             throw new ConsultaInvalida("A avaliação não concluída precisa da chave de acesso.");

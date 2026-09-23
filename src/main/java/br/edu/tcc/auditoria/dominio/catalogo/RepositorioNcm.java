@@ -5,13 +5,9 @@ import br.edu.tcc.auditoria.dominio.Ncm;
 import java.time.LocalDate;
 import java.util.Optional;
 
-/**
- * Porta de acesso aos registros de NCM do catálogo.
- *
- * <p>Ver a nota sobre a data em {@link RepositorioClassificacaoTributaria}.</p>
- */
+// Interface responsável por buscar os registros de NCM do catálogo numa data.
 public interface RepositorioNcm {
 
-    /** O registro do NCM que valia na data, se algum valia. */
+    // Retorna o registro do NCM que valia na data, se algum valia.
     Optional<RegistroNcm> buscarVigenteEm(Ncm ncm, LocalDate data);
 }

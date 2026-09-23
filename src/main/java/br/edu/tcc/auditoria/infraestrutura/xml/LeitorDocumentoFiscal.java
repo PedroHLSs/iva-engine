@@ -12,37 +12,7 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 import java.io.InputStream;
 
-/**
- * Lê o XML de uma NF-e ou NFC-e e devolve o objeto de leiaute correspondente.
- *
- * <p>Não interpreta nada: a saída é a classe gerada pelo JAXB a partir do XSD
- * oficial, com os campos exatamente como vieram no arquivo. Traduzir isso para o
- * modelo de domínio é tarefa do {@link NormalizadorDocumento}.</p>
- *
- * <h2>As duas raízes aceitas</h2>
- *
- * <p>Documento arquivado depois da autorização vem embrulhado em
- * {@code <nfeProc>}, junto do protocolo; documento exportado antes disso vem
- * como {@code <NFe>} puro. Os dois são aceitos, e nos dois casos o que sai é o
- * {@code TNFe}. O protocolo de autorização é descartado: a auditoria de
- * coerência de IBS/CBS olha o que foi declarado, e o protocolo não diz nada
- * sobre isso.</p>
- *
- * <p>Qualquer outra raiz é recusada, mesmo que o XML esteja bem formado. Isso
- * evita que um arquivo de outro tipo — um evento, um retorno de consulta, um XML
- * qualquer — seja lido como se fosse um documento vazio.</p>
- *
- * <h2>Entrada não confiável</h2>
- *
- * <p>O leitor processa arquivos de terceiros e por isso desliga DTD e entidades
- * externas. Sem isso, um XML com {@code <!DOCTYPE>} apontando para um arquivo
- * local ou para uma URL faria o processo lê-lo em nome de quem rodou a
- * auditoria.</p>
- *
- * <p>A instância é reutilizável e o {@code JAXBContext} é criado uma vez só, que
- * é a parte cara. Cada leitura cria o seu próprio {@code Unmarshaller}, que não
- * é seguro para uso concorrente.</p>
- */
+// Classe que lê o XML de uma NF-e ou NFC-e e devolve a classe gerada pelo JAXB, sem interpretar nada. Aceita a raiz <NFe> e a <nfeProc>, recusa qualquer outra, e desliga DTD e entidades externas, porque o arquivo vem de fora.
 public final class LeitorDocumentoFiscal {
 
     private static final String NAMESPACE_DA_NFE = "http://www.portalfiscal.inf.br/nfe";
@@ -52,6 +22,7 @@ public final class LeitorDocumentoFiscal {
     private final JAXBContext contexto;
     private final XMLInputFactory fabricaDeLeitura;
 
+    // Construtor que prepara o JAXB uma vez só, que é a parte cara, e a fábrica de leitura segura.
     public LeitorDocumentoFiscal() {
         try {
             this.contexto = JAXBContext.newInstance(TNfeProc.class, TNFe.class);
@@ -62,16 +33,7 @@ public final class LeitorDocumentoFiscal {
         this.fabricaDeLeitura = fabricaSemEntidadesExternas();
     }
 
-    /**
-     * Lê o documento contido no fluxo informado.
-     *
-     * <p>O fluxo é consumido, mas não é fechado: quem o abriu continua
-     * responsável por fechá-lo.</p>
-     *
-     * @throws DocumentoFiscalIlegivel se o XML estiver malformado ou se a raiz
-     *                                 não for {@code NFe} nem {@code nfeProc} no
-     *                                 namespace da NF-e
-     */
+    // Lê o documento do fluxo, sem fechá-lo; recusa XML malformado ou com raiz que não seja NFe nem nfeProc.
     public TNFe ler(InputStream conteudo) {
         if (conteudo == null) {
             throw new DocumentoFiscalIlegivel("Não há conteúdo a ler.");
@@ -109,6 +71,7 @@ public final class LeitorDocumentoFiscal {
         }
     }
 
+    // Método auxiliar que tira o <NFe> de dentro do <nfeProc>; recusa envelope vazio.
     private static TNFe documentoDe(TNfeProc documentoAutorizado) {
         TNFe documento = documentoAutorizado.getNFe();
         if (documento == null) {
@@ -118,6 +81,7 @@ public final class LeitorDocumentoFiscal {
         return documento;
     }
 
+    // Método auxiliar que avança até o primeiro elemento do XML; recusa conteúdo sem elemento.
     private static void avancarAteARaiz(XMLStreamReader leitorDeFluxo) throws XMLStreamException {
         while (leitorDeFluxo.hasNext()) {
             if (leitorDeFluxo.next() == XMLStreamConstants.START_ELEMENT) {
@@ -127,13 +91,7 @@ public final class LeitorDocumentoFiscal {
         throw new DocumentoFiscalIlegivel("O conteúdo lido não tem elemento nenhum: não é um XML de documento.");
     }
 
-    /**
-     * Fábrica de leitura com DTD e entidades externas desligados.
-     *
-     * <p>O sistema lê arquivo que veio de fora. Com DTD habilitado, um documento
-     * pode mandar o processo abrir arquivo local ou fazer requisição de rede
-     * durante a análise, e pode se expandir até esgotar a memória.</p>
-     */
+    // Método auxiliar que cria a fábrica de leitura com DTD e entidades externas desligados, para o XML não mandar abrir arquivo local ou endereço de rede.
     private static XMLInputFactory fabricaSemEntidadesExternas() {
         XMLInputFactory fabrica = XMLInputFactory.newFactory();
         fabrica.setProperty(XMLInputFactory.SUPPORT_DTD, false);
@@ -142,6 +100,7 @@ public final class LeitorDocumentoFiscal {
         return fabrica;
     }
 
+    // Método auxiliar que fecha o leitor de XML, mas não o fluxo de quem chamou.
     private static void fechar(XMLStreamReader leitorDeFluxo) {
         if (leitorDeFluxo == null) {
             return;

@@ -12,66 +12,57 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Escrita de células, com uma decisão só e importante: <strong>ausência é
- * escrita, não deixada em branco.</strong>
- *
- * <p>Numa planilha lida meses depois, célula vazia é indistinguível de célula que
- * ninguém preencheu. O sistema inteiro é construído sobre a diferença entre "o
- * campo não veio no documento" e "o campo veio com zero", e essa diferença não
- * pode se perder na última etapa. Por isso ausência vira um texto explícito, e
- * zero vira o número zero.</p>
- */
+// Classe que escreve as células da planilha. Campo que não veio é escrito com um texto, e nunca fica em branco, porque célula vazia não se distingue de célula esquecida; zero continua sendo o número zero.
 final class Celulas {
 
-    /** O que aparece onde o documento não declarou o campo. */
+    // Texto escrito onde a nota não declarou o campo.
     static final String NAO_INFORMADO = "(não informado)";
 
-    /** O que aparece onde a regra não tinha valor de referência a opor. */
+    // Texto escrito onde a regra não tinha valor de referência.
     static final String SEM_REFERENCIA = "(sem referência)";
 
-    /** O que aparece onde a vigência não tem fim declarado. */
+    // Texto escrito onde a vigência não tem data de fim.
     static final String SEM_FIM_DECLARADO = "(sem fim declarado)";
 
-    /** Separador de evidências dentro de uma célula. */
+    // Separador das evidências dentro de uma célula.
     private static final String QUEBRA = "\n";
 
     private final ZoneId fusoDeApresentacao;
 
+    // Construtor que recebe o fuso em que data e hora são mostradas.
     Celulas(ZoneId fusoDeApresentacao) {
         this.fusoDeApresentacao = fusoDeApresentacao;
     }
 
+    // Método estático que escreve texto na célula.
     static void texto(Row linha, int coluna, String valor, CellStyle estilo) {
         Cell celula = linha.createCell(coluna);
         celula.setCellValue(valor);
         celula.setCellStyle(estilo);
     }
 
+    // Método estático que escreve um número inteiro na célula.
     static void inteiro(Row linha, int coluna, long valor, CellStyle estilo) {
         Cell celula = linha.createCell(coluna);
         celula.setCellValue(valor);
         celula.setCellStyle(estilo);
     }
 
+    // Método estático que escreve uma data na célula.
     static void data(Row linha, int coluna, LocalDate valor, CellStyle estilo) {
         Cell celula = linha.createCell(coluna);
         celula.setCellValue(valor);
         celula.setCellStyle(estilo);
     }
 
+    // Escreve data e hora na célula, convertidas para o fuso de apresentação.
     void dataHora(Row linha, int coluna, Instant valor, CellStyle estilo) {
         Cell celula = linha.createCell(coluna);
         celula.setCellValue(LocalDateTime.ofInstant(valor, fusoDeApresentacao));
         celula.setCellStyle(estilo);
     }
 
-    /**
-     * Escreve o valor em risco como número, ou o motivo de não haver como texto.
-     *
-     * <p>Nunca deixa a célula vazia: sem montante e sem motivo, quem lê não sabe
-     * se o apontamento não tem valor aferível ou se o sistema deixou de calcular.</p>
-     */
+    // Método estático que escreve o valor em risco como número, ou o motivo de não haver valor como texto; nunca deixa a célula vazia.
     static void valorEmRisco(
             Row linha,
             int coluna,
@@ -89,18 +80,12 @@ final class Celulas {
         texto(linha, coluna, motivoDaAusencia.orElse(SEM_REFERENCIA), estiloDeTexto);
     }
 
-    /**
-     * Junta as evidências numa célula, uma por linha.
-     *
-     * <p>As três colunas de evidência — campo, encontrado e esperado — são
-     * escritas com a mesma quantidade de linhas e na mesma ordem, de modo que a
-     * enésima linha de uma corresponde à enésima linha das outras.</p>
-     */
+    // Método estático que junta as evidências numa célula, uma por linha, na mesma ordem nas três colunas de evidência.
     static String juntar(List<String> valores) {
         return String.join(QUEBRA, valores);
     }
 
-    /** Junta valores opcionais, escrevendo a marca indicada onde não há valor. */
+    // Método estático que junta valores opcionais, escrevendo a marca indicada onde falta valor.
     static String juntarOpcionais(List<Optional<String>> valores, String marcaDeAusencia) {
         return juntar(valores.stream().map(valor -> valor.orElse(marcaDeAusencia)).toList());
     }

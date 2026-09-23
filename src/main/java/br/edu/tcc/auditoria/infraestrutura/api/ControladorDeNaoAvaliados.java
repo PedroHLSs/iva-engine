@@ -10,26 +10,19 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-/**
- * Os itens que o motor não conseguiu julgar naquela execução, com o motivo.
- *
- * <h2>Endpoint próprio, e não um detalhe de outro</h2>
- *
- * <p>Porque não avaliar não é um caso especial de não apontar. Se estas linhas
- * fossem um campo dentro da resposta de achados, quem consome escolheria não
- * olhar — e um lote em que nada pôde ser avaliado sairia com cara de lote limpo,
- * que é o defeito que a D007 descreve para a planilha e que valeria igual aqui.</p>
- */
+// Controlador que responde GET /api/execucoes/{id}/nao-avaliados: os itens que o motor não conseguiu avaliar, com o motivo. Tem endereço próprio para não avaliado nunca parecer lote limpo.
 @RestController
 @RequestMapping("/api/execucoes/{id}/nao-avaliados")
 class ControladorDeNaoAvaliados {
 
     private final MontadorDeRespostas respostas;
 
+    // Construtor que recebe o montador de respostas.
     ControladorDeNaoAvaliados(MontadorDeRespostas respostas) {
         this.respostas = respostas;
     }
 
+    // Lista uma página dos não avaliados, podendo filtrar por regra.
     @GetMapping
     RespostaDeNaoAvaliados listar(
             @PathVariable UUID id,

@@ -13,32 +13,7 @@ import br.edu.tcc.auditoria.dominio.catalogo.ProcedenciaNormativa;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * R03 — quando o {@code cClassTrib} declarado é marcado como benefício, o NCM do
- * item consta de anexo no catálogo vigente na data?
- *
- * <p>Benefício invocado sobre mercadoria que o catálogo não vincula a anexo
- * nenhum é redução declarada sem respaldo na tabela de referência, e por isso a
- * severidade é grave.</p>
- *
- * <p>Quem diz que um código é benefício é o catálogo, pelo indicador importado
- * junto com a linha. A regra não classifica código nenhum por conta própria.</p>
- *
- * <h2>Limitação declarada: "algum anexo", não "o anexo correspondente"</h2>
- *
- * <p>A formulação exata da verificação seria confrontar o NCM contra <em>o anexo
- * correspondente àquele {@code cClassTrib}</em>. O catálogo modelado na Etapa 2
- * não guarda esse vínculo: {@code ClassificacaoTributaria} não tem campo de
- * anexo, e {@code ItemAnexo} liga NCM a anexo sem passar por {@code cClassTrib}.
- * A regra portanto verifica o vínculo do NCM a <em>qualquer</em> anexo vigente,
- * que é uma condição necessária do que se quer verificar, e nomeia na evidência
- * os anexos encontrados para leitura humana.</p>
- *
- * <p>Isso deixa passar o caso em que o NCM consta de um anexo diferente do que o
- * código invocado pressupõe. Fechar essa lacuna exige acrescentar o vínculo
- * {@code cClassTrib → anexo} ao catálogo, o que é mudança em etapa já entregue e
- * não foi feita aqui.</p>
- */
+// Regra R03: se o cClassTrib do item é de benefício, o NCM está em algum anexo do catálogo? Gravidade: grave. Limite conhecido: confere se o NCM está em qualquer anexo, e não no anexo certo daquele código.
 public final class RegraBeneficioExigeNcmEmAnexo extends RegraDeItem {
 
     public static final String ID = "R03";
@@ -46,6 +21,7 @@ public final class RegraBeneficioExigeNcmEmAnexo extends RegraDeItem {
 
     private final ProcedenciaNormativa cobertura;
 
+    // Construtor que recebe o período coberto pela tabela de anexos.
     public RegraBeneficioExigeNcmEmAnexo(ProcedenciaNormativa coberturaDaTabelaDeAnexos) {
         this.cobertura = exigirCobertura(coberturaDaTabelaDeAnexos, "itens de anexo");
     }
@@ -65,6 +41,7 @@ public final class RegraBeneficioExigeNcmEmAnexo extends RegraDeItem {
         return Severidade.GRAVE;
     }
 
+    // Aplica a regra: só cobra o anexo quando o catálogo diz que o cClassTrib é de benefício, e aponta se o NCM não estiver em nenhum anexo.
     @Override
     protected Avaliacao avaliarItem(ItemDocumento item, Documento documento, ContextoNormativo contexto) {
         Optional<CodigoClassificacaoTributaria> codigo = item.codigoClassificacaoTributaria();
@@ -82,8 +59,7 @@ public final class RegraBeneficioExigeNcmEmAnexo extends RegraDeItem {
 
         ClassificacaoTributaria classificacao = registro.get();
         if (!classificacao.indicadorDeBeneficio()) {
-            // O código não invoca benefício: a exigência de anexo não se aplica,
-            // e a regra se esgota aqui tendo sido aplicada por inteiro.
+            // O código não é de benefício, então não precisa de anexo e o item passa na regra.
             return conforme(item, documento);
         }
 

@@ -18,42 +18,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Importa classificações tributárias de um CSV.
- *
- * <p>Colunas esperadas: {@code codigo}, {@code cstsCompativeis},
- * {@code dispositivoLegal}, {@code indicadorDeBeneficio},
- * {@code percentualReducao}, {@code camposObrigatoriosCondicionados}, mais as
- * três comuns a todo catálogo — {@code vigenciaInicio}, {@code vigenciaFim} e
- * {@code fonteNormativa}.</p>
- *
- * <p>{@code cstsCompativeis} e {@code camposObrigatoriosCondicionados} são
- * listas dentro de um único campo, separadas por {@code |}.</p>
- *
- * <p><b>Emenda de 14/09/2026, sobre a Etapa 2.</b> Até esta data, as colunas
- * acima eram a única forma aceita. Passou a existir uma segunda, por tributo,
- * para três campos: {@code dispositivoLegal_cbs} e {@code dispositivoLegal_ibs},
- * {@code reducao_cbs} e {@code reducao_ibs}, {@code fonteNormativa_cbs} e
- * {@code fonteNormativa_ibs}. A escolha é campo a campo, e o cabeçalho não pode
- * trazer as duas formas para o mesmo campo nem só metade do par.</p>
- *
- * <p>A classificação continua guardando um valor só por campo — o domínio não
- * mudou —, e por isso o par é juntado aqui, <b>sem escolher entre os dois</b>:</p>
- *
- * <ul>
- *   <li>valores iguais viram um valor só;</li>
- *   <li>texto diferente é guardado inteiro, rotulado:
- *       {@code CBS: … | IBS: …};</li>
- *   <li>redução diferente recusa a linha. Número não se rotula, e escolher um
- *       dos dois seria decidir sobre a norma. A comparação é do valor escrito,
- *       casas decimais incluídas, e só vírgula e ponto se equivalem, como no
- *       resto do CSV.</li>
- * </ul>
- *
- * <p>Célula em branco num dos lados é recusada como seria na coluna única.
- * Redução em branco nos dois lados continua sendo redução não declarada, que é
- * diferente de redução zero.</p>
- */
+// Classe que importa as classificações tributárias de um CSV. Desde 14/09/2026, dispositivoLegal, redução e fonteNormativa também podem vir por tributo (_cbs e _ibs): texto igual vira um só, texto diferente vira "CBS: … | IBS: …", e redução diferente recusa a linha, porque escolher uma seria decidir sobre a norma.
 public final class ImportadorClassificacaoTributariaCsv {
 
     public static final String COLUNA_CODIGO = "codigo";
@@ -70,10 +35,11 @@ public final class ImportadorClassificacaoTributariaCsv {
     public static final String COLUNA_FONTE_NORMATIVA_CBS = "fonteNormativa_cbs";
     public static final String COLUNA_FONTE_NORMATIVA_IBS = "fonteNormativa_ibs";
 
-    /** As duas formas de escrever um mesmo campo no cabeçalho. */
+    // Representa as duas formas de escrever um campo no cabeçalho: a coluna única ou o par por tributo.
     private record Campo(String colunaUnica, String colunaCbs, String colunaIbs) {
     }
 
+    // Os três campos que aceitam a forma por tributo.
     private static final Campo DISPOSITIVO_LEGAL = new Campo(
             COLUNA_DISPOSITIVO_LEGAL, COLUNA_DISPOSITIVO_LEGAL_CBS, COLUNA_DISPOSITIVO_LEGAL_IBS);
     private static final Campo REDUCAO = new Campo(
@@ -81,13 +47,7 @@ public final class ImportadorClassificacaoTributariaCsv {
     private static final Campo FONTE_NORMATIVA = new Campo(
             ProcedenciaEmCsv.COLUNA_FONTE_NORMATIVA, COLUNA_FONTE_NORMATIVA_CBS, COLUNA_FONTE_NORMATIVA_IBS);
 
-    /*
-     * Emenda da etapa de conferência, sobre a Etapa 2.
-     *
-     * O retorno passou de List para TabelaImportada porque a procedência das
-     * linhas é fato sobre elas, e precisa sair pelo mesmo caminho. Devolvê-la
-     * à parte permitiria ler os registros de um arquivo e a natureza de outro.
-     */
+    // Lê o CSV e devolve os registros junto com a procedência. Mudou na Etapa 11: antes devolvia só a lista.
     public TabelaImportada<ClassificacaoTributaria> importar(Reader origem) throws IOException {
         List<LinhaCsv> linhas = LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new);
         return new TabelaImportada<>(
@@ -95,12 +55,14 @@ public final class ImportadorClassificacaoTributariaCsv {
                 NaturezaEmCsv.uniforme(linhas));
     }
 
+    // Abre o arquivo em UTF-8 e importa.
     public TabelaImportada<ClassificacaoTributaria> importar(Path arquivo) throws IOException {
         try (Reader origem = Files.newBufferedReader(arquivo, StandardCharsets.UTF_8)) {
             return importar(origem);
         }
     }
 
+    // Método auxiliar que transforma uma linha do CSV numa classificação; CSTs e campos obrigatórios vêm numa célula só, separados por |.
     private ClassificacaoTributaria converter(LinhaCsv linha) {
         ProcedenciaNormativa procedencia = ProcedenciaEmCsv.ler(
                 linha, lida -> textoObrigatorio(lida, FONTE_NORMATIVA));
@@ -126,6 +88,7 @@ public final class ImportadorClassificacaoTributariaCsv {
         });
     }
 
+    // Método auxiliar que lê um campo de texto da coluna única ou do par; se os dois lados forem diferentes, guarda os dois com o nome do tributo.
     private static String textoObrigatorio(LinhaCsv linha, Campo campo) {
         if (!estaPorTributo(linha, campo)) {
             return linha.textoObrigatorio(campo.colunaUnica());
@@ -135,6 +98,7 @@ public final class ImportadorClassificacaoTributariaCsv {
         return cbs.equals(ibs) ? cbs : "CBS: %s | IBS: %s".formatted(cbs, ibs);
     }
 
+    // Método auxiliar que lê a redução da coluna única ou do par; recusa a linha se os dois lados forem diferentes.
     private static Optional<BigDecimal> reducao(LinhaCsv linha) {
         if (!estaPorTributo(linha, REDUCAO)) {
             return linha.decimal(REDUCAO.colunaUnica());
@@ -153,7 +117,7 @@ public final class ImportadorClassificacaoTributariaCsv {
         return cbs;
     }
 
-    /** Se o cabeçalho escreve o campo por tributo; recusa as duas formas juntas e o par pela metade. */
+    // Método auxiliar que diz se o campo veio por tributo; recusa as duas formas juntas e o par pela metade.
     private static boolean estaPorTributo(LinhaCsv linha, Campo campo) {
         Set<String> colunas = linha.valores().keySet();
         boolean temUnica = colunas.contains(campo.colunaUnica());
@@ -176,6 +140,7 @@ public final class ImportadorClassificacaoTributariaCsv {
         return temCbs;
     }
 
+    // Método auxiliar que devolve o valor como foi escrito, entre aspas, ou "em branco", para a mensagem de erro.
     private static String comoEscrito(LinhaCsv linha, String coluna) {
         return linha.texto(coluna).map(valor -> "\"" + valor + "\"").orElse("em branco");
     }

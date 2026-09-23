@@ -2,16 +2,10 @@ package br.edu.tcc.auditoria.dominio.catalogo;
 
 import br.edu.tcc.auditoria.dominio.excecao.RegistroNormativoInvalido;
 
-/**
- * Recorte a que uma alíquota do catálogo se aplica.
- *
- * <p>Rótulo opaco, validado só quanto à forma. O domínio não conhece quais
- * abrangências existem, como se relacionam entre si nem qual prevalece sobre
- * qual — isso é conteúdo normativo e chega por importação. Aqui a abrangência
- * serve apenas como parte da chave de consulta.</p>
- */
+// Representa o recorte a que uma alíquota do catálogo se aplica; é um rótulo opaco, e o domínio não conhece quais abrangências existem.
 public record Abrangencia(String valor) {
 
+    // Valida que a abrangência não seja nula, vazia nem tenha espaço em volta.
     public Abrangencia {
         if (valor == null) {
             throw new RegistroNormativoInvalido("A abrangência da alíquota não pode ser nula.");

@@ -2,21 +2,16 @@ package br.edu.tcc.auditoria.infraestrutura.api;
 
 import java.util.List;
 
-/**
- * As execuções gravadas, da mais recente para a mais antiga.
- *
- * <p>{@code limite} vai na resposta porque a listagem é recortada: sem ele, uma
- * resposta com vinte linhas não distingue "há vinte execuções" de "há duzentas e
- * você pediu vinte".</p>
- */
+// Representa a lista das execuções gravadas, da mais nova para a mais antiga. O limite vai junto, para quem lê saber se a lista foi cortada.
 public record RespostaDeExecucoes(List<ExecucaoResumida> execucoes, int quantidade, int limite) {
 
-    /** Quantas execuções a listagem traz quando quem consulta não pede um número. */
+    // Quantas execuções a lista traz quando ninguém pede um número.
     public static final int LIMITE_PADRAO = 25;
 
-    /** Teto do recorte, para que um pedido não varra o histórico inteiro. */
+    // Máximo de execuções por pedido, para ninguém varrer o histórico inteiro.
     public static final int LIMITE_MAXIMO = 200;
 
+    // Valida que a lista exista e que a quantidade bata com o número de linhas.
     public RespostaDeExecucoes {
         if (execucoes == null) {
             throw new RespostaInvalida(
@@ -30,6 +25,7 @@ public record RespostaDeExecucoes(List<ExecucaoResumida> execucoes, int quantida
         execucoes = List.copyOf(execucoes);
     }
 
+    // Método estático que cria a resposta contando as execuções da lista.
     public static RespostaDeExecucoes de(List<ExecucaoResumida> execucoes, int limite) {
         return new RespostaDeExecucoes(execucoes, execucoes.size(), limite);
     }

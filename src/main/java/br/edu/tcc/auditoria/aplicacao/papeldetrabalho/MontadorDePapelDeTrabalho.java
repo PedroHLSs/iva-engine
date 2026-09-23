@@ -20,23 +20,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Monta o papel de trabalho de uma execução a partir do que está gravado.
- *
- * <p>Junta quatro coisas: o recibo da execução, os apontamentos que ela produziu
- * com a tratativa atual de cada um, as avaliações que não concluíram, e os dados
- * de identificação dos documentos envolvidos.</p>
- *
- * <h2>A chave de acesso não sai daqui</h2>
- *
- * <p>Ela é substituída pelo pseudônimo antes de qualquer linha ser montada. Os
- * dígitos da chave carregam o CNPJ do emitente, e a exportação não leva
- * identificador em texto claro. O que fica no lugar — modelo, série, número,
- * data e UF — localiza a nota no sistema da empresa sem identificar ninguém.</p>
- */
+// Classe que monta o papel de trabalho de uma execução a partir do que está gravado, trocando a chave de acesso pelo pseudônimo.
 public final class MontadorDePapelDeTrabalho {
 
-    /** Separador de agrupamento, fora de qualquer texto que venha de regra ou de catálogo. */
+    // Separador de agrupamento, fora de qualquer texto que venha de regra ou de catálogo.
     private static final String SEPARADOR_DE_AGRUPAMENTO = String.valueOf((char) 0x1f);
 
     private final ConsultaDeAchadosDaExecucao achados;
@@ -44,6 +31,7 @@ public final class MontadorDePapelDeTrabalho {
     private final ConsultaDeDocumentos documentos;
     private final PseudonimizadorDeChave pseudonimizador;
 
+    // Construtor do montador, que recebe as consultas de leitura e o pseudonimizador de chave.
     public MontadorDePapelDeTrabalho(
             ConsultaDeAchadosDaExecucao achados,
             ConsultaDeNaoAvaliadas naoAvaliadas,
@@ -55,7 +43,7 @@ public final class MontadorDePapelDeTrabalho {
         this.pseudonimizador = exigir(pseudonimizador, "o pseudonimizador de chave");
     }
 
-    /** Monta o papel de trabalho da execução indicada. */
+    // Monta o papel de trabalho da execução indicada, com achados, não avaliados e motivos agrupados.
     public PapelDeTrabalho montar(ExecucaoAuditoria execucao) {
         if (execucao == null) {
             throw new PapelDeTrabalhoInvalido("Não há execução cujo papel de trabalho montar.");
@@ -73,6 +61,7 @@ public final class MontadorDePapelDeTrabalho {
                 itensDistintos(naoConcluidas));
     }
 
+    // Método auxiliar que monta a linha de achado, separando as evidências em três listas alinhadas.
     private LinhaDeAchado linhaDe(
             AchadoRegistrado registrado, Map<ChaveAcesso, DadosDoDocumento> dados) {
 
@@ -114,6 +103,7 @@ public final class MontadorDePapelDeTrabalho {
                 registrado.tratativa().map(tratativa -> tratativa.registradoEm()));
     }
 
+    // Método auxiliar que monta a linha de não avaliado a partir da avaliação não concluída.
     private LinhaNaoAvaliada linhaDe(
             NaoAvaliadaRegistrada naoAvaliada, Map<ChaveAcesso, DadosDoDocumento> dados) {
 
@@ -129,20 +119,13 @@ public final class MontadorDePapelDeTrabalho {
                 naoAvaliada.motivo());
     }
 
-    /**
-     * Agrupa os motivos por regra e por texto, do mais frequente para o menos.
-     *
-     * <p>Milhares de linhas de não avaliado quase sempre são poucos motivos
-     * repetidos. Ordenar por frequência coloca no topo o que, resolvido, elimina
-     * a maior parte delas.</p>
-     */
+    // Método auxiliar que agrupa os motivos por regra e por texto, do mais frequente para o menos frequente.
     private static List<MotivoAgrupado> agrupar(List<NaoAvaliadaRegistrada> naoConcluidas) {
         Map<String, Integer> contagem = new LinkedHashMap<>();
         Map<String, NaoAvaliadaRegistrada> exemplos = new LinkedHashMap<>();
 
         for (NaoAvaliadaRegistrada naoAvaliada : naoConcluidas) {
-            // Separador que nao ocorre em identificador de regra nem em texto de
-            // motivo: sem ele, "R0" + "5x" e "R05" + "x" cairiam no mesmo grupo.
+            // Usa um separador que não ocorre em regra nem em motivo, para que textos diferentes não caiam no mesmo grupo.
             String chave = naoAvaliada.regraId() + SEPARADOR_DE_AGRUPAMENTO + naoAvaliada.motivo();
             contagem.merge(chave, 1, Integer::sum);
             exemplos.putIfAbsent(chave, naoAvaliada);
@@ -159,7 +142,7 @@ public final class MontadorDePapelDeTrabalho {
                 .toList();
     }
 
-    /** Itens distintos atingidos por ao menos uma avaliação não concluída. */
+    // Método auxiliar que conta os itens distintos atingidos por ao menos uma avaliação não concluída.
     private static int itensDistintos(List<NaoAvaliadaRegistrada> naoConcluidas) {
         Set<String> itens = new LinkedHashSet<>();
         naoConcluidas.forEach(naoAvaliada ->
@@ -167,6 +150,7 @@ public final class MontadorDePapelDeTrabalho {
         return itens.size();
     }
 
+    // Método auxiliar que junta as chaves de acesso dos documentos envolvidos, sem repetição.
     private static Set<ChaveAcesso> chavesDe(
             List<AchadoRegistrado> registrados, List<NaoAvaliadaRegistrada> naoConcluidas) {
         Set<ChaveAcesso> chaves = new LinkedHashSet<>();
@@ -175,10 +159,12 @@ public final class MontadorDePapelDeTrabalho {
         return chaves;
     }
 
+    // Método auxiliar que troca a chave de acesso pelo pseudônimo dela.
     private String pseudonimoDe(ChaveAcesso chaveAcesso) {
         return pseudonimizador.de(chaveAcesso).valor();
     }
 
+    // Método auxiliar que busca os dados do documento e falha se ele não estiver gravado.
     private static DadosDoDocumento exigirDocumento(
             Map<ChaveAcesso, DadosDoDocumento> dados, ChaveAcesso chaveAcesso) {
         DadosDoDocumento documento = dados.get(chaveAcesso);
@@ -191,6 +177,7 @@ public final class MontadorDePapelDeTrabalho {
         return documento;
     }
 
+    // Método auxiliar para verificar se um valor é nulo e lançar uma exceção com uma mensagem apropriada.
     private static <T> T exigir(T valor, String oQueFalta) {
         if (valor == null) {
             throw new PapelDeTrabalhoInvalido(

@@ -16,29 +16,7 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/**
- * Resumo criptográfico do conjunto de arquivos de uma origem.
- *
- * <p>É o {@code hashEntrada} da execução de auditoria: dois lotes iguais
- * produzem o mesmo resumo, e qualquer diferença — arquivo a mais, arquivo a
- * menos, conteúdo alterado, nome trocado — produz resumo diferente. Sem isso,
- * uma execução gravada não conseguiria dizer <em>sobre o quê</em> ela foi.</p>
- *
- * <h2>O que entra no cálculo</h2>
- *
- * <p>Para cada arquivo XML da origem, o nome relativo e o resumo do conteúdo,
- * na ordem alfabética do nome. A ordem fixa é o que torna o resultado
- * independente da ordem em que o sistema de arquivos devolve as entradas.</p>
- *
- * <p>Os mesmos critérios de seleção do leitor de lote valem aqui: só arquivos
- * com extensão {@code .xml}, dentro de diretório ou de pacote {@code .zip}. Se
- * os dois divergissem, o resumo passaria a descrever um conjunto diferente do
- * que foi efetivamente auditado.</p>
- *
- * <p>Arquivo ilegível não é ignorado no resumo: ele fez parte da entrada, mesmo
- * sem ter virado documento. O resumo descreve o que foi apresentado ao sistema,
- * não o que ele conseguiu ler.</p>
- */
+// Classe que calcula o resumo SHA-256 dos arquivos de uma origem, que é o hashEntrada da execução: lotes iguais dão o mesmo resumo, e qualquer arquivo a mais, a menos ou alterado muda o resumo. Entram só os .xml, em ordem alfabética, inclusive os que não puderam ser lidos.
 final class ResumoDaEntrada {
 
     private static final String ALGORITMO = "SHA-256";
@@ -46,10 +24,11 @@ final class ResumoDaEntrada {
     private static final String EXTENSAO_DE_PACOTE = ".zip";
     private static final byte SEPARADOR = 0x1f;
 
+    // Construtor privado: ninguém cria objeto desta classe, só usa os métodos estáticos.
     private ResumoDaEntrada() {
     }
 
-    /** Calcula o resumo do conjunto de arquivos da origem. */
+    // Método estático que calcula o resumo de uma pasta ou de um .zip; recusa outra coisa.
     static String de(Path origem) throws IOException {
         if (origem == null) {
             throw new IllegalArgumentException("Não há origem cujo resumo calcular.");
@@ -65,6 +44,7 @@ final class ResumoDaEntrada {
                         + "dos dois.").formatted(EXTENSAO_DE_PACOTE, origem));
     }
 
+    // Método auxiliar que calcula o resumo dos .xml de uma pasta.
     private static String resumirDiretorio(Path diretorio) throws IOException {
         List<Path> arquivos;
         try (Stream<Path> percurso = Files.walk(diretorio)) {
@@ -77,8 +57,7 @@ final class ResumoDaEntrada {
 
         MessageDigest resumoDoLote = resumoNovo();
         for (Path arquivo : arquivos) {
-            // Separador de barras normalizado: o mesmo lote lido em Windows e em
-            // Linux precisa produzir o mesmo resumo.
+            // Barras iguais nos dois sistemas, para o mesmo lote dar o mesmo resumo no Windows e no Linux.
             String nome = diretorio.relativize(arquivo).toString().replace('\\', '/');
             try (InputStream conteudo = Files.newInputStream(arquivo)) {
                 acrescentar(resumoDoLote, nome, conteudo);
@@ -87,6 +66,7 @@ final class ResumoDaEntrada {
         return emHexadecimalMinusculo(resumoDoLote.digest());
     }
 
+    // Método auxiliar que calcula o resumo dos .xml de um .zip.
     private static String resumirPacote(Path pacote) throws IOException {
         MessageDigest resumoDoLote = resumoNovo();
         try (ZipFile arquivoCompactado = new ZipFile(pacote.toFile(), StandardCharsets.UTF_8)) {
@@ -105,6 +85,7 @@ final class ResumoDaEntrada {
         return emHexadecimalMinusculo(resumoDoLote.digest());
     }
 
+    // Método auxiliar que acrescenta ao resumo o nome e o resumo do conteúdo de um arquivo.
     private static void acrescentar(MessageDigest resumoDoLote, String nome, InputStream conteudo)
             throws IOException {
         resumoDoLote.update(nome.getBytes(StandardCharsets.UTF_8));
@@ -113,6 +94,7 @@ final class ResumoDaEntrada {
         resumoDoLote.update(SEPARADOR);
     }
 
+    // Método auxiliar que calcula o resumo do conteúdo de um arquivo, sem guardar nada dele.
     private static byte[] resumoDe(InputStream conteudo) throws IOException {
         MessageDigest resumoDoArquivo = resumoNovo();
         byte[] descarte = new byte[8192];
@@ -124,6 +106,7 @@ final class ResumoDaEntrada {
         return resumoDoArquivo.digest();
     }
 
+    // Método auxiliar que cria um calculador de SHA-256.
     private static MessageDigest resumoNovo() {
         try {
             return MessageDigest.getInstance(ALGORITMO);
@@ -134,16 +117,19 @@ final class ResumoDaEntrada {
         }
     }
 
+    // Método auxiliar que diz se o nome termina em .xml.
     private static boolean ehDocumento(String nome) {
         return nome.toLowerCase(Locale.ROOT).endsWith(EXTENSAO_DE_DOCUMENTO);
     }
 
+    // Método auxiliar que diz se a origem é um .zip.
     private static boolean ehPacote(Path origem) {
         return origem.getFileName() != null
                 && origem.getFileName().toString().toLowerCase(Locale.ROOT)
                         .endsWith(EXTENSAO_DE_PACOTE);
     }
 
+    // Método auxiliar que escreve os bytes em hexadecimal minúsculo.
     private static String emHexadecimalMinusculo(byte[] bytes) {
         StringBuilder texto = new StringBuilder(bytes.length * 2);
         for (byte umByte : bytes) {

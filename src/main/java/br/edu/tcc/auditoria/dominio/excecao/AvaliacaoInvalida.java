@@ -1,8 +1,8 @@
 package br.edu.tcc.auditoria.dominio.excecao;
 
-/** Tentativa de construir uma avaliação sem os dados que a tornam conferível. */
 public class AvaliacaoInvalida extends ExcecaoDeDominio {
 
+    // Construtor que recebe a mensagem de erro e chama RuntimeException com essa mensagem.
     public AvaliacaoInvalida(String mensagem) {
         super(mensagem);
     }

@@ -27,43 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Converte o objeto de leiaute produzido pelo {@link LeitorDocumentoFiscal} no
- * modelo de domínio.
- *
- * <p>É a fronteira do sistema. Daqui para dentro não existem classes geradas
- * pelo JAXB, não existe {@code null} representando ausência e não existe
- * identificador de participante em texto claro.</p>
- *
- * <h2>Ausente não vira zero</h2>
- *
- * <p>Todo campo que pode não vir no XML atravessa como {@code Optional}: campo
- * ausente e campo com espaço em branco viram {@code Optional.empty()}, e campo
- * declarado como {@code 0} vira {@code Optional.of(BigDecimal.ZERO)}. São
- * situações fiscalmente distintas e produzem apontamentos distintos — ver D002
- * em {@code docs/DECISOES-ARQUITETURA.md}.</p>
- *
- * <p>Os valores monetários são construídos direto do texto do XML, o que
- * preserva a escala declarada: {@code "0"} e {@code "0.00"} continuam
- * distinguíveis depois de normalizados.</p>
- *
- * <h2>Onde o leiaute traz um campo e o domínio tem dois</h2>
- *
- * <p>O grupo {@code IBSCBS} do item declara um único {@code CST}, um único
- * {@code cClassTrib} e uma única base de cálculo {@code vBC}, válidos para os
- * dois tributos. O modelo de domínio tem campo separado para IBS e para CBS.
- * A normalização repete o valor declarado nos dois campos, porque foi isso que o
- * documento afirmou dos dois tributos. Deixar o lado da CBS vazio faria as
- * regras apontarem ausência de campo que o documento preencheu.</p>
- *
- * <h2>O que faz o documento inteiro ser recusado</h2>
- *
- * <p>Quando um valor lido não tem sequer a forma que o domínio exige — chave com
- * 43 dígitos, NCM com 2 — a exceção de domínio sobe e o documento não é
- * normalizado. Não há conserto silencioso e não há descarte de campo: um
- * documento que o modelo não consegue representar fielmente é registrado como
- * falha e fica visível, em vez de entrar no relatório pela metade.</p>
- */
+// Classe que converte o que o LeitorDocumentoFiscal leu no modelo de domínio; daqui para dentro não há classe do JAXB, null nem CNPJ ou CPF em texto claro. Campo que não veio vira Optional vazio, e 0 continua zero; o CST, o cClassTrib e a base, que o XML declara uma vez só, são repetidos para IBS e CBS.
 public final class NormalizadorDocumento {
 
     private static final String PREFIXO_DO_IDENTIFICADOR_NA_CHAVE = "NFe";
@@ -71,6 +35,7 @@ public final class NormalizadorDocumento {
 
     private final Pseudonimizador pseudonimizador;
 
+    // Construtor que recebe o pseudonimizador; recusa nulo, porque identificador não entra no domínio em texto claro.
     public NormalizadorDocumento(Pseudonimizador pseudonimizador) {
         if (pseudonimizador == null) {
             throw new IllegalArgumentException(
@@ -80,25 +45,7 @@ public final class NormalizadorDocumento {
         this.pseudonimizador = pseudonimizador;
     }
 
-    /**
-     * Normaliza o documento e os seus itens.
-     *
-     * @throws DocumentoFiscalIlegivel se faltar no XML algo sem o que o
-     *                                 documento não pode ser representado
-     * @throws ExcecaoDeDominio        se algum valor declarado não tiver a forma
-     *                                 que o domínio exige
-     */
-    /*
-     * Emenda da etapa de conferência, sobre a Etapa 4.
-     *
-     * O método ganhou o registro de descrições. Não há sobrecarga sem ele de
-     * propósito: um valor padrão silencioso faria um caminho de leitura deixar de
-     * registrar descrição sem que ninguém decidisse isso. Quem não quer registrar
-     * passa RegistroDeDescricoesDeProduto.DESCARTA, que é uma decisão escrita.
-     *
-     * A descrição NÃO entra em ItemDocumento e NÃO chega ao domínio: nenhuma regra
-     * a examina, e o motor continua recebendo exatamente o que recebia.
-     */
+    // Normaliza o documento e os itens; recusa se faltar algo obrigatório ou se um valor não tiver a forma que o domínio exige. Mudou na Etapa 11: ganhou o registro de descrições, sem valor padrão, e a descrição não entra no domínio.
     public DocumentoComItens normalizar(
             TNFe documentoLido, RegistroDeDescricoesDeProduto descricoes) {
 
@@ -132,18 +79,7 @@ public final class NormalizadorDocumento {
                 documento, itens(documento.chaveAcesso(), informacoes, descricoes));
     }
 
-    /**
-     * Os itens do documento, registrando a descrição de cada um ao construí-lo.
-     *
-     * <p>O registro acontece aqui, e não num segundo laço depois, porque aqui o
-     * item e o {@code det} que o originou estão na mão ao mesmo tempo. Parear duas
-     * listas por índice depois funcionaria enquanto as duas fossem montadas na
-     * mesma ordem — e deixaria de funcionar no dia em que uma delas ganhasse um
-     * filtro, sem que nada acusasse.</p>
-     *
-     * <p>O endereço da descrição é {@code HashDoItem.de(chave, item)}: a mesma
-     * função, sobre as mesmas entradas, que o acervo usa para gravar o item.</p>
-     */
+    // Método auxiliar que monta os itens e registra a descrição de cada um no mesmo passo, pelo HashDoItem, o mesmo endereço que o acervo usa.
     private static List<ItemDocumento> itens(
             ChaveAcesso chaveAcesso,
             TNFe.InfNFe informacoes,
@@ -159,12 +95,13 @@ public final class NormalizadorDocumento {
         return itens;
     }
 
-    /** O xProd como veio, ou nulo se o documento não o trouxe. */
+    // Método auxiliar que devolve o xProd como veio, ou null se a nota não o trouxe.
     private static String descricaoDeclarada(TNFe.InfNFe.Det detalhamento) {
         TNFe.InfNFe.Det.Prod produto = detalhamento.getProd();
         return produto == null ? null : produto.getXProd();
     }
 
+    // Método auxiliar que monta um item com os campos de IBS/CBS como vieram.
     private static ItemDocumento item(TNFe.InfNFe.Det detalhamento) {
         TNFe.InfNFe.Det.Prod produto = exigir(detalhamento.getProd(), "det/prod");
         Optional<TTribNFe> grupo = grupoIbsCbs(detalhamento.getImposto());
@@ -198,14 +135,7 @@ public final class NormalizadorDocumento {
                 cbs.flatMap(declarado -> decimal(declarado.getVCBS())));
     }
 
-    /**
-     * Localiza o grupo {@code IBSCBS} entre os tributos declarados no item.
-     *
-     * <p>O XSD reúne ICMS, IPI, PIS, COFINS, IS e IBSCBS numa mesma escolha
-     * repetível, e o XJC representa isso como uma lista única de elementos. Aqui
-     * o grupo é procurado por nome e por tipo: nome porque é o que o documento
-     * declarou, tipo porque é o que garante a conversão adiante.</p>
-     */
+    // Método auxiliar que acha o grupo IBSCBS entre os tributos do item, pelo nome e pelo tipo.
     private static Optional<TTribNFe> grupoIbsCbs(TNFe.InfNFe.Det.Imposto tributos) {
         if (tributos == null) {
             return Optional.empty();
@@ -219,6 +149,7 @@ public final class NormalizadorDocumento {
         return Optional.empty();
     }
 
+    // Método auxiliar que tira a chave de acesso do atributo Id de infNFe, que começa com "NFe".
     private static String chaveDeAcesso(TNFe.InfNFe informacoes) {
         String identificador = exigirTexto(informacoes.getId(), "infNFe/@Id");
         if (!identificador.startsWith(PREFIXO_DO_IDENTIFICADOR_NA_CHAVE)) {
@@ -230,13 +161,7 @@ public final class NormalizadorDocumento {
         return identificador.substring(PREFIXO_DO_IDENTIFICADOR_NA_CHAVE.length());
     }
 
-    /**
-     * Converte a data e hora de emissão na data do documento.
-     *
-     * <p>Fica a data local declarada, sem conversão de fuso: a auditoria resolve
-     * a vigência das tabelas normativas na data em que o documento diz ter sido
-     * emitido, e não na data em que aquele instante caiu em outro fuso.</p>
-     */
+    // Método auxiliar que pega a data de emissão como a nota declarou, sem converter fuso, porque é nessa data que a vigência é resolvida.
     private static LocalDate dataDeEmissao(String dataEHoraDeclarada) {
         String declarada = exigirTexto(dataEHoraDeclarada, "ide/dhEmi");
         try {
@@ -248,6 +173,7 @@ public final class NormalizadorDocumento {
         }
     }
 
+    // Método auxiliar que lê a UF do emitente; recusa se ela não vier.
     private static Uf ufDoEmitente(TNFe.InfNFe.Emit emitente) {
         TEnderEmi endereco = exigir(emitente.getEnderEmit(), "emit/enderEmit");
         if (endereco.getUF() == null) {
@@ -256,13 +182,7 @@ public final class NormalizadorDocumento {
         return Uf.de(endereco.getUF().value());
     }
 
-    /**
-     * UF do destinatário, quando há destinatário com endereço no país.
-     *
-     * <p>Destinatário no exterior é declarado com a sigla {@code EX}, que não é
-     * unidade federativa. O domínio representa esse caso com ausência, e não com
-     * uma sigla especial.</p>
-     */
+    // Método auxiliar que lê a UF do destinatário; destinatário no exterior (EX) ou sem endereço fica vazio.
     private static Optional<Uf> ufDoDestinatario(TNFe.InfNFe.Dest destinatario) {
         if (destinatario == null) {
             return Optional.empty();
@@ -278,6 +198,7 @@ public final class NormalizadorDocumento {
         return Optional.of(Uf.de(sigla.value()));
     }
 
+    // Método auxiliar que devolve o CNPJ ou o CPF do emitente; recusa se não houver nenhum.
     private static String identificadorDoEmitente(TNFe.InfNFe.Emit emitente) {
         return texto(emitente.getCNPJ())
                 .or(() -> texto(emitente.getCPF()))
@@ -285,6 +206,7 @@ public final class NormalizadorDocumento {
                         "O documento não identifica o emitente: não há CNPJ nem CPF em emit."));
     }
 
+    // Método auxiliar que devolve o CNPJ, o CPF ou o identificador de estrangeiro do destinatário, se houver.
     private static Optional<String> identificadorDoDestinatario(TNFe.InfNFe.Dest destinatario) {
         if (destinatario == null) {
             return Optional.empty();
@@ -294,6 +216,7 @@ public final class NormalizadorDocumento {
                 .or(() -> texto(destinatario.getIdEstrangeiro()));
     }
 
+    // Método auxiliar que lê o número do item; recusa se não for número inteiro.
     private static int numeroDoItem(TNFe.InfNFe.Det detalhamento) {
         String declarado = exigirTexto(detalhamento.getNItem(), "det/@nItem");
         try {
@@ -305,13 +228,7 @@ public final class NormalizadorDocumento {
         }
     }
 
-    /**
-     * Texto declarado, ou ausência.
-     *
-     * <p>Espaço em branco em volta é removido, e campo em branco vira ausência:
-     * o domínio recusa texto vazio de propósito, para que ausência tenha uma
-     * grafia só.</p>
-     */
+    // Método auxiliar que devolve o texto sem espaços em volta, ou vazio quando não veio ou veio em branco.
     private static Optional<String> texto(String declarado) {
         if (declarado == null) {
             return Optional.empty();
@@ -320,22 +237,25 @@ public final class NormalizadorDocumento {
         return semEspacos.isEmpty() ? Optional.empty() : Optional.of(semEspacos);
     }
 
-    /** Valor declarado, com a escala em que foi declarado, ou ausência. */
+    // Método auxiliar que devolve o valor numérico com as casas decimais declaradas, ou vazio.
     private static Optional<BigDecimal> decimal(String declarado) {
         return texto(declarado).map(NormalizadorDocumento::converterEmDecimal);
     }
 
+    // Método auxiliar que exige um texto obrigatório.
     private static String exigirTexto(String declarado, String caminhoNoXml) {
         return texto(declarado).orElseThrow(() -> new DocumentoFiscalIlegivel(
                 "O documento não traz \"%s\", que é obrigatório para identificá-lo."
                         .formatted(caminhoNoXml)));
     }
 
+    // Método auxiliar que exige um valor numérico obrigatório.
     private static BigDecimal exigirDecimal(String declarado, String caminhoNoXml) {
         return decimal(declarado).orElseThrow(() -> new DocumentoFiscalIlegivel(
                 "O documento não traz \"%s\", que é obrigatório.".formatted(caminhoNoXml)));
     }
 
+    // Método auxiliar que converte o texto em BigDecimal; recusa se não for número.
     private static BigDecimal converterEmDecimal(String declarado) {
         try {
             return new BigDecimal(declarado);
@@ -346,6 +266,7 @@ public final class NormalizadorDocumento {
         }
     }
 
+    // Método auxiliar que exige que um grupo do XML exista.
     private static <T> T exigir(T lido, String caminhoNoXml) {
         if (lido == null) {
             throw new DocumentoFiscalIlegivel(

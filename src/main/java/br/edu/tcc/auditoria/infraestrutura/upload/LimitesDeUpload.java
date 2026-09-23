@@ -1,19 +1,6 @@
 package br.edu.tcc.auditoria.infraestrutura.upload;
 
-/**
- * Quanto o sistema aceita receber pela web.
- *
- * <p><strong>Estes têm valor padrão, ao contrário do sal e da tolerância.</strong>
- * A diferença não é de estilo: aqueles dois são escolhas que decidem o que o
- * relatório afirma — quanta divergência some, e se o pseudônimo é reversível —,
- * e escolher por conta própria seria decidir em nome de quem audita. Um limite de
- * tamanho de arquivo não afirma nada sobre documento nenhum; é dimensionamento
- * de máquina, e deixar o sistema parar na subida por falta dele seria zelo mal
- * colocado.</p>
- *
- * <p>Todos são configuráveis. Quem tiver acervo maior que o padrão aumenta os
- * números e segue.</p>
- */
+// Representa quanto o sistema aceita receber pela web. Tem valor padrão, ao contrário do sal e da tolerância, porque um limite de tamanho não afirma nada sobre documento nenhum; todos podem ser configurados.
 public record LimitesDeUpload(
         long tamanhoMaximoDoEnvio,
         int entradasMaximasNoPacote,
@@ -24,6 +11,7 @@ public record LimitesDeUpload(
 
     private static final long MEGABYTE = 1024L * 1024L;
 
+    // Valida que todos os limites sejam maiores que zero e que o piso da razão não seja negativo.
     public LimitesDeUpload {
         exigirPositivo(tamanhoMaximoDoEnvio, "tamanhoMaximoDoEnvio");
         exigirPositivo(entradasMaximasNoPacote, "entradasMaximasNoPacote");
@@ -36,18 +24,7 @@ public record LimitesDeUpload(
         }
     }
 
-    /**
-     * Os padrões.
-     *
-     * <p>O piso de 1 MB para a conferência de razão merece explicação, porque sem
-     * ele a proteção recusaria dado legítimo: <strong>XML de documento fiscal
-     * comprime muito</strong> — é texto com marcação repetida —, e razões de
-     * 30:1 ou 50:1 são normais num arquivo honesto. Abaixo do piso, uma razão
-     * alta não é ameaça nenhuma: o teto absoluto por entrada já limita o estrago
-     * a {@code tamanhoMaximoPorEntrada}, e é ele que faz o trabalho. A razão
-     * existe como segunda barreira para a entrada que já é grande depois de
-     * descomprimida.</p>
-     */
+    // Método estático que devolve os limites padrão. A razão de compressão só é conferida acima de 1 MB, porque XML fiscal comprime muito e razão alta é normal em arquivo pequeno.
     public static LimitesDeUpload padrao() {
         return new LimitesDeUpload(
                 64 * MEGABYTE,
@@ -58,23 +35,27 @@ public record LimitesDeUpload(
                 MEGABYTE);
     }
 
-    /** O tamanho do envio, escrito em megabytes, para a mensagem de recusa. */
+    // Retorna o limite do envio em megabytes, para a mensagem de recusa.
     public String envioEmMegabytes() {
         return emMegabytes(tamanhoMaximoDoEnvio);
     }
 
+    // Retorna o limite por entrada em megabytes, para a mensagem de recusa.
     public String porEntradaEmMegabytes() {
         return emMegabytes(tamanhoMaximoPorEntrada);
     }
 
+    // Retorna o limite total descomprimido em megabytes, para a mensagem de recusa.
     public String totalEmMegabytes() {
         return emMegabytes(totalDescomprimidoMaximo);
     }
 
+    // Método auxiliar que escreve bytes como megabytes.
     private static String emMegabytes(long bytes) {
         return "%d MB".formatted(bytes / MEGABYTE);
     }
 
+    // Método auxiliar que exige valor maior que zero.
     private static void exigirPositivo(long valor, String nomeDoCampo) {
         if (valor < 1) {
             throw new IllegalArgumentException(

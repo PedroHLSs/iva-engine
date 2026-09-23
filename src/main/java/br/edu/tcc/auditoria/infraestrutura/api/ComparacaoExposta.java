@@ -4,16 +4,10 @@ import br.edu.tcc.auditoria.aplicacao.conferencia.ComparacaoDeclaradoEIndicado;
 
 import java.util.List;
 
-/**
- * O declarado ao lado do indicado, como a tela recebe o quadro.
- *
- * <p>{@code quemJulga} não é aviso legal: é a frase que impede a tela de ser lida
- * como um segundo veredito. O quadro não escreve "confere" nem "não confere", e o
- * motivo está em {@link ComparacaoDeclaradoEIndicado} — quem julga são as sete
- * regras, e o julgamento delas já está na situação do produto.</p>
- */
+// Representa o quadro que põe o que a nota declarou ao lado do que a base indica. O quadro não diz se confere; quem julga são as sete regras, e o campo quemJulga lembra isso na tela.
 public record ComparacaoExposta(String quemJulga, List<LinhaExposta> linhas) {
 
+    // Valida que o quadro tenha a frase de quem julga e pelo menos uma linha.
     public ComparacaoExposta {
         if (quemJulga == null || quemJulga.isBlank()) {
             throw new RespostaInvalida(
@@ -25,19 +19,21 @@ public record ComparacaoExposta(String quemJulga, List<LinhaExposta> linhas) {
         linhas = List.copyOf(linhas);
     }
 
+    // Método estático que converte o quadro da aplicação para a resposta.
     static ComparacaoExposta de(ComparacaoDeclaradoEIndicado comparacao) {
         return new ComparacaoExposta(
                 ComparacaoDeclaradoEIndicado.QUEM_JULGA,
                 comparacao.linhas().stream().map(LinhaExposta::de).toList());
     }
 
-    /** Um campo, o que o documento declarou e o que a carga indica. */
+    // Representa uma linha do quadro: o campo, o que a nota declarou (ou o motivo de não ter declarado) e o que a base indica.
     public record LinhaExposta(
             String campo,
             String declarado,
             String motivoDoNaoDeclarado,
             LeituraExposta<String> indicado) {
 
+        // Valida que a linha tenha o campo, o valor declarado ou o motivo de faltar, e o lado da base.
         public LinhaExposta {
             if (campo == null || campo.isBlank()) {
                 throw new RespostaInvalida("A linha do quadro precisa nomear o campo.");
@@ -54,6 +50,7 @@ public record ComparacaoExposta(String quemJulga, List<LinhaExposta> linhas) {
             }
         }
 
+        // Método estático que converte uma linha da aplicação para a resposta.
         static LinhaExposta de(ComparacaoDeclaradoEIndicado.Linha linha) {
             return new LinhaExposta(
                     linha.campo(),

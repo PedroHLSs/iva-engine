@@ -18,40 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Grava uma rodada de auditoria inteira: execução, documentos, itens e
- * apontamentos.
- *
- * <h2>Reprocessar o mesmo lote não duplica nada</h2>
- *
- * <p>Cada coisa é gravada pela sua identidade natural, e não por linha nova:</p>
- *
- * <ul>
- *   <li>documento, pela chave de acesso;</li>
- *   <li>item, pela chave de acesso e pelo número do item;</li>
- *   <li>apontamento, pelo resumo do item, pelo identificador da regra e pela
- *       versão da regra — a mesma chave da tratativa.</li>
- * </ul>
- *
- * <p>As avaliações que não concluíram são a exceção: elas <strong>não</strong>
- * são deduplicadas, porque não concluir é fato da rodada e não do documento. A
- * mesma regra sobre o mesmo item pode não concluir hoje por falta de tabela no
- * catálogo e concluir amanhã, e o papel de trabalho de cada execução precisa
- * mostrar o que valia na hora dela.</p>
- *
- * <p>Só a execução é sempre nova: cada rodada é um fato distinto, com sua hora e
- * suas contagens. O apontamento reencontrado tem o conteúdo atualizado e passa a
- * apontar para a execução que acabou de vê-lo, mantendo a primeira detecção. É
- * isso que faz a tratativa dada por uma pessoa continuar valendo depois de o lote
- * rodar de novo: a linha do apontamento é a mesma, e a chave que a tratativa usa
- * não mudou.</p>
- *
- * <h2>Ordem de gravação</h2>
- *
- * <p>Execução, depois documentos e itens, depois apontamentos. O apontamento tem
- * chave estrangeira para o item e para a execução; gravar fora dessa ordem
- * falharia na primeira restrição.</p>
- */
+// Repositório que grava uma rodada de auditoria inteira: execução, documentos, itens, apontamentos e não concluídas, nessa ordem, por causa das chaves estrangeiras. Documento, item e apontamento são gravados pela identidade natural, então reprocessar o lote não duplica nada e a tratativa continua valendo; só a execução e as não concluídas são sempre novas.
 @Repository
 class RepositorioDaAuditoriaNoBanco implements RepositorioDaAuditoria {
 
@@ -62,6 +29,7 @@ class RepositorioDaAuditoriaNoBanco implements RepositorioDaAuditoria {
     private final AchadoDaExecucaoJpa achadosDaExecucao;
     private final AvaliacaoNaoConcluidaJpa naoConcluidas;
 
+    // Construtor que recebe os repositórios de execução, documento, item, apontamento, vínculo e não concluídas.
     RepositorioDaAuditoriaNoBanco(
             ExecucaoAuditoriaJpa execucoes,
             DocumentoJpa documentos,
@@ -77,6 +45,7 @@ class RepositorioDaAuditoriaNoBanco implements RepositorioDaAuditoria {
         this.naoConcluidas = naoConcluidas;
     }
 
+    // Grava a execução, os documentos com os itens, os apontamentos com o vínculo à execução e as não concluídas.
     @Override
     @Transactional
     public void persistir(ResultadoDaAuditoria resultado) {
@@ -93,12 +62,7 @@ class RepositorioDaAuditoriaNoBanco implements RepositorioDaAuditoria {
         gravarNaoConcluidas(resultado.naoAvaliadas(), execucao.id());
     }
 
-    /**
-     * Grava as avaliações que não concluíram desta execução.
-     *
-     * <p>Sem procurar linha existente: cada execução tem as suas, e a chave única
-     * da tabela é por execução.</p>
-     */
+    // Método auxiliar que grava as avaliações não concluídas da execução, sempre como linhas novas, porque cada execução tem as suas.
     private void gravarNaoConcluidas(List<Avaliacao.NaoAvaliada> avaliacoes, UUID execucaoId) {
         List<AvaliacaoNaoConcluidaEntidade> linhas = new ArrayList<>();
         for (Avaliacao.NaoAvaliada avaliacao : avaliacoes) {
@@ -118,6 +82,7 @@ class RepositorioDaAuditoriaNoBanco implements RepositorioDaAuditoria {
         naoConcluidas.saveAll(linhas);
     }
 
+    // Método auxiliar que grava o recibo da execução.
     private void gravarExecucao(ExecucaoAuditoria execucao) {
         execucoes.save(new ExecucaoAuditoriaEntidade(
                 execucao.id(),
@@ -131,6 +96,7 @@ class RepositorioDaAuditoriaNoBanco implements RepositorioDaAuditoria {
                 execucao.achadosPorRegra()));
     }
 
+    // Método auxiliar que grava o documento e os itens, atualizando as linhas que já existem.
     private void gravarDocumento(DocumentoComItens documentoComItens, Instant momento) {
         String chaveAcesso = documentoComItens.documento().chaveAcesso().valor();
 
@@ -152,7 +118,7 @@ class RepositorioDaAuditoriaNoBanco implements RepositorioDaAuditoria {
         }
     }
 
-    /** Grava o apontamento e devolve o identificador da linha, nova ou reencontrada. */
+    // Método auxiliar que grava o apontamento, atualizando o que já existe com a mesma chave, e devolve o identificador da linha.
     private UUID gravarAchado(AchadoLocalizado localizado, UUID execucaoId, Instant momento) {
         Achado achado = localizado.achado();
         String hashDoItem = localizado.hashDoItem().valor();

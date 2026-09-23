@@ -10,14 +10,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * Vínculo entre uma execução e um apontamento que ela produziu.
- *
- * <p>A linha do apontamento guarda só a primeira e a última execução que o
- * viram. Sem esta tabela, o papel de trabalho de uma execução antiga traria os
- * apontamentos errados — os que a execução mais recente viu — e as contagens do
- * Resumo não bateriam com as linhas da aba de achados.</p>
- */
+// Representa o vínculo entre uma execução e um apontamento que ela produziu. Sem esta tabela, a planilha de uma execução antiga traria os apontamentos da mais recente.
 @Entity
 @Table(name = "achado_da_execucao")
 @IdClass(AchadoDaExecucaoEntidade.Chave.class)
@@ -31,10 +24,11 @@ class AchadoDaExecucaoEntidade {
     @Column(name = "achado_id", nullable = false)
     private UUID achadoId;
 
+    // Construtor vazio exigido pelo JPA.
     protected AchadoDaExecucaoEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe a execução e o apontamento.
     AchadoDaExecucaoEntidade(UUID execucaoId, UUID achadoId) {
         this.execucaoId = execucaoId;
         this.achadoId = achadoId;
@@ -44,20 +38,23 @@ class AchadoDaExecucaoEntidade {
         return achadoId;
     }
 
-    /** Chave composta exigida pelo JPA. */
+    // Representa a chave composta, execução e apontamento, exigida pelo JPA.
     static class Chave implements Serializable {
 
         private UUID execucaoId;
         private UUID achadoId;
 
+        // Construtor vazio exigido pelo JPA.
         Chave() {
         }
 
+        // Construtor que recebe a execução e o apontamento.
         Chave(UUID execucaoId, UUID achadoId) {
             this.execucaoId = execucaoId;
             this.achadoId = achadoId;
         }
 
+        // Compara duas chaves pela execução e pelo apontamento.
         @Override
         public boolean equals(Object outro) {
             if (this == outro) {
@@ -70,6 +67,7 @@ class AchadoDaExecucaoEntidade {
                     && Objects.equals(achadoId, chave.achadoId);
         }
 
+        // Calcula o hash pela execução e pelo apontamento.
         @Override
         public int hashCode() {
             return Objects.hash(execucaoId, achadoId);

@@ -11,59 +11,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Optional;
 import java.util.StringJoiner;
 
-/**
- * Resumo criptográfico do conteúdo declarado de um item, usado como identidade
- * estável do que foi auditado.
- *
- * <h2>Por que existe</h2>
- *
- * <p>Um apontamento precisa poder ser reencontrado depois de o lote ser
- * reprocessado, para que a tratativa dada por uma pessoa não se perca. A linha
- * do banco não serve como identidade: ela é apagada e recriada. O número do
- * item tampouco basta sozinho, porque o mesmo número existe em todo documento.
- * O que identifica o item é <em>o documento em que está</em> mais <em>o que ele
- * declara</em>, e é exatamente isso que este resumo cobre.</p>
- *
- * <h2>O que entra no resumo</h2>
- *
- * <p>A chave de acesso, o número do item e todos os campos declarados do item,
- * na ordem em que {@link ItemDocumento} os declara. Consequências deliberadas:</p>
- *
- * <ul>
- *   <li>Reprocessar o mesmo arquivo produz o mesmo resumo — a tratativa se
- *       aplica de novo.</li>
- *   <li>Se o conteúdo do item mudar, o resumo muda e o apontamento reabre. A
- *       tratativa foi dada sobre um item concreto; item diferente é pergunta
- *       nova.</li>
- *   <li>Campo ausente e campo com zero geram resumos diferentes, porque a
- *       marca de ausência é distinta de qualquer valor. Apagar essa diferença
- *       aqui faria duas situações fiscais distintas compartilharem tratativa.</li>
- *   <li>A escala declarada entra no resumo: {@code 0} e {@code 0,00} são
- *       registros diferentes do mesmo número para a auditoria, e continuam
- *       diferentes aqui.</li>
- * </ul>
- *
- * <p>Não é pseudonimização e não tem sal: o objetivo é identidade reproduzível
- * entre execuções e entre instalações, não sigilo. A chave de acesso já é
- * gravada em texto no repositório de documentos auditados — nada que este
- * resumo cobre é segredo. Dado pessoal do participante não entra aqui nem lá:
- * emitente e destinatário não fazem parte do item.</p>
- *
- * <p><strong>A ausência de sal é o que salva a tratativa quando o sal muda.</strong>
- * Como este resumo não depende do segredo da instalação, trocar o sal de
- * pseudonimização não altera nenhum valor calculado aqui — e a chave da
- * tratativa, que é {@code (este resumo, regra, versão da regra)}, continua
- * apontando para o mesmo item. A decisão humana sobrevive e se reaplica sozinha
- * no reprocessamento.</p>
- *
- * <p>Está escrito porque não é óbvio de fora: quem encontrar um resumo sem sal
- * ao lado de um pseudônimo com sal tende a ler descuido, e a "consertar"
- * acrescentando sal aqui. Isso amarraria toda tratativa registrada ao segredo da
- * instalação, e a primeira troca de sal apagaria o trabalho de auditoria
- * acumulado. O guarda que recusa a subida com sal trocado
- * ({@code infraestrutura.sal}) protege os pseudônimos justamente porque esta
- * parte não precisa de proteção.</p>
- */
+// Representa o resumo (SHA-256) do conteúdo do item, usado para reconhecer o mesmo item quando o lote é reprocessado. Não tem sal de propósito: trocar o sal não muda o resumo, e a tratativa continua valendo. Não acrescentar sal aqui.
 public record HashDoItem(String valor) {
 
     private static final int COMPRIMENTO_ESPERADO = 64;
@@ -71,6 +19,7 @@ public record HashDoItem(String valor) {
     private static final String SEPARADOR_DE_CAMPO = "\u001f";
     private static final String MARCA_DE_AUSENCIA = "\u0000ausente";
 
+    // Valida que o resumo tenha 64 caracteres, só com hexadecimal minúsculo.
     public HashDoItem {
         if (valor == null) {
             throw new TratativaInvalida("O resumo do item não pode ser nulo.");
@@ -86,7 +35,7 @@ public record HashDoItem(String valor) {
         }
     }
 
-    /** Calcula o resumo do item tal como declarado no documento indicado. */
+    // Método estático que calcula o resumo a partir da chave de acesso da nota e de todos os campos do item.
     public static HashDoItem de(ChaveAcesso chaveAcesso, ItemDocumento item) {
         if (chaveAcesso == null) {
             throw new TratativaInvalida(
@@ -99,13 +48,7 @@ public record HashDoItem(String valor) {
         return new HashDoItem(resumir(descrever(chaveAcesso, item)));
     }
 
-    /**
-     * Descrição canônica do item, campo a campo.
-     *
-     * <p>Formato próprio, e não {@code toString()}: o resumo precisa ser estável
-     * entre versões do código, e {@code toString()} de {@code record} muda com o
-     * nome dos componentes.</p>
-     */
+    // Método auxiliar que escreve o item campo a campo num formato próprio; não usa toString() porque ele muda se um campo do record for renomeado.
     private static String descrever(ChaveAcesso chaveAcesso, ItemDocumento item) {
         StringJoiner descricao = new StringJoiner(SEPARADOR_DE_CAMPO);
         descricao.add(chaveAcesso.valor());
@@ -127,15 +70,17 @@ public record HashDoItem(String valor) {
         return descricao.toString();
     }
 
+    // Método auxiliar que troca campo ausente por uma marca própria, para ausente não se confundir com zero.
     private static String texto(Optional<String> valor) {
         return valor.orElse(MARCA_DE_AUSENCIA);
     }
 
-    /** Preserva a escala declarada: para a auditoria, "0" e "0,00" não são o mesmo registro. */
+    // Método auxiliar que escreve o número mantendo as casas decimais: para a auditoria, 0 e 0,00 são registros diferentes.
     private static String quantia(BigDecimal valor) {
         return valor.toPlainString();
     }
 
+    // Método auxiliar que calcula o SHA-256 do texto do item.
     private static String resumir(String descricao) {
         MessageDigest resumo;
         try {
@@ -148,6 +93,7 @@ public record HashDoItem(String valor) {
         return emHexadecimalMinusculo(resumo.digest(descricao.getBytes(StandardCharsets.UTF_8)));
     }
 
+    // Método auxiliar que converte o resultado do SHA-256 em texto hexadecimal minúsculo.
     private static String emHexadecimalMinusculo(byte[] bytes) {
         StringBuilder texto = new StringBuilder(bytes.length * 2);
         for (byte umByte : bytes) {
@@ -157,6 +103,7 @@ public record HashDoItem(String valor) {
         return texto.toString();
     }
 
+    // Método auxiliar que confere se o texto só tem dígitos de 0 a 9 e letras de a a f.
     private static boolean ehHexadecimalMinusculo(String texto) {
         return texto.chars().allMatch(caractere ->
                 (caractere >= '0' && caractere <= '9') || (caractere >= 'a' && caractere <= 'f'));

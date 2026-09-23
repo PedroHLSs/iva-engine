@@ -8,33 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * Apaga o acervo que dependia do sal antigo e adota o sal atual.
- *
- * <h2>Para o caso legítimo</h2>
- *
- * <p>Trocar de sal de propósito é uma decisão defensável — máquina nova, segredo
- * comprometido, instalação recomeçada. O que não é defensável é o sistema decidir
- * sozinho que era isso. Este comando é o lugar onde a pessoa afirma que era.</p>
- *
- * <h2>O que ele NÃO apaga</h2>
- *
- * <p>Tratativas. A chave delas é o hash do item, que não leva sal: a decisão
- * humana continua válida e se reaplica sozinha quando o lote for reprocessado.
- * Apagá-las aqui destruiria trabalho de auditoria que a troca de sal nunca
- * tocou.</p>
- *
- * <p>Catálogo também fica: não tem sal nenhum, e reimportá-lo à toa só criaria
- * uma versão de carga nova sem motivo.</p>
- *
- * <h2>Por que a confirmação é uma palavra, e não uma marca</h2>
- *
- * <p>{@code --confirmo=sim}, e não {@code --confirmo}. O interpretador de
- * argumentos trata opção sem valor como opção em branco, então uma marca solta
- * não chegaria aqui distinguível de ausência. Exigir a palavra resolve isso e, de
- * quebra, torna o comando difícil de rodar por engano ao repetir uma linha do
- * histórico.</p>
- */
+// Classe do comando recomecar-do-zero, que apaga o acervo que dependia do sal antigo e adota o sal atual, para quando a troca de sal foi intencional. Não apaga tratativas nem catálogo, e só roda com --confirmo=sim, a palavra inteira, para não ser rodado por engano.
 @Component
 class ComandoRecomecarDoZero implements Comando {
 
@@ -49,6 +23,7 @@ class ComandoRecomecarDoZero implements Comando {
     private final SalResolvido salResolvido;
     private final Saida saida;
 
+    // Construtor que recebe o acervo, o registro da impressão digital, o sal resolvido e a saída.
     ComandoRecomecarDoZero(
             AcervoSalgado acervo,
             RegistroDaImpressaoDigital registro,
@@ -89,6 +64,7 @@ class ComandoRecomecarDoZero implements Comando {
                 """.formatted(NOME, OPCAO_CONFIRMO, CONFIRMACAO, OPCAO_CONFIRMO);
     }
 
+    // Sem --confirmo=sim não apaga nada; com ele, apaga o acervo, registra o sal atual e mostra o que foi feito.
     @Override
     public void executar(Argumentos argumentos) {
         argumentos.exigirSomente(List.of(OPCAO_CONFIRMO));

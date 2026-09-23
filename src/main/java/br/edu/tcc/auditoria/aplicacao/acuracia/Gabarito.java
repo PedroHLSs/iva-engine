@@ -51,7 +51,7 @@ public final class Gabarito {
         return Optional.ofNullable(porEndereco.get(endereco)).map(LinhaDeGabarito::rotulo);
     }
 
-    /** Indica se o gabarito afirma algo sobre este endereço. */
+    // Indica se o gabarito tem rótulo para este endereço.
     public boolean contem(EnderecoDaAvaliacao endereco) {
         return rotuloDe(endereco).isPresent();
     }

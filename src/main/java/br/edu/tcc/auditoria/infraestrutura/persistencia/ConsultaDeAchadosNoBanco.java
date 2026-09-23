@@ -21,30 +21,20 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Lista apontamentos gravados já acompanhados da tratativa que houver.
- *
- * <p>A tratativa vem junto, e não numa consulta separada feita depois por quem
- * exibe o relatório: apontamento listado sem dizer que já foi tratado faz a
- * mesma pessoa reexaminar a mesma coisa a cada rodada.</p>
- *
- * <p>A busca das tratativas é feita em bloco, pelos resumos dos apontamentos da
- * página, e o pareamento final é por chave completa — resumo do item, regra e
- * versão da regra. Uma tratativa gravada para outra versão da mesma regra não
- * pareia, e o apontamento aparece aberto. Isso é o comportamento pretendido, não
- * um efeito colateral.</p>
- */
+// Classe que lista do banco os apontamentos gravados, já com a tratativa de cada um, para ninguém reexaminar o que já foi tratado. As tratativas são buscadas de uma vez e casadas pela chave completa; tratativa de outra versão da regra não casa, e o apontamento aparece aberto.
 @Component
 class ConsultaDeAchadosNoBanco implements ConsultaDeAchados {
 
     private final AchadoJpa achados;
     private final TratativaJpa tratativas;
 
+    // Construtor que recebe os repositórios de apontamentos e de tratativas.
     ConsultaDeAchadosNoBanco(AchadoJpa achados, TratativaJpa tratativas) {
         this.achados = achados;
         this.tratativas = tratativas;
     }
 
+    // Lista os apontamentos do filtro, do mais grave para o menos grave, até o limite.
     @Override
     @Transactional(readOnly = true)
     public List<AchadoRegistrado> listar(FiltroDeAchados filtro) {
@@ -64,6 +54,7 @@ class ConsultaDeAchadosNoBanco implements ConsultaDeAchados {
                 .toList();
     }
 
+    // Busca um apontamento pelo identificador, com a tratativa.
     @Override
     @Transactional(readOnly = true)
     public Optional<AchadoRegistrado> porId(UUID id) {
@@ -71,6 +62,7 @@ class ConsultaDeAchadosNoBanco implements ConsultaDeAchados {
                 .map(entidade -> montar(entidade, buscarTratativas(List.of(entidade))));
     }
 
+    // Conta os apontamentos do filtro, sem o limite.
     @Override
     @Transactional(readOnly = true)
     public long contar(FiltroDeAchados filtro) {
@@ -81,6 +73,7 @@ class ConsultaDeAchadosNoBanco implements ConsultaDeAchados {
                 filtro.apenasAbertos());
     }
 
+    // Método auxiliar que busca de uma vez as tratativas dos itens encontrados.
     private Map<ChaveDeTratativa, Tratativa> buscarTratativas(List<AchadoEntidade> encontrados) {
         if (encontrados.isEmpty()) {
             return Map.of();
@@ -97,6 +90,7 @@ class ConsultaDeAchadosNoBanco implements ConsultaDeAchados {
         return porChave;
     }
 
+    // Método auxiliar que junta o apontamento com a tratativa da mesma chave, se houver.
     private static AchadoRegistrado montar(
             AchadoEntidade entidade, Map<ChaveDeTratativa, Tratativa> tratativas) {
 

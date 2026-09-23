@@ -12,16 +12,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Lê os recibos de execução gravados. */
+// Classe que lê do banco os recibos das execuções gravadas.
 @Component
 class ConsultaDeExecucoesNoBanco implements ConsultaDeExecucoes {
 
     private final ExecucaoAuditoriaJpa execucoes;
 
+    // Construtor que recebe o repositório de execuções.
     ConsultaDeExecucoesNoBanco(ExecucaoAuditoriaJpa execucoes) {
         this.execucoes = execucoes;
     }
 
+    // Busca a execução mais recente, se houver.
     @Override
     @Transactional(readOnly = true)
     public Optional<ExecucaoAuditoria> maisRecente() {
@@ -30,6 +32,7 @@ class ConsultaDeExecucoesNoBanco implements ConsultaDeExecucoes {
                 .map(ConsultaDeExecucoesNoBanco::paraDominio);
     }
 
+    // Busca uma execução pelo identificador.
     @Override
     @Transactional(readOnly = true)
     public Optional<ExecucaoAuditoria> porId(UUID id) {
@@ -39,6 +42,7 @@ class ConsultaDeExecucoesNoBanco implements ConsultaDeExecucoes {
         return execucoes.findById(id).map(ConsultaDeExecucoesNoBanco::paraDominio);
     }
 
+    // Busca as execuções mais recentes, até a quantidade pedida; recusa quantidade menor que 1.
     @Override
     @Transactional(readOnly = true)
     public List<ExecucaoAuditoria> ultimas(int quantidade) {
@@ -52,14 +56,7 @@ class ConsultaDeExecucoesNoBanco implements ConsultaDeExecucoes {
                 .toList();
     }
 
-    /**
-     * Reconstrói o recibo com as contagens como foram gravadas.
-     *
-     * <p>Pelo construtor, e não pela fábrica {@code ExecucaoAuditoria.de(...)}:
-     * as contagens vêm do banco e não devem ser recalculadas a partir dos
-     * apontamentos de hoje. O que a execução contou naquele dia é o que ela
-     * contou, e é isso que o papel de trabalho tem de mostrar.</p>
-     */
+    // Método auxiliar que remonta o recibo com as contagens como foram gravadas, sem recalcular pelos apontamentos de hoje.
     private static ExecucaoAuditoria paraDominio(ExecucaoAuditoriaEntidade entidade) {
         return new ExecucaoAuditoria(
                 entidade.id(),

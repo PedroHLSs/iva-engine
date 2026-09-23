@@ -1,8 +1,8 @@
 package br.edu.tcc.auditoria.dominio.excecao;
 
-/** Sinaliza apontamento sem identificação de regra, sem evidência ou sem vigência. */
 public class AchadoInvalido extends ExcecaoDeDominio {
 
+    // Construtor que recebe a mensagem de erro e chama RuntimeException com essa mensagem.
     public AchadoInvalido(String mensagem) {
         super(mensagem);
     }

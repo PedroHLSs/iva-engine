@@ -21,34 +21,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Carrega a carga de catálogo mais recente e a entrega pronta para consulta por
- * data.
- *
- * <h2>Por que a carga inteira vai para a memória</h2>
- *
- * <p>Os repositórios em memória da etapa 2 não são um atalho: é neles que mora a
- * resolução por vigência e a recusa de vigências sobrepostas
- * ({@code SerieNormativa}). Consultar o banco registro a registro exigiria
- * reimplementar essa lógica em SQL, em duplicidade, com risco de as duas versões
- * divergirem — e a auditoria passaria a depender de qual caminho foi usado.</p>
- *
- * <p>O custo é aceitável porque um catálogo normativo é pequeno perto de um lote
- * de documentos, e porque ele é carregado uma vez por rodada, não uma vez por
- * documento.</p>
- *
- * <h2>Emenda da etapa de conferência: a segunda porta</h2>
- *
- * <p>Até a Etapa 10 esta classe respondia uma pergunta só — qual é o catálogo de
- * agora —, que é a pergunta de quem vai auditar. A tela de conferência faz outra:
- * qual era o catálogo <em>daquela</em> análise. Por isso a classe passou a
- * implementar também {@link ProvedorDeCatalogoPorVersao}.</p>
- *
- * <p>A montagem é a mesma, e de propósito: fossem dois carregadores, o tratamento
- * exibido na tela poderia divergir do que a auditoria usou por diferença de
- * implementação, e ninguém veria. O que muda entre os dois métodos é só qual linha
- * de {@code carga_catalogo} se busca.</p>
- */
+// Classe que carrega uma carga de catálogo do banco para os repositórios em memória, onde fica a resolução por vigência, para essa lógica não ser repetida em SQL. Entrega a carga mais recente, para auditar, ou a de uma versão, para reabrir uma análise; a segunda porta foi acrescentada na Etapa 11, com a mesma montagem.
 @Component
 class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalogoPorVersao {
 
@@ -60,6 +33,7 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalog
     private final ItemAnexoJpa itensDeAnexo;
     private final AliquotaVigenteJpa aliquotas;
 
+    // Construtor que recebe os repositórios de cada tabela do catálogo.
     ProvedorDeCatalogoNoBanco(
             CargaCatalogoJpa cargas,
             CoberturaCatalogoJpa coberturas,
@@ -77,6 +51,7 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalog
         this.aliquotas = aliquotas;
     }
 
+    // Carrega a carga mais recente; recusa se nenhuma foi importada.
     @Override
     @Transactional(readOnly = true)
     public CatalogoParaAuditoria carregar() {
@@ -89,12 +64,7 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalog
         return montar(carga);
     }
 
-    /**
-     * A carga daquela versão, vazio se ela não está mais gravada.
-     *
-     * <p>Não cai na mais recente quando não encontra. Cair seria mostrar, ao lado
-     * de um apontamento de março, a tabela de setembro que não o produziu.</p>
-     */
+    // Carrega a carga daquela versão, ou vazio se ela não está mais gravada; nunca cai na mais recente, para não mostrar ao lado de um apontamento uma tabela que não o produziu.
     @Override
     @Transactional(readOnly = true)
     public Optional<CatalogoParaAuditoria> daVersao(String versao) {
@@ -104,6 +74,7 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalog
         return cargas.findByVersao(versao).map(this::montar);
     }
 
+    // Método auxiliar que monta o catálogo com a cobertura, a procedência e os quatro repositórios em memória.
     private CatalogoParaAuditoria montar(CargaCatalogoEntidade carga) {
         UUID cargaId = carga.id();
         return new CatalogoParaAuditoria(
@@ -128,6 +99,7 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalog
                                 .toList()));
     }
 
+    // Método auxiliar que lê a cobertura declarada da carga, tabela por tabela.
     private CoberturaDoCatalogo cobertura(UUID cargaId, String versao) {
         Map<String, ProcedenciaNormativa> porTabela = new LinkedHashMap<>();
         for (CoberturaCatalogoEntidade linha : coberturas.findByCargaId(cargaId)) {
@@ -140,6 +112,7 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalog
                 exigir(porTabela, TabelaNormativa.ITEM_ANEXO, versao));
     }
 
+    // Método auxiliar que exige a cobertura de uma tabela; recusa carga sem ela.
     private static ProcedenciaNormativa exigir(
             Map<String, ProcedenciaNormativa> porTabela, TabelaNormativa tabela, String versao) {
         ProcedenciaNormativa procedencia = porTabela.get(tabela.name());

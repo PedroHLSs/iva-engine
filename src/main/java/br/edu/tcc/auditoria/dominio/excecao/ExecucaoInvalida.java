@@ -1,8 +1,8 @@
 package br.edu.tcc.auditoria.dominio.excecao;
 
-/** Tentativa de registrar uma execução de auditoria sem o que a torna reproduzível. */
 public class ExecucaoInvalida extends ExcecaoDeDominio {
 
+    // Construtor que recebe a mensagem de erro e chama RuntimeException com essa mensagem.
     public ExecucaoInvalida(String mensagem) {
         super(mensagem);
     }

@@ -5,20 +5,10 @@ import br.edu.tcc.auditoria.dominio.excecao.PeriodoVigenciaInvalido;
 import java.time.LocalDate;
 import java.util.Optional;
 
-/**
- * Intervalo de datas em que uma regra ou uma linha de tabela normativa vale.
- *
- * <p>O fim é opcional: vigência ainda aberta se representa com
- * {@code Optional.empty()}, não com uma data distante escolhida a esmo.</p>
- *
- * <p>Nenhuma data está fixada em código neste projeto. As datas de vigência são
- * conteúdo normativo e chegam junto com as tabelas importadas.</p>
- *
- * @param inicio primeiro dia de vigência, inclusive
- * @param fim    último dia de vigência, inclusive; vazio se ainda aberta
- */
+// Representa o período em que uma regra ou uma linha de tabela vale. Fim vazio quer dizer que ainda está valendo; nenhuma data fica fixa no código.
 public record PeriodoVigencia(LocalDate inicio, Optional<LocalDate> fim) {
 
+    // Valida que exista início e que o fim, se houver, não seja antes do início.
     public PeriodoVigencia {
         if (inicio == null) {
             throw new PeriodoVigenciaInvalido("O início da vigência não pode ser nulo.");
@@ -33,12 +23,12 @@ public record PeriodoVigencia(LocalDate inicio, Optional<LocalDate> fim) {
         }
     }
 
-    /** Vigência aberta: vale a partir de {@code inicio}, sem fim conhecido. */
+    // Método estático que cria um período que vale a partir da data, sem fim.
     public static PeriodoVigencia aPartirDe(LocalDate inicio) {
         return new PeriodoVigencia(inicio, Optional.empty());
     }
 
-    /** Vigência fechada, com os dois extremos inclusive. */
+    // Método estático que cria um período com início e fim, contando os dois dias.
     public static PeriodoVigencia de(LocalDate inicio, LocalDate fim) {
         if (fim == null) {
             throw new PeriodoVigenciaInvalido(
@@ -47,7 +37,7 @@ public record PeriodoVigencia(LocalDate inicio, Optional<LocalDate> fim) {
         return new PeriodoVigencia(inicio, Optional.of(fim));
     }
 
-    /** Indica se a data cai dentro do período, considerando ambos os extremos inclusive. */
+    // Indica se a data está dentro do período, contando o primeiro e o último dia.
     public boolean contem(LocalDate data) {
         if (data == null) {
             throw new PeriodoVigenciaInvalido("A data consultada não pode ser nula.");
@@ -55,14 +45,7 @@ public record PeriodoVigencia(LocalDate inicio, Optional<LocalDate> fim) {
         return !data.isBefore(inicio) && fim.map(ultimoDia -> !data.isAfter(ultimoDia)).orElse(true);
     }
 
-    /**
-     * Indica se a vigência ainda está aberta, isto é, sem último dia conhecido.
-     *
-     * <p>Ainda não é consumido em produção: a resolução por vigência usa
-     * {@link #contem(java.time.LocalDate)}. Existe porque "vigência aberta" é
-     * uma condição que o relatório precisa saber enunciar, e perguntá-la pelo
-     * {@code fim().isEmpty()} espalharia a definição pelo código.</p>
-     */
+    // Indica se o período ainda está aberto, sem último dia. Ainda não é usado em produção.
     public boolean estaAberta() {
         return fim.isEmpty();
     }

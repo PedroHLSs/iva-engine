@@ -5,30 +5,14 @@ import br.edu.tcc.auditoria.dominio.excecao.TratativaInvalida;
 
 import java.time.Instant;
 
-/**
- * Decisão humana sobre um apontamento, com a razão registrada.
- *
- * <p><strong>A justificativa é obrigatória.</strong> Uma tratativa sem razão
- * escrita transforma o relatório numa lista de apontamentos silenciados sem que
- * se saiba por quê — o oposto do que uma auditoria produz. O construtor recusa
- * texto vazio ou só com espaço.</p>
- *
- * <p>A tratativa é presa à {@link ChaveDeTratativa}, isto é, ao conteúdo do item
- * e à versão da regra, e não à linha do apontamento no banco. É isso que a faz
- * sobreviver ao reprocessamento do lote e reabrir quando a regra muda de versão
- * — ver {@link ChaveDeTratativa}.</p>
- *
- * @param chave         o item e a regra tratados
- * @param decisao       o que foi decidido
- * @param justificativa por quê, em texto livre e obrigatório
- * @param registradoEm  quando a decisão foi registrada
- */
+// Representa a decisão de uma pessoa sobre um apontamento, com justificativa obrigatória. Fica presa à chave (item, regra e versão), e não à linha do banco, por isso continua valendo quando o lote é reprocessado.
 public record Tratativa(
         ChaveDeTratativa chave,
         DecisaoDeTratativa decisao,
         String justificativa,
         Instant registradoEm) {
 
+    // Valida que a tratativa tenha chave, decisão, justificativa preenchida e data de registro.
     public Tratativa {
         if (chave == null) {
             throw new TratativaInvalida("A tratativa precisa dizer o que está tratando.");
@@ -49,22 +33,19 @@ public record Tratativa(
         }
     }
 
-    /** Indica se esta tratativa responde ao apontamento indicado, para o item indicado. */
+    // Indica se esta tratativa vale para o apontamento e o item indicados.
     public boolean seAplicaA(Achado achado, HashDoItem hashDoItem) {
         return chave.equals(ChaveDeTratativa.de(hashDoItem, achado));
     }
 
-    /** Atalho para {@code chave().hashDoItem()}. */
     public HashDoItem hashDoItem() {
         return chave.hashDoItem();
     }
 
-    /** Atalho para {@code chave().regraId()}. */
     public String regraId() {
         return chave.regraId();
     }
 
-    /** Atalho para {@code chave().regraVersao()}. */
     public String regraVersao() {
         return chave.regraVersao();
     }

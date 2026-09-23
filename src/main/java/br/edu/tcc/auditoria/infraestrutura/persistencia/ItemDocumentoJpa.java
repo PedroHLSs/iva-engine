@@ -7,16 +7,12 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/** Acesso aos itens dos documentos auditados. */
+// Repositório utilizado para acessar os itens dos documentos auditados.
 interface ItemDocumentoJpa extends JpaRepository<ItemDocumentoEntidade, UUID> {
 
+    // Busca um item pela chave de acesso e pelo número.
     Optional<ItemDocumentoEntidade> findByChaveAcessoAndNumeroItem(String chaveAcesso, int numeroItem);
 
-    /*
-     * Acrescentado na Etapa 11. Buscar item a item bastava para a gravacao, que
-     * percorre um documento de cada vez; a tela de conferencia de um lote pede os
-     * itens de centenas de notas de uma vez, e uma consulta por item seriam
-     * milhares de idas ao banco para desenhar uma tabela.
-     */
+    // Busca os itens de várias notas de uma vez, para a tela do lote não fazer uma consulta por item. Acrescentado na Etapa 11.
     List<ItemDocumentoEntidade> findByChaveAcessoIn(Collection<String> chavesDeAcesso);
 }

@@ -8,15 +8,17 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Optional;
 
-/** Adaptador em memória do repositório de registros de NCM. */
+// Repositório em memória utilizado para buscar os registros de NCM válidos numa data.
 public final class RepositorioNcmEmMemoria implements RepositorioNcm {
 
     private final CatalogoEmMemoria<RegistroNcm> catalogo;
 
+    // Construtor que recebe os registros e monta o catálogo; recusa datas sobrepostas para o mesmo NCM.
     public RepositorioNcmEmMemoria(Collection<RegistroNcm> registros) {
         this.catalogo = new CatalogoEmMemoria<>(registros);
     }
 
+    // Busca o registro do NCM válido na data; NCM nulo devolve vazio.
     @Override
     public Optional<RegistroNcm> buscarVigenteEm(Ncm ncm, LocalDate data) {
         if (ncm == null) {
@@ -25,7 +27,7 @@ public final class RepositorioNcmEmMemoria implements RepositorioNcm {
         return catalogo.vigenteEm(ncm.valor(), data);
     }
 
-    /** Quantidade de NCM distintos carregados, independentemente de vigência. */
+    // Retorna quantos NCM diferentes foram carregados, sem olhar a data.
     public int quantidadeDeNcms() {
         return catalogo.quantidadeDeSeries();
     }

@@ -10,41 +10,16 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * O que o documento declarou, ao lado do que a base normativa indica, campo a
- * campo.
- *
- * <h2>Esta tela não emite um segundo veredito</h2>
- *
- * <p>A comparação põe os dois lados um do lado do outro e <strong>para
- * aí</strong>. Ela não escreve "confere" nem "não confere", e a omissão é
- * deliberada.</p>
- *
- * <p>Quem julga se o declarado procede são as sete regras, e o julgamento delas
- * já está na situação do produto. Uma comparação que emitisse veredito próprio
- * seria um oitavo juízo, mais fraco que os outros sete: ignoraria a tolerância de
- * valor, ignoraria cobertura declarada da carga e ignoraria as condições que cada
- * regra examina. Na prática ela acabaria dizendo "diferente" onde a regra
- * concluiu sem violação — e a pessoa veria a interface contradizendo o motor, sem
- * ter como saber qual dos dois está certo.</p>
- *
- * <p>O que a comparação afirma é só sobre presença: quando um dos lados não
- * existe, ela diz qual e por quê. Isso é fato sobre o documento e sobre a carga,
- * não sobre a norma.</p>
- *
- * <h2>Os números vão como texto, com a escala declarada</h2>
- *
- * <p>Pelo mesmo motivo da D009: a diferença entre um percentual declarado com
- * duas casas e um com quatro é informação, e some no primeiro arredondamento.</p>
- */
+// Representa o que o documento declarou ao lado do que a base normativa indica, campo a campo, sem emitir veredito próprio.
 public record ComparacaoDeclaradoEIndicado(List<Linha> linhas) {
 
-    /** O que a tela escreve quando as regras é que respondem pelo veredito. */
+    // Texto que a tela exibe para lembrar que quem julga são as regras, e não este quadro.
     public static final String QUEM_JULGA =
             "A conferência das regras sobre este produto está na situação acima e nos passos abaixo. "
                     + "Este quadro só põe lado a lado o que o documento declarou e o que a base "
                     + "normativa carregada indica.";
 
+    // Valida que a comparação tenha linhas e que nenhuma delas seja nula.
     public ComparacaoDeclaradoEIndicado {
         if (linhas == null || linhas.isEmpty()) {
             throw new ConferenciaInvalida(
@@ -56,14 +31,7 @@ public record ComparacaoDeclaradoEIndicado(List<Linha> linhas) {
         linhas = List.copyOf(linhas);
     }
 
-    /**
-     * As cinco linhas em que o documento e a carga falam do mesmo campo.
-     *
-     * <p>Base de cálculo e valor do tributo ficam de fora <em>de propósito</em>:
-     * a carga não declara nenhum dos dois, e uma linha cujo lado direito é sempre
-     * vazio ensinaria a pessoa a ignorar o lado direito. Esses campos aparecem no
-     * bloco do que foi declarado, onde pertencem.</p>
-     */
+    // Método estático que monta as cinco linhas comparáveis; base de cálculo e valor ficam de fora porque a carga não os declara.
     public static ComparacaoDeclaradoEIndicado de(
             ItemDocumento item, TratamentoIdentificado tratamento) {
 
@@ -104,6 +72,7 @@ public record ComparacaoDeclaradoEIndicado(List<Linha> linhas) {
         return new ComparacaoDeclaradoEIndicado(linhas);
     }
 
+    // Método auxiliar que busca os CSTs que a carga admite para o cClassTrib, ou o motivo de não haver.
     private static LeituraDoCatalogo<String> cstsAdmitidos(TratamentoIdentificado tratamento) {
         LeituraDoCatalogo<ClassificacaoDoCatalogo> classificacao = tratamento.classificacao();
         if (!classificacao.respondido()) {
@@ -117,6 +86,7 @@ public record ComparacaoDeclaradoEIndicado(List<Linha> linhas) {
         return LeituraDoCatalogo.de(admitidos);
     }
 
+    // Método auxiliar que busca os percentuais da carga para um tributo, ou o motivo de não haver.
     private static LeituraDoCatalogo<String> percentuaisDe(
             TratamentoIdentificado tratamento, Tributo tributo) {
 
@@ -137,19 +107,14 @@ public record ComparacaoDeclaradoEIndicado(List<Linha> linhas) {
                 .toList());
     }
 
-    /**
-     * Um campo, o que veio no documento e o que a carga indica.
-     *
-     * @param declarado            o que o documento trouxe, vazio se não trouxe
-     * @param motivoDoNaoDeclarado por que não trouxe, obrigatório quando vazio
-     * @param indicado             o que a carga diz, ou por que não diz
-     */
+    // Representa uma linha da comparação: o campo, o que veio no documento e o que a carga indica.
     public record Linha(
             String campo,
             Optional<String> declarado,
             Optional<String> motivoDoNaoDeclarado,
             LeituraDoCatalogo<String> indicado) {
 
+        // Valida que a linha tenha o valor declarado ou o motivo da ausência, exatamente um dos dois.
         public Linha {
             if (campo == null || campo.isBlank()) {
                 throw new ConferenciaInvalida("A linha da comparação precisa nomear o campo.");
@@ -171,6 +136,7 @@ public record ComparacaoDeclaradoEIndicado(List<Linha> linhas) {
             }
         }
 
+        // Método estático que cria a linha, preenchendo o motivo quando o documento não declarou o campo.
         static Linha de(
                 String campo,
                 Optional<String> declarado,

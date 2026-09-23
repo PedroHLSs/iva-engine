@@ -1,8 +1,8 @@
 package br.edu.tcc.auditoria.dominio.excecao;
 
-/** Sinaliza período de vigência sem início ou com fim anterior ao início. */
 public class PeriodoVigenciaInvalido extends ExcecaoDeDominio {
 
+    // Construtor que recebe a mensagem de erro e chama RuntimeException com essa mensagem.
     public PeriodoVigenciaInvalido(String mensagem) {
         super(mensagem);
     }

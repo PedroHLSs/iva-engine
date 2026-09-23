@@ -6,42 +6,17 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-/**
- * Resumo criptográfico do sal em uso, gravado no banco para que a troca de sal
- * não passe despercebida.
- *
- * <h2>O sal nunca é gravado, só a impressão digital</h2>
- *
- * <p>O que vai para o banco é SHA-256 sobre um rótulo fixo mais o sal. Isso
- * basta para comparar dois sais sem guardar nenhum dos dois: se a impressão
- * digital bate, é o mesmo sal; se não bate, é outro.</p>
- *
- * <p>O rótulo fixo é separação de domínio. Sem ele, o valor gravado aqui seria
- * o mesmo resumo que qualquer outra ferramenta produziria sobre o mesmo sal, e
- * duas coisas que deveriam ser independentes passariam a se confirmar
- * mutuamente. Com ele, a impressão digital só serve para o que foi feita.</p>
- *
- * <p>Não é o resumo usado na pseudonimização, e nem poderia ser: aquele leva o
- * identificador do participante junto. Trocar um pelo outro faria a coluna do
- * banco carregar algo derivado de dado pessoal.</p>
- *
- * <h2>Por que isto não enfraquece o sal</h2>
- *
- * <p>Quem obtiver o banco obtém a impressão digital, e a partir dela poderia
- * tentar descobrir o sal por força bruta. Isso só funciona se o sal for
- * adivinhável — e o piso de {@code SalDeInstalacao} é de 32 caracteres, com o
- * sal gerado automaticamente vindo de 256 bits de {@code SecureRandom}. Contra
- * um segredo desse tamanho a força bruta não termina.</p>
- */
+// Representa a impressão digital do sal: SHA-256 de um rótulo fixo mais o sal, gravada no banco para perceber a troca de sal sem guardar o sal. Com sal de pelo menos 32 caracteres, ou gerado com 256 bits, não dá para descobrir o sal a partir dela.
 public record ImpressaoDigitalDoSal(String valor) {
 
     private static final String ALGORITMO = "SHA-256";
 
-    /** Separação de domínio: este resumo só vale como impressão digital de sal. */
+    // Rótulo fixo que faz este resumo servir só como impressão digital de sal.
     private static final String ROTULO = "auditoria.sal.impressao-digital.v1";
 
     private static final int COMPRIMENTO_ESPERADO = 64;
 
+    // Valida que a impressão digital tenha 64 caracteres, só com hexadecimal minúsculo.
     public ImpressaoDigitalDoSal {
         if (valor == null) {
             throw new SalTrocado("A impressão digital do sal não pode ser nula.");
@@ -57,7 +32,7 @@ public record ImpressaoDigitalDoSal(String valor) {
         }
     }
 
-    /** Calcula a impressão digital do sal informado. */
+    // Método estático que calcula a impressão digital do sal informado.
     public static ImpressaoDigitalDoSal de(SalDeInstalacao sal) {
         if (sal == null) {
             throw new SalTrocado("Não há sal a resumir.");
@@ -69,25 +44,23 @@ public record ImpressaoDigitalDoSal(String valor) {
         return new ImpressaoDigitalDoSal(emHexadecimalMinusculo(resumo.digest()));
     }
 
-    /**
-     * Forma curta, para caber numa linha de log sem virar ruído.
-     *
-     * <p>Doze caracteres não identificam o sal e bastam para uma pessoa comparar
-     * duas linhas de diagnóstico a olho. O valor inteiro continua disponível.</p>
-     */
+    // Retorna os 12 primeiros caracteres, para caber numa linha de log; eles não identificam o sal.
     public String abreviada() {
         return valor.substring(0, 12);
     }
 
+    // Mostra só a forma curta da impressão digital.
     @Override
     public String toString() {
         return "ImpressaoDigitalDoSal[" + abreviada() + "...]";
     }
 
+    // Método auxiliar que confere se o caractere é hexadecimal minúsculo.
     private static boolean ehHexadecimalMinusculo(int caractere) {
         return (caractere >= '0' && caractere <= '9') || (caractere >= 'a' && caractere <= 'f');
     }
 
+    // Método auxiliar que escreve os bytes em hexadecimal minúsculo.
     private static String emHexadecimalMinusculo(byte[] bytes) {
         StringBuilder texto = new StringBuilder(bytes.length * 2);
         for (byte parte : bytes) {
@@ -97,6 +70,7 @@ public record ImpressaoDigitalDoSal(String valor) {
         return texto.toString();
     }
 
+    // Método auxiliar que cria um calculador de SHA-256.
     private static MessageDigest resumoNovo() {
         try {
             return MessageDigest.getInstance(ALGORITMO);

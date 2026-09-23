@@ -3,26 +3,10 @@ package br.edu.tcc.auditoria.dominio.tratativa;
 import br.edu.tcc.auditoria.dominio.Achado;
 import br.edu.tcc.auditoria.dominio.excecao.TratativaInvalida;
 
-/**
- * O que uma tratativa trata: um item concreto, sob uma regra, numa versão dessa
- * regra.
- *
- * <p><strong>A versão da regra faz parte da chave, de propósito.</strong> Uma
- * justificativa é dada contra um critério — "esta regra, nesta versão, aponta
- * isto, e eu discordo por tal razão". Quando o critério muda, a justificativa
- * deixa de responder à pergunta que está sendo feita. Então a tratativa não é
- * encontrada, e o apontamento reabre para nova leitura humana.</p>
- *
- * <p>O efeito é intencional e não deve ser "corrigido" fazendo a busca ignorar a
- * versão: isso faria uma decisão antiga silenciar um apontamento novo que ela
- * nunca examinou. A tratativa antiga não é apagada — continua no banco, presa à
- * versão em que foi dada.</p>
- *
- * <p>Pelo mesmo raciocínio, mudar o conteúdo do item muda
- * {@link HashDoItem} e também reabre o apontamento.</p>
- */
+// Representa a chave de uma tratativa: o item, a regra e a versão da regra. A versão entra de propósito: se a regra muda, o apontamento reabre. Não mudar a busca para ignorar a versão.
 public record ChaveDeTratativa(HashDoItem hashDoItem, String regraId, String regraVersao) {
 
+    // Valida que a chave tenha o resumo do item, a regra e a versão.
     public ChaveDeTratativa {
         if (hashDoItem == null) {
             throw new TratativaInvalida(
@@ -33,7 +17,7 @@ public record ChaveDeTratativa(HashDoItem hashDoItem, String regraId, String reg
         exigirTexto(regraVersao, "regraVersao");
     }
 
-    /** Chave da tratativa que se aplicaria ao apontamento indicado. */
+    // Método estático que monta a chave da tratativa de um apontamento, junto com o resumo do item.
     public static ChaveDeTratativa de(HashDoItem hashDoItem, Achado achado) {
         if (achado == null) {
             throw new TratativaInvalida("Não há apontamento a tratar.");
@@ -41,6 +25,7 @@ public record ChaveDeTratativa(HashDoItem hashDoItem, String regraId, String reg
         return new ChaveDeTratativa(hashDoItem, achado.regraId(), achado.regraVersao());
     }
 
+    // Método auxiliar para verificar se um campo de texto obrigatório está vazio e lançar uma exceção.
     private static void exigirTexto(String valor, String nomeDoCampo) {
         if (valor == null || valor.isBlank()) {
             throw new TratativaInvalida(

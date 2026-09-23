@@ -4,18 +4,11 @@ import br.edu.tcc.auditoria.dominio.catalogo.AliquotaVigente;
 
 import java.math.BigDecimal;
 
-/**
- * Um percentual que a carga atribui a um tributo, numa abrangência, na data do
- * documento.
- *
- * <p>O percentual é repassado como {@link BigDecimal}, com a escala que a carga
- * declarou. Quem o formata é a borda da API, em texto — arredondar aqui apagaria
- * a diferença entre um percentual declarado com duas casas e um declarado com
- * quatro, que são afirmações diferentes da fonte.</p>
- */
+// Representa um percentual que a carga atribui a um tributo, numa abrangência, mantendo a escala declarada.
 public record AliquotaDoCatalogo(
         String abrangencia, BigDecimal percentual, ReferenciaNormativa referencia) {
 
+    // Valida que a alíquota tenha abrangência, percentual e referência normativa.
     public AliquotaDoCatalogo {
         if (abrangencia == null || abrangencia.isBlank()) {
             throw new ConferenciaInvalida(
@@ -30,6 +23,7 @@ public record AliquotaDoCatalogo(
         }
     }
 
+    // Método estático que cria a alíquota de exibição a partir da alíquota vigente do catálogo.
     public static AliquotaDoCatalogo de(AliquotaVigente vigente) {
         if (vigente == null) {
             throw new ConferenciaInvalida("Não há alíquota a apresentar.");

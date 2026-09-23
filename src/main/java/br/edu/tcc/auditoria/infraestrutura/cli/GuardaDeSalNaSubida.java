@@ -14,53 +14,12 @@ import org.springframework.stereotype.Component;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * Recusa a subida quando o sal resolvido não é o que produziu o acervo gravado.
- *
- * <h2>O que a troca de sal quebra — e o que ela não quebra</h2>
- *
- * <p><strong>Não quebra tratativa.</strong> A chave da tratativa é
- * {@code (hash do item, regra, versão da regra)}, e o hash do item não leva sal,
- * por decisão explícita: ele é identidade reproduzível entre instalações, não
- * sigilo. Decisão humana registrada sobrevive à troca e se reaplica sozinha no
- * reprocessamento.</p>
- *
- * <p><strong>Quebra a coerência interna do acervo.</strong>
- * {@code emitente_pseudonimizado} e {@code destinatario_pseudonimizado} saíram do
- * sal anterior. Com sal novo, o mesmo participante passa a existir sob dois
- * pseudônimos no mesmo acervo, e o pseudônimo do documento deixa de bater com o
- * que já saiu em planilha e em API.</p>
- *
- * <p>E esse é o defeito pior, não o mais brando: tratativa reaberta o usuário
- * vê. Participante duplicado não aparece em lugar nenhum — nenhuma contagem
- * muda, nenhum relatório acusa, e o acervo fica incoerente com aparência
- * normal. É a mesma família do "R04: 0 apontamentos" que não se distinguia de
- * "R04: não avaliado": falso negativo silencioso.</p>
- *
- * <h2>Recusa por padrão, permissão explícita</h2>
- *
- * <p>A lista abaixo é de quem PASSA, não de quem é barrado. Um comando novo
- * nasce protegido: para atravessar o guarda é preciso acrescentá-lo aqui, de
- * propósito. A regra inversa — enumerar quem é barrado — deixaria o comando
- * esquecido na lista rodando contra pseudônimo incoerente, e lista de exclusão é
- * exatamente o tipo de coisa que ninguém revisita.</p>
- *
- * <p>Os dois que passam são os que existem para resolver justamente esta
- * situação. Barrá-los deixaria a pessoa com um sistema que se recusa a subir e
- * nenhuma ferramenta para entender por quê.</p>
- *
- * <h2>Por que roda antes de {@code LinhaDeComando}</h2>
- *
- * <p>Os dois são {@code CommandLineRunner}. Este declara precedência máxima e
- * aquele não declara nenhuma, então o Spring executa este primeiro. Foi o jeito
- * de interceptar todo comando sem alterar {@code LinhaDeComando}, que é da
- * Etapa 5.</p>
- */
+// Classe que recusa a subida quando o sal atual não é o que produziu o acervo gravado, porque com outro sal o mesmo participante passaria a ter dois pseudônimos sem ninguém perceber; a tratativa não é afetada. Só diagnosticar-sal e recomecar-do-zero passam, e o guarda roda antes de LinhaDeComando.
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 class GuardaDeSalNaSubida implements CommandLineRunner {
 
-    /** Quem atravessa o guarda. Acrescentar aqui é decisão, não manutenção. */
+    // Os únicos comandos que passam pelo guarda; comando novo nasce barrado.
     private static final Set<String> COMANDOS_PERMITIDOS =
             Set.of(ComandoDiagnosticarSal.NOME, ComandoRecomecarDoZero.NOME);
 
@@ -69,6 +28,7 @@ class GuardaDeSalNaSubida implements CommandLineRunner {
     private final AcervoSalgado acervo;
     private final Saida saida;
 
+    // Construtor que recebe o sal resolvido, o registro da impressão digital, o acervo e a saída.
     GuardaDeSalNaSubida(
             SalResolvido salResolvido,
             RegistroDaImpressaoDigital registro,
@@ -81,6 +41,7 @@ class GuardaDeSalNaSubida implements CommandLineRunner {
         this.saida = saida;
     }
 
+    // Deixa passar a chamada sem comando e os comandos permitidos; os outros passam pela conferência.
     @Override
     public void run(String... argumentos) {
         if (argumentos.length == 0) {
@@ -93,6 +54,7 @@ class GuardaDeSalNaSubida implements CommandLineRunner {
         conferir();
     }
 
+    // Compara a impressão digital em uso com a gravada: grava se não houver, aceita se forem iguais ou se o banco estiver vazio, e recusa nos outros casos.
     void conferir() {
         ImpressaoDigitalDoSal emUso = salResolvido.impressaoDigital();
         Optional<RegistroDaImpressaoDigital.Registro> gravada = registro.registrada();
@@ -106,8 +68,7 @@ class GuardaDeSalNaSubida implements CommandLineRunner {
             return;
         }
         if (documentos == 0) {
-            // Sem documento gravado não há pseudônimo a orfanar. A impressão
-            // digital passa a ser a do sal novo, e isso é dito em voz alta.
+            // Sem documento gravado, nenhum pseudônimo fica órfão: passa a valer o sal novo, e isso é avisado.
             registro.registrar(emUso, salResolvido.origem(), false);
             saida.linha("O sal mudou, e o acervo estava vazio: nenhum pseudônimo foi orfanado.");
             saida.linha("Impressão digital agora em uso: %s", emUso.valor());
@@ -116,14 +77,7 @@ class GuardaDeSalNaSubida implements CommandLineRunner {
         recusar(emUso, gravada.get(), documentos);
     }
 
-    /**
-     * Registra a impressão digital pela primeira vez.
-     *
-     * <p>Com acervo já povoado não há o que conferir: a tabela do guarda não
-     * existia quando aqueles pseudônimos foram gravados, e não há com o que
-     * comparar. O sal atual é assumido como o correto, e a ressalva fica
-     * gravada — o diagnóstico não vai afirmar uma verificação que não houve.</p>
-     */
+    // Método auxiliar que registra a impressão digital pela primeira vez. Se o banco já tinha documentos, não há com o que comparar, e isso fica gravado para o diagnóstico não afirmar uma checagem que não houve.
     private void adotar(ImpressaoDigitalDoSal emUso, long documentos) {
         registro.registrar(emUso, salResolvido.origem(), documentos > 0);
         if (documentos > 0) {
@@ -134,13 +88,7 @@ class GuardaDeSalNaSubida implements CommandLineRunner {
         }
     }
 
-    /**
-     * Recusa a subida, dizendo o que aconteceu e quais são as duas saídas.
-     *
-     * <p>A mensagem sai pela {@link Saida} antes da exceção porque é ela que a
-     * pessoa precisa ler. Nenhum sal aparece: as duas impressões digitais bastam
-     * para comparar, e são o que se pode mostrar sem expor segredo.</p>
-     */
+    // Método auxiliar que recusa a subida, explicando o que aconteceu e as duas saídas, sem mostrar o sal.
     private void recusar(
             ImpressaoDigitalDoSal emUso,
             RegistroDaImpressaoDigital.Registro gravada,
@@ -178,11 +126,7 @@ class GuardaDeSalNaSubida implements CommandLineRunner {
                         + "%s, gravada %s, com %d documento(s) no banco. Ver a explicação acima.")
                         .formatted(emUso.abreviada(), gravada.impressao().abreviada(), documentos));
 
-        // Sem rastro de pilha: esta recusa é uma decisão, não uma queda. As linhas
-        // acima já dizem o que aconteceu e o que fazer, e um rastro de pilha atrás
-        // delas faria a recusa parecer defeito do sistema — justamente na hora em
-        // que a pessoa precisa acreditar no que leu. A pilha não informaria nada:
-        // só existe um lugar que lança isto.
+        // Sem rastro de pilha: é uma decisão, não uma queda, e as linhas acima já explicam o que fazer.
         recusa.setStackTrace(new StackTraceElement[0]);
         throw recusa;
     }

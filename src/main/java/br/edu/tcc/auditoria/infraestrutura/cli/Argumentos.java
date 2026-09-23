@@ -7,26 +7,17 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Opções de um comando, no formato {@code --nome=valor}.
- *
- * <p>Formato único e sem abreviação: {@code --origem=dados/agosto}. Não há
- * {@code -o}, não há {@code --origem dados} separado por espaço, e não há
- * ordem posicional. A rigidez é intencional — o comando que apaga um dia de
- * trabalho por causa de um espaço mal colocado não é um comando bom.</p>
- *
- * <p>Opção sem valor ({@code --apenas-abertos}) é sinalizador e vale
- * verdadeiro.</p>
- */
+// Representa o comando e as opções da linha de comando, sempre no formato --nome=valor, sem abreviação nem posição. Opção sem valor, como --apenas-abertos, é um sinalizador.
 record Argumentos(String comando, Map<String, String> opcoes) {
 
     private static final String PREFIXO = "--";
 
+    // Guarda uma cópia imutável das opções.
     Argumentos {
         opcoes = Map.copyOf(opcoes);
     }
 
-    /** Interpreta os argumentos brutos recebidos na linha de comando. */
+    // Método estático que interpreta os argumentos: o primeiro é o comando e os outros são opções; recusa opção sem --, sem nome ou repetida.
     static Argumentos de(String... brutos) {
         if (brutos == null || brutos.length == 0 || brutos[0].startsWith(PREFIXO)) {
             throw new UsoInvalido(
@@ -58,29 +49,29 @@ record Argumentos(String comando, Map<String, String> opcoes) {
         return new Argumentos(brutos[0], opcoes);
     }
 
-    /** Valor da opção, vazio se ela não foi informada ou veio em branco. */
+    // Devolve o valor da opção, ou vazio se ela não veio ou veio em branco.
     Optional<String> texto(String nome) {
         String valor = opcoes.get(nome);
         return valor == null || valor.isBlank() ? Optional.empty() : Optional.of(valor.strip());
     }
 
-    /** Valor da opção; erro de uso se ela não foi informada. */
+    // Devolve o valor da opção; recusa se ela não foi informada.
     String textoObrigatorio(String nome) {
         return texto(nome).orElseThrow(() -> new UsoInvalido(
                 "A opção \"--%s\" é obrigatória.".formatted(nome)));
     }
 
-    /** Caminho da opção; erro de uso se ela não foi informada. */
+    // Devolve a opção como caminho; recusa se ela não foi informada.
     Path caminhoObrigatorio(String nome) {
         return Path.of(textoObrigatorio(nome));
     }
 
-    /** Caminho da opção, se informada. */
+    // Devolve a opção como caminho, se ela foi informada.
     Optional<Path> caminho(String nome) {
         return texto(nome).map(Path::of);
     }
 
-    /** Identificador da opção; erro de uso se ausente ou malformado. */
+    // Devolve a opção como identificador; recusa se faltar ou estiver malformada.
     UUID identificadorObrigatorio(String nome) {
         String valor = textoObrigatorio(nome);
         try {
@@ -93,7 +84,7 @@ record Argumentos(String comando, Map<String, String> opcoes) {
         }
     }
 
-    /** Número inteiro da opção, ou o padrão se ela não foi informada. */
+    // Devolve a opção como número inteiro, ou o padrão se ela não foi informada.
     int inteiro(String nome, int padrao) {
         return texto(nome).map(valor -> {
             try {
@@ -106,12 +97,12 @@ record Argumentos(String comando, Map<String, String> opcoes) {
         }).orElse(padrao);
     }
 
-    /** Indica se o sinalizador foi informado. */
+    // Diz se o sinalizador foi informado.
     boolean sinalizador(String nome) {
         return opcoes.containsKey(nome);
     }
 
-    /** Recusa opções que o comando não conhece, em vez de ignorá-las em silêncio. */
+    // Recusa opção que o comando não conhece, em vez de ignorá-la.
     void exigirSomente(List<String> conhecidas) {
         for (String informada : opcoes.keySet()) {
             if (!conhecidas.contains(informada)) {

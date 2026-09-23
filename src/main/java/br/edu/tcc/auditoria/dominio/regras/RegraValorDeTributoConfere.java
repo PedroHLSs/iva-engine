@@ -16,47 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * R05 — o valor de tributo declarado no item confere com a base declarada
- * multiplicada pela alíquota vigente na data, dentro da tolerância recebida?
- *
- * <p>Confronta três pares de uma vez, na ordem fixa IBS estadual, IBS municipal
- * e CBS. Cada par usa a base que o próprio item declarou e a alíquota que o
- * catálogo traz — não a alíquota declarada no documento. Conferir o declarado
- * contra ele mesmo só detectaria erro de aritmética; o que interessa é confrontar
- * o declarado com a referência.</p>
- *
- * <p>Severidade grave: é a regra do conjunto que mexe com valor.</p>
- *
- * <h2>Convenção de unidade</h2>
- *
- * <p>O percentual do catálogo é lido como porcentagem, de modo que o valor
- * esperado é {@code base × percentual ÷ 100}. Isso é convenção de unidade da
- * coluna importada, não afirmação sobre a norma, e está dita aqui para que quem
- * prepara o CSV saiba em que escala preencher.</p>
- *
- * <h2>Escolha da alíquota</h2>
- *
- * <p>O catálogo guarda alíquotas por par tributo e abrangência, e a regra não
- * sabe qual abrangência se aplica a qual operação — isso é conteúdo normativo, e
- * escolher uma seria inventá-lo. Por isso a regra só calcula quando o catálogo
- * traz exatamente uma alíquota vigente para o tributo na data. Havendo mais de
- * uma, o resultado é {@code NAO_AVALIADO} nomeando as abrangências encontradas,
- * e cabe a quem opera o catálogo restringir a carga ou a quem evoluir o sistema
- * modelar a escolha de abrangência.</p>
- *
- * <h2>Como os três pares se combinam num resultado só</h2>
- *
- * <ul>
- *   <li>Qualquer divergência acima da tolerância produz achado, ainda que outro
- *       par não tenha sido avaliável: a divergência encontrada é fato.</li>
- *   <li>Sem divergência, se algum par ficou sem avaliar, o resultado é
- *       {@code NAO_AVALIADO} com todos os motivos. Dizer conforme aqui seria
- *       afirmar que se conferiu o que não se conferiu.</li>
- *   <li>{@code CONFORME} só quando os três pares avaliáveis fecharam e nenhum
- *       ficou pendente.</li>
- * </ul>
- */
+// Regra R05: o valor do tributo na nota bate com base × alíquota do catálogo, dentro da tolerância? Gravidade: grave. Só faz a conta quando o catálogo tem uma única alíquota para o tributo na data.
 public final class RegraValorDeTributoConfere extends RegraDeItem {
 
     public static final String ID = "R05";
@@ -64,10 +24,12 @@ public final class RegraValorDeTributoConfere extends RegraDeItem {
 
     static final String TABELA = "catalogo:aliquota";
 
+    // O percentual do catálogo é lido como porcentagem, ou seja, dividido por 100.
     private static final int CASAS_DA_PORCENTAGEM = 2;
 
     private final ToleranciaDeValor tolerancia;
 
+    // Construtor que recebe a tolerância; sem ela, diferença de centavo por arredondamento viraria achado.
     public RegraValorDeTributoConfere(ToleranciaDeValor tolerancia) {
         if (tolerancia == null) {
             throw new RegraInvalida(
@@ -92,6 +54,7 @@ public final class RegraValorDeTributoConfere extends RegraDeItem {
         return Severidade.GRAVE;
     }
 
+    // Aplica a regra nos três valores (IBS estadual, IBS municipal e CBS). Se algum não bate, gera achado; se nenhum diverge mas algum não pôde ser conferido, NAO_AVALIADO; só é CONFORME se os três foram conferidos e bateram.
     @Override
     protected Avaliacao avaliarItem(ItemDocumento item, Documento documento, ContextoNormativo contexto) {
         List<Divergencia> divergencias = new ArrayList<>();
@@ -110,7 +73,7 @@ public final class RegraValorDeTributoConfere extends RegraDeItem {
         return conforme(item, documento);
     }
 
-    /** Os três pares base e valor, sempre na mesma ordem. */
+    // Método auxiliar que monta os três pares de base e valor, sempre na ordem IBS estadual, IBS municipal e CBS.
     private static List<Conferencia> conferencias(ItemDocumento item) {
         return List.of(
                 new Conferencia(Tributo.IBS_UF, "baseCalculoIbs", item.baseCalculoIbs(),
@@ -121,6 +84,7 @@ public final class RegraValorDeTributoConfere extends RegraDeItem {
                         "valorCbs", item.valorCbs()));
     }
 
+    // Método auxiliar que confere um par: precisa da base, do valor e de uma única alíquota; calcula base × alíquota ÷ 100 e compara com o valor da nota.
     private Resultado conferir(Conferencia conferencia, ContextoNormativo contexto) {
         if (conferencia.base().isEmpty() && conferencia.valorInformado().isEmpty()) {
             return Resultado.pendente(
@@ -167,6 +131,7 @@ public final class RegraValorDeTributoConfere extends RegraDeItem {
         return Resultado.divergente(new Divergencia(conferencia, aliquota, esperado, diferenca));
     }
 
+    // Método auxiliar que monta o achado com as evidências de cada valor que não bateu e soma as diferenças como valor em risco.
     private Avaliacao achadoDe(ItemDocumento item, Documento documento, List<Divergencia> divergencias) {
         List<Evidencia> evidencias = new ArrayList<>();
         BigDecimal somaDasDiferencas = BigDecimal.ZERO;
@@ -196,7 +161,7 @@ public final class RegraValorDeTributoConfere extends RegraDeItem {
                 ValorEmRisco.calculado(somaDasDiferencas));
     }
 
-    /** Um par base e valor a conferir para um tributo. */
+    // Guarda um par de base e valor de um tributo para conferir.
     private record Conferencia(
             Tributo tributo,
             String nomeDaBase,
@@ -205,7 +170,7 @@ public final class RegraValorDeTributoConfere extends RegraDeItem {
             Optional<BigDecimal> valorInformado) {
     }
 
-    /** Um par que não fechou, com o que se esperava e de onde veio a referência. */
+    // Guarda um par que não bateu, com o valor esperado e a alíquota usada na conta.
     private record Divergencia(
             Conferencia conferencia,
             AliquotaVigente aliquota,
@@ -213,28 +178,25 @@ public final class RegraValorDeTributoConfere extends RegraDeItem {
             BigDecimal diferenca) {
     }
 
-    /**
-     * Desfecho de um par isolado.
-     *
-     * <p>Três estados, os mesmos do resultado final, porque o problema é o mesmo
-     * em escala menor: conferiu, não fechou, ou não deu para conferir. Um par
-     * pendente não pode desaparecer no meio do caminho e virar conformidade do
-     * item.</p>
-     */
+    // Resultado da conferência de um par: bateu, não bateu ou não deu para conferir. Assim um par que não foi conferido não passa como se estivesse certo.
     private record Resultado(Optional<Divergencia> divergencia, Optional<String> pendencia) {
 
+        // Cria o resultado de par que bateu dentro da tolerância.
         static Resultado conferido() {
             return new Resultado(Optional.empty(), Optional.empty());
         }
 
+        // Cria o resultado de par que não bateu.
         static Resultado divergente(Divergencia divergencia) {
             return new Resultado(Optional.of(divergencia), Optional.empty());
         }
 
+        // Cria o resultado de par que não deu para conferir, com o motivo.
         static Resultado pendente(String motivo) {
             return new Resultado(Optional.empty(), Optional.of(motivo));
         }
 
+        // Coloca o resultado do par na lista de divergências ou na de pendências.
         void aplicarEm(List<Divergencia> divergencias, List<String> pendencias) {
             divergencia.ifPresent(divergencias::add);
             pendencia.ifPresent(pendencias::add);

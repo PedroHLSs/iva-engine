@@ -2,20 +2,12 @@ package br.edu.tcc.auditoria.aplicacao.catalogo;
 
 import br.edu.tcc.auditoria.dominio.excecao.CatalogoInvalido;
 
-/**
- * Caso de uso: importar um catálogo normativo.
- *
- * <p>A validação relevante já aconteceu quando a {@link CargaDeCatalogo} foi
- * construída — formato dos registros, cobertura declarada e ausência de
- * vigências sobrepostas. Aqui a carga só é gravada. O serviço existe para que o
- * ponto de entrada (a linha de comando) não fale com o repositório direto e para
- * que o resumo devolvido ao usuário seja o mesmo qualquer que seja a origem dos
- * arquivos.</p>
- */
+// Serviço que importa um catálogo normativo, gravando a carga já validada e devolvendo o resumo do que entrou.
 public final class ServicoDeImportacaoDeCatalogo {
 
     private final RepositorioDeCargaDeCatalogo repositorio;
 
+    // Construtor do serviço de importação, que recebe o repositório onde a carga será gravada.
     public ServicoDeImportacaoDeCatalogo(RepositorioDeCargaDeCatalogo repositorio) {
         if (repositorio == null) {
             throw new CatalogoInvalido("A importação de catálogo precisa de um repositório onde gravar.");
@@ -23,7 +15,7 @@ public final class ServicoDeImportacaoDeCatalogo {
         this.repositorio = repositorio;
     }
 
-    /** Grava a carga e devolve o resumo do que entrou. */
+    // Grava a carga de catálogo e devolve o resumo com a quantidade de registros por tabela.
     public ResumoDaImportacao importar(CargaDeCatalogo carga) {
         if (carga == null) {
             throw new CatalogoInvalido("Não há carga de catálogo a importar.");
@@ -37,7 +29,7 @@ public final class ServicoDeImportacaoDeCatalogo {
                 carga.aliquotas().size());
     }
 
-    /** O que foi gravado, por tabela. */
+    // Representa o resumo da importação, com a versão e a quantidade de registros gravados por tabela.
     public record ResumoDaImportacao(
             String versao,
             int classificacoesTributarias,
@@ -45,7 +37,6 @@ public final class ServicoDeImportacaoDeCatalogo {
             int itensDeAnexo,
             int aliquotas) {
 
-        /** Total de registros gravados. */
         public int total() {
             return classificacoesTributarias + registrosDeNcm + itensDeAnexo + aliquotas;
         }

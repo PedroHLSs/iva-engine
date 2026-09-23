@@ -9,13 +9,7 @@ import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
 
-/**
- * Os estilos de célula da planilha, criados uma vez por pasta de trabalho.
- *
- * <p>Uma vez, e não por célula: o Excel guarda estilos numa tabela global e tem
- * limite de 64 mil deles. Criar um estilo dentro do laço de linhas estoura esse
- * limite num acervo grande e deixa o arquivo gigante.</p>
- */
+// Classe que cria os estilos de célula uma vez por planilha, e não por célula, porque o Excel tem limite de estilos e o arquivo ficaria enorme.
 final class EstilosDaPlanilha {
 
     private final CellStyle titulo;
@@ -28,6 +22,7 @@ final class EstilosDaPlanilha {
     private final CellStyle inteiro;
     private final CellStyle monetario;
 
+    // Construtor que cria todos os estilos: título, rótulo, cabeçalho, texto, texto longo, data, data e hora, inteiro e dinheiro.
     EstilosDaPlanilha(Workbook planilha) {
         Font fonteDeTitulo = planilha.createFont();
         fonteDeTitulo.setBold(true);
@@ -58,9 +53,7 @@ final class EstilosDaPlanilha {
         this.texto = planilha.createCellStyle();
         this.texto.setVerticalAlignment(VerticalAlignment.TOP);
 
-        // Quebra de linha ligada: fundamento normativo, motivo e justificativa
-        // são frases inteiras, e cortá-las na largura da coluna esconderia
-        // justamente o que a pessoa precisa ler para conferir.
+        // Texto longo quebra linha, para frases como fundamento e justificativa não serem cortadas na coluna.
         this.textoLongo = planilha.createCellStyle();
         this.textoLongo.setVerticalAlignment(VerticalAlignment.TOP);
         this.textoLongo.setWrapText(true);
@@ -78,8 +71,7 @@ final class EstilosDaPlanilha {
         this.inteiro.setAlignment(HorizontalAlignment.RIGHT);
         this.inteiro.setDataFormat(planilha.createDataFormat().getFormat("0"));
 
-        // Duas casas fixas: a planilha mostra centavo, e um valor em risco
-        // arredondado para inteiro esconderia exatamente a diferença apontada.
+        // Dinheiro com duas casas fixas, para não esconder a diferença de centavos apontada.
         this.monetario = planilha.createCellStyle();
         this.monetario.setVerticalAlignment(VerticalAlignment.TOP);
         this.monetario.setAlignment(HorizontalAlignment.RIGHT);

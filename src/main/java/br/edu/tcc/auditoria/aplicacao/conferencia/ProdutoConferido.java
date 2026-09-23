@@ -7,21 +7,14 @@ import br.edu.tcc.auditoria.aplicacao.consulta.NaoAvaliadaRegistrada;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Um produto de uma nota, com o que foi declarado e o que as regras concluíram.
- *
- * <p>Carrega os apontamentos e as pendências inteiros, e não só a contagem
- * deles: a tela de detalhe monta a sequência de passos que levou ao resultado a
- * partir das evidências que o apontamento já traz, e do motivo que a regra
- * escreveu. Sem eles, a explicação seria texto genérico — que é a única coisa
- * pior que não explicar.</p>
- */
+// Representa um produto de uma nota, com o item declarado, a situação e os apontamentos e pendências inteiros.
 public record ProdutoConferido(
         DadosDoItem dados,
         SituacaoDoProduto situacao,
         List<AchadoRegistrado> achados,
         List<NaoAvaliadaRegistrada> naoAvaliadas) {
 
+    // Valida que o produto tenha item, situação e listas não nulas.
     public ProdutoConferido {
         if (dados == null) {
             throw new ConferenciaInvalida("O produto conferido precisa do item declarado.");
@@ -47,7 +40,7 @@ public record ProdutoConferido(
         return dados.numeroItem();
     }
 
-    /** Identidade estável do produto, e sem identificador: é o resumo do item. */
+    // Retorna o endereço do produto, que é o resumo do item e não traz identificador em texto claro.
     public String endereco() {
         return dados.hashLidoNaAnalise().valor();
     }

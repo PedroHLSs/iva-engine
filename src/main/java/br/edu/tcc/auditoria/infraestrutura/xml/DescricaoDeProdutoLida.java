@@ -5,37 +5,15 @@ import br.edu.tcc.auditoria.dominio.tratativa.HashDoItem;
 import java.util.Optional;
 import java.util.regex.Pattern;
 
-/**
- * A descrição de um item, endereçada pela identidade que o sistema já usa.
- *
- * <h2>O endereço é o resumo do item, e não uma chave nova</h2>
- *
- * <p>{@link HashDoItem} já identifica o item em toda parte: é a chave da
- * tratativa, é o que {@code item_da_execucao} grava, e é o endereço do produto na
- * interface. Usá-lo aqui faz a associação entre descrição e item ser a mesma
- * função com as mesmas entradas dos dois lados — quem grava e quem lê calculam o
- * endereço do mesmo jeito. Uma chave própria poderia divergir, e divergência aqui
- * não é linha faltando: é descrição trocada de produto.</p>
- *
- * <h2>Corrida de 44 dígitos não entra</h2>
- *
- * <p>xProd é texto digitado pelo emitente, e chave de acesso aparece nele com
- * frequência ("REF NF 3512..."). Os dígitos do meio da chave são o CNPJ do
- * emitente (D005), então a corrida é substituída pelo marcador antes de a
- * descrição sair daqui. É a mesma barreira de {@code OrigemDeArquivoIlegivel},
- * e a restrição da V8 é a segunda.</p>
- *
- * <p>O que nenhuma regra de forma alcança é prosa: "P/ OBRA FULANO" passa por
- * esta checagem e por qualquer outra automática. Está declarado como limitação,
- * e não disfarçado.</p>
- */
+// Representa a descrição de um item (xProd), ligada ao item pelo HashDoItem, o mesmo endereço que o resto do sistema usa. Sequência de 44 dígitos é trocada por [chave-omitida], porque a chave de acesso contém o CNPJ; texto livre, como nome de cliente, não é pego.
 public record DescricaoDeProdutoLida(HashDoItem hashDoItem, Optional<String> descricao) {
 
-    /** O que ocupa o lugar de uma chave de acesso encontrada na descrição. */
+    // Marca que fica no lugar de uma chave de acesso achada na descrição.
     public static final String MARCA_DA_CHAVE = "[chave-omitida]";
 
     private static final Pattern CORRIDA_DE_44_DIGITOS = Pattern.compile("[0-9]{44}");
 
+    // Valida que haja o hash do item e que a descrição seja Optional, nunca nula.
     public DescricaoDeProdutoLida {
         if (hashDoItem == null) {
             throw new IllegalArgumentException(
@@ -48,12 +26,7 @@ public record DescricaoDeProdutoLida(HashDoItem hashDoItem, Optional<String> des
         }
     }
 
-    /**
-     * A descrição como veio no XML, saneada.
-     *
-     * <p>Texto nulo ou em branco vira {@code Optional.empty()}: o documento não
-     * declarou nada, e branco é a mesma ausência escrita de outro jeito.</p>
-     */
+    // Método estático que cria a descrição a partir do texto do XML: nulo ou em branco vira vazio, e chave de acesso vira a marca.
     public static DescricaoDeProdutoLida de(HashDoItem hashDoItem, String declarada) {
         if (declarada == null || declarada.isBlank()) {
             return new DescricaoDeProdutoLida(hashDoItem, Optional.empty());

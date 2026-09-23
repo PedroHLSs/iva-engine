@@ -17,17 +17,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Grava uma carga de catálogo importada.
- *
- * <p>Cada importação vira uma carga nova, com identificador próprio, e as linhas
- * normativas ficam presas a ela. Importar de novo não apaga o catálogo anterior:
- * a auditoria passa a usar o mais recente, e o antigo continua ali para que um
- * relatório produzido contra ele siga conferível.</p>
- *
- * <p>Nenhum dado normativo entra por aqui sem ter vindo de um arquivo que o
- * usuário forneceu. Migration não insere nada; este é o único caminho.</p>
- */
+// Repositório que grava uma carga de catálogo importada. Cada importação vira uma carga nova, e a anterior continua gravada, para um relatório feito contra ela seguir conferível; dado normativo só entra por aqui, vindo de arquivo do usuário.
 @Repository
 class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalogo {
 
@@ -40,6 +30,7 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
     private final AliquotaVigenteJpa aliquotas;
     private final Clock relogio;
 
+    // Construtor que recebe os repositórios de cada tabela do catálogo e o relógio.
     RepositorioDeCargaDeCatalogoNoBanco(
             CargaCatalogoJpa cargas,
             CoberturaCatalogoJpa coberturas,
@@ -59,6 +50,7 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
         this.relogio = relogio;
     }
 
+    // Grava a carga, a cobertura, a procedência e os registros das quatro tabelas; recusa versão repetida.
     @Override
     @Transactional
     public void salvar(CargaDeCatalogo carga) {
@@ -88,18 +80,14 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
                 .toList());
     }
 
+    // Busca a versão da carga mais recente, se houver.
     @Override
     @Transactional(readOnly = true)
     public Optional<String> versaoDaCargaMaisRecente() {
         return cargas.findTopByOrderByImportadoEmDescVersaoDesc().map(CargaCatalogoEntidade::versao);
     }
 
-    /*
-     * Uma linha por tabela que TEM registro. Tabela vazia não gera linha: a
-     * natureza é declarada linha a linha no CSV, e arquivo só com cabeçalho não
-     * tem onde declará-la. Ausência aqui é lida como ausência, nunca como
-     * normativo — ver SituacaoDaNatureza.
-     */
+    // Método auxiliar que monta uma linha de procedência por tabela que tem registro; tabela vazia não gera linha, e isso é lido como não declarado, nunca como normativo.
     private static List<NaturezaDaCargaEntidade> naturezaDe(
             NaturezaDaCarga natureza, UUID cargaId) {
 
@@ -109,6 +97,7 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
         return linhas;
     }
 
+    // Método auxiliar que monta as três linhas de cobertura da carga.
     private static List<CoberturaCatalogoEntidade> coberturaDe(
             CoberturaDoCatalogo cobertura, UUID cargaId) {
         List<CoberturaCatalogoEntidade> linhas = new ArrayList<>();
@@ -119,6 +108,7 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
         return linhas;
     }
 
+    // Método auxiliar que monta a linha de cobertura de uma tabela.
     private static CoberturaCatalogoEntidade linhaDe(
             UUID cargaId, TabelaNormativa tabela, ProcedenciaNormativa procedencia) {
         return new CoberturaCatalogoEntidade(

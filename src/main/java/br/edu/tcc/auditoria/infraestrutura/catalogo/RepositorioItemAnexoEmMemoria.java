@@ -8,21 +8,17 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 
-/**
- * Adaptador em memória do repositório de vínculos entre NCM e anexo.
- *
- * <p>A série é do par NCM e anexo, então o mesmo NCM em dois anexos na mesma
- * data é carga válida, e a consulta devolve os dois. O que a carga recusa é o
- * mesmo par NCM e anexo com vigências sobrepostas.</p>
- */
+// Repositório em memória utilizado para buscar os vínculos entre NCM e anexo válidos numa data. O mesmo NCM pode estar em dois anexos na mesma data; o que a carga recusa é o mesmo par NCM e anexo com datas sobrepostas.
 public final class RepositorioItemAnexoEmMemoria implements RepositorioItemAnexo {
 
     private final CatalogoEmMemoria<ItemAnexo> catalogo;
 
+    // Construtor que recebe os vínculos e monta o catálogo.
     public RepositorioItemAnexoEmMemoria(Collection<ItemAnexo> registros) {
         this.catalogo = new CatalogoEmMemoria<>(registros);
     }
 
+    // Busca todos os anexos do NCM válidos na data; NCM nulo devolve lista vazia.
     @Override
     public List<ItemAnexo> buscarVigentesEm(Ncm ncm, LocalDate data) {
         if (ncm == null) {
@@ -33,7 +29,7 @@ public final class RepositorioItemAnexoEmMemoria implements RepositorioItemAnexo
                 .toList();
     }
 
-    /** Quantidade de pares NCM e anexo distintos carregados, independentemente de vigência. */
+    // Retorna quantos pares NCM e anexo diferentes foram carregados, sem olhar a data.
     public int quantidadeDeVinculos() {
         return catalogo.quantidadeDeSeries();
     }

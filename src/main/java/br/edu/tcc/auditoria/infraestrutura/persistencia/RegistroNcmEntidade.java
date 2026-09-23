@@ -8,7 +8,7 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/** Linha da tabela de NCM de uma carga. Espelha {@code RegistroNcm} do domínio. */
+// Representa uma linha da tabela de NCM de uma carga; espelha o RegistroNcm do domínio.
 @Entity
 @Table(name = "registro_ncm")
 class RegistroNcmEntidade {
@@ -35,10 +35,11 @@ class RegistroNcmEntidade {
     @Column(name = "fonte_normativa", nullable = false)
     private String fonteNormativa;
 
+    // Construtor vazio exigido pelo JPA.
     protected RegistroNcmEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe todos os campos da linha.
     RegistroNcmEntidade(
             UUID id,
             UUID cargaId,

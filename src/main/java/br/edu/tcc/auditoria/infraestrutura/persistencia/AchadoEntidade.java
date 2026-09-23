@@ -20,27 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Apontamento gravado.
- *
- * <h2>A identidade não é a linha</h2>
- *
- * <p>A chave natural do apontamento é {@code (hashItem, regraId, regraVersao)} —
- * a mesma chave da tratativa. Reprocessar o mesmo lote reencontra a linha em vez
- * de criar outra: o conteúdo é atualizado, {@code ultimaExecucaoId} e
- * {@code vistoEm} avançam, e {@code primeiraExecucaoId} e {@code detectadoEm}
- * ficam como estavam. É isso que faz a tratativa dada por uma pessoa continuar
- * valendo depois do reprocessamento.</p>
- *
- * <p>O identificador gerado existe só para que a linha possa ser citada — é o
- * que a listagem mostra e o que o comando de tratar recebe.</p>
- *
- * <h2>Valor em risco</h2>
- *
- * <p>Ou há montante, ou há o motivo de não haver. Nunca nenhum dos dois e nunca
- * os dois: uma restrição do banco garante isso, porque valor ausente sem
- * explicação seria exatamente o silêncio que este projeto evita.</p>
- */
+// Representa um apontamento gravado. A identidade é o hash do item, a regra e a versão, a mesma chave da tratativa: reprocessar reencontra a linha, atualiza o conteúdo e a última execução e mantém a primeira detecção. O banco exige o valor em risco ou o motivo de faltar, nunca os dois nem nenhum.
 @Entity
 @Table(name = "achado")
 class AchadoEntidade {
@@ -74,7 +54,7 @@ class AchadoEntidade {
     @Column(name = "vigencia_inicio", nullable = false)
     private LocalDate vigenciaInicio;
 
-    /** Nulo é vigência aberta. */
+    // Null quer dizer vigência aberta.
     @Column(name = "vigencia_fim")
     private LocalDate vigenciaFim;
 
@@ -101,10 +81,11 @@ class AchadoEntidade {
     @OrderColumn(name = "ordem")
     private List<EvidenciaEmbutida> evidencias = new ArrayList<>();
 
+    // Construtor vazio exigido pelo JPA.
     protected AchadoEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que cria o apontamento na primeira vez que ele aparece, com a chave e a execução que o encontrou.
     AchadoEntidade(
             UUID id,
             String hashItem,
@@ -122,14 +103,7 @@ class AchadoEntidade {
         this.vistoEm = detectadoEm;
     }
 
-    /**
-     * Regrava o conteúdo do apontamento e marca que ele foi visto de novo.
-     *
-     * <p>O conteúdo pode mudar entre execuções sem que o apontamento deixe de ser
-     * o mesmo: a fonte normativa citada vem do catálogo, e uma carga nova pode
-     * trazer outra redação para a mesma regra e o mesmo item. Vale o último
-     * conteúdo; a identidade e a primeira detecção não se mexem.</p>
-     */
+    // Regrava o conteúdo e marca que o apontamento foi visto de novo; vale o último conteúdo, e a chave e a primeira detecção não mudam.
     void registrarOcorrencia(
             Severidade severidade,
             String chaveAcesso,

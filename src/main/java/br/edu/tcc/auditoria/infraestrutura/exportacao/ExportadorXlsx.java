@@ -23,34 +23,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Escreve o papel de trabalho em xlsx.
- *
- * <h2>Três abas, e a ordem importa</h2>
- *
- * <ol>
- *   <li><strong>Resumo</strong> — abre com a identificação da execução, depois os
- *       totais por severidade, por regra, e os motivos de não avaliação.</li>
- *   <li><strong>Achados</strong> — uma linha por apontamento.</li>
- *   <li><strong>Não avaliados</strong> — uma linha por avaliação que não
- *       concluiu.</li>
- * </ol>
- *
- * <p>O bloco de identificação vem primeiro e sem nada acima dele. Uma planilha
- * encontrada numa pasta meses depois precisa responder, na primeira tela, contra
- * qual catálogo e com que versão de regras foi produzida — sem isso um
- * apontamento que deixou de proceder por mudança de tabela é indistinguível de
- * um erro do sistema.</p>
- *
- * <h2>Escrita em fluxo</h2>
- *
- * <p>{@link SXSSFWorkbook} mantém em memória apenas uma janela de linhas e
- * despeja o resto em disco. Um acervo fiscal produz dezenas de milhares de
- * apontamentos, e a alternativa não-streaming carrega a planilha inteira na
- * memória. Como consequência as larguras de coluna são fixas, e não calculadas a
- * partir do conteúdo: o cálculo automático exige ter todas as linhas em memória,
- * que é justamente o que se está evitando.</p>
- */
+// Classe que grava o papel de trabalho em xlsx, com três abas: Resumo, que começa pela identificação da execução, Achados e Não avaliados. Escreve em fluxo, com poucas linhas na memória, por isso as larguras das colunas são fixas.
 @Component
 class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
 
@@ -58,7 +31,7 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
     static final String ABA_ACHADOS = "Achados";
     static final String ABA_NAO_AVALIADOS = "Não avaliados";
 
-    /** Linhas mantidas em memória antes de irem para o disco. */
+    // Quantas linhas ficam na memória antes de irem para o disco.
     private static final int JANELA_DE_LINHAS = 500;
 
     private static final int LARGURA_DE_UM_CARACTERE = 256;
@@ -82,21 +55,24 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
 
     private final ZoneId fusoDeApresentacao;
 
+    // Construtor que usa o fuso do sistema.
     ExportadorXlsx() {
-        // Fuso do sistema: a planilha é lida por quem opera a ferramenta, e
-        // horário em UTC numa coluna de data faria a pessoa converter de cabeça.
+        // Fuso do sistema, para quem lê a planilha não ter de converter de UTC de cabeça.
         this(ZoneId.systemDefault());
     }
 
+    // Construtor que recebe o fuso em que data e hora são mostradas.
     ExportadorXlsx(ZoneId fusoDeApresentacao) {
         this.fusoDeApresentacao = fusoDeApresentacao;
     }
 
+    // Retorna a extensão do arquivo gravado.
     @Override
     public String extensao() {
         return "xlsx";
     }
 
+    // Grava a planilha no destino, criando a pasta se ela não existir.
     @Override
     public void exportar(PapelDeTrabalho papel, Path destino) {
         if (papel == null) {
@@ -106,8 +82,7 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
             throw new PapelDeTrabalhoInvalido("Não foi informado onde gravar a planilha.");
         }
 
-        // O close() da escrita em fluxo já remove os arquivos temporários que ela
-        // deixa em disco; não é preciso descartá-los à parte.
+        // O close() da escrita em fluxo já apaga os arquivos temporários.
         try (SXSSFWorkbook planilha = new SXSSFWorkbook(JANELA_DE_LINHAS)) {
             Celulas celulas = new Celulas(fusoDeApresentacao);
             EstilosDaPlanilha estilos = new EstilosDaPlanilha(planilha);
@@ -127,6 +102,7 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
         }
     }
 
+    // Método auxiliar que escreve a aba Resumo: identificação, achados por gravidade e por regra, e os motivos de não avaliação.
     private void escreverResumo(
             SXSSFWorkbook planilha,
             EstilosDaPlanilha estilos,
@@ -174,10 +150,7 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
         Row cabecalhoDeRegra = aba.createRow(proxima++);
         Celulas.texto(cabecalhoDeRegra, 0, "Regra", estilos.cabecalho());
         Celulas.texto(cabecalhoDeRegra, 1, "Quantidade", estilos.cabecalho());
-        // Ordenado pelo identificador da regra, e nao pela ordem do mapa: as
-        // contagens chegam de um Map imutavel e de uma tabela filha do banco, e
-        // nenhum dos dois garante ordem de iteracao. Duas emissoes do mesmo papel
-        // de trabalho precisam sair iguais, senao compara-las vira trabalho manual.
+        // Ordena pelo código da regra, porque o mapa não garante ordem e duas planilhas da mesma execução precisam sair iguais.
         for (Map.Entry<String, Integer> porRegra : ordenadasPorRegra(execucao)) {
             Row linha = aba.createRow(proxima++);
             Celulas.texto(linha, 0, porRegra.getKey(), estilos.texto());
@@ -209,6 +182,7 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
         }
     }
 
+    // Método auxiliar que escreve a aba Achados, uma linha por apontamento.
     private void escreverAchados(
             SXSSFWorkbook planilha,
             EstilosDaPlanilha estilos,
@@ -264,6 +238,7 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
         }
     }
 
+    // Método auxiliar que escreve a aba Não avaliados, uma linha por avaliação não concluída.
     private void escreverNaoAvaliados(
             SXSSFWorkbook planilha, EstilosDaPlanilha estilos, List<LinhaNaoAvaliada> naoAvaliados) {
 
@@ -286,13 +261,14 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
         }
     }
 
-    /** Contagens por regra em ordem estável, do identificador menor para o maior. */
+    // Método auxiliar que ordena as contagens por regra, do código menor para o maior.
     private static List<Map.Entry<String, Integer>> ordenadasPorRegra(ExecucaoAuditoria execucao) {
         return execucao.achadosPorRegra().entrySet().stream()
                 .sorted(Map.Entry.comparingByKey())
                 .toList();
     }
 
+    // Método auxiliar que cria a aba com o cabeçalho, as larguras das colunas e o cabeçalho fixo.
     private static Sheet criarAbaComCabecalho(
             SXSSFWorkbook planilha,
             EstilosDaPlanilha estilos,
@@ -306,12 +282,12 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
             Celulas.texto(linha, coluna, cabecalho.get(coluna), estilos.cabecalho());
             aba.setColumnWidth(coluna, larguras.get(coluna) * LARGURA_DE_UM_CARACTERE);
         }
-        // Cabeçalho fixo e filtro: uma planilha de vinte mil linhas sem os dois é
-        // inutilizável para quem confere.
+        // Cabeçalho fixo, para quem confere uma planilha grande não perder o nome das colunas.
         aba.createFreezePane(0, 1);
         return aba;
     }
 
+    // Método auxiliar que escreve um par rótulo e texto numa linha.
     private static int par(Sheet aba, int numeroDaLinha, EstilosDaPlanilha estilos,
                            String rotulo, String valor) {
         Row linha = aba.createRow(numeroDaLinha);
@@ -320,6 +296,7 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
         return numeroDaLinha + 1;
     }
 
+    // Método auxiliar que escreve um par rótulo e número numa linha.
     private static int parComNumero(Sheet aba, int numeroDaLinha, EstilosDaPlanilha estilos,
                                     String rotulo, long valor) {
         Row linha = aba.createRow(numeroDaLinha);
@@ -328,6 +305,7 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
         return numeroDaLinha + 1;
     }
 
+    // Método auxiliar que escreve um par rótulo e data e hora numa linha.
     private static int parComDataHora(Sheet aba, int numeroDaLinha, EstilosDaPlanilha estilos,
                                       Celulas celulas, String rotulo, java.time.Instant valor) {
         Row linha = aba.createRow(numeroDaLinha);
@@ -336,6 +314,7 @@ class ExportadorXlsx implements ExportadorDePapelDeTrabalho {
         return numeroDaLinha + 1;
     }
 
+    // Método auxiliar que cria a pasta de destino, se ela não existir.
     private static void criarPastaDe(Path destino) throws IOException {
         Path pasta = destino.toAbsolutePath().getParent();
         if (pasta != null) {

@@ -16,30 +16,20 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-/**
- * Monta, a cada análise, uma cadeia de leitura com registro de falhas próprio.
- *
- * <p>Os objetos caros continuam sendo os mesmos de sempre: o leitor de XML e o
- * normalizador são injetados e compartilhados, como na CLI. O que nasce novo a
- * cada chamada são as três peças baratas que carregam estado de lote — o
- * registro de falhas, o leitor de lote que escreve nele, e a fonte que os
- * junta.</p>
- *
- * <p>Nenhuma linha da Etapa 4 muda por causa disto. {@code LeitorLote} e
- * {@code FonteDeLoteNoSistemaDeArquivos} já recebiam essas dependências por
- * construtor; a novidade é só chamar o construtor mais de uma vez.</p>
- */
+// Classe que cria, a cada análise, uma leitura com registro de falhas próprio, para os ilegíveis de uma análise não aparecerem na seguinte. O leitor de XML e o normalizador são os mesmos de sempre; só as peças que guardam estado do lote nascem novas.
 @Component
 class FabricaDeLeituraDeLoteIsolada implements FabricaDeLeituraDeLote {
 
     private final LeitorDocumentoFiscal leitor;
     private final NormalizadorDocumento normalizador;
 
+    // Construtor que recebe o leitor de XML e o normalizador, compartilhados entre as análises.
     FabricaDeLeituraDeLoteIsolada(LeitorDocumentoFiscal leitor, NormalizadorDocumento normalizador) {
         this.leitor = leitor;
         this.normalizador = normalizador;
     }
 
+    // Cria uma leitura nova, com registro de falhas e de descrições só dela.
     @Override
     public LeituraDeLote nova() {
         FalhasDeLeituraEmMemoria falhas = new FalhasDeLeituraEmMemoria();
@@ -49,13 +39,7 @@ class FabricaDeLeituraDeLoteIsolada implements FabricaDeLeituraDeLote {
         return new LeituraIsolada(fonte, falhas, descricoes);
     }
 
-    /**
-     * Uma leitura e as falhas dela.
-     *
-     * <p>A conversão para {@link ArquivoIlegivel} passa por
-     * {@link OrigemDeArquivoIlegivel}, que é onde o caminho perde o diretório de
-     * quem rodou e o CNPJ que viaja dentro do nome do arquivo.</p>
-     */
+    // Representa uma leitura e as falhas dela. O nome do arquivo ilegível passa por OrigemDeArquivoIlegivel, que tira a pasta e o CNPJ.
     private record LeituraIsolada(
             FonteDeLoteNoSistemaDeArquivos origem,
             FalhasDeLeituraEmMemoria falhas,
@@ -66,16 +50,13 @@ class FabricaDeLeituraDeLoteIsolada implements FabricaDeLeituraDeLote {
             return origem;
         }
 
+        // Devolve os arquivos que não puderam ser lidos, já sem pasta e sem CNPJ no nome.
         @Override
         public List<ArquivoIlegivel> arquivosIlegiveis() {
             return falhas.falhas().stream().map(OrigemDeArquivoIlegivel::de).toList();
         }
 
-        /*
-         * Os dois níveis de Optional viram os três estados de DescricaoDoProduto,
-         * e é aqui que a tradução acontece: sem entrada, a leitura não viu o item;
-         * com entrada vazia, viu e o documento nada declarou; com texto, é o texto.
-         */
+        // Devolve a descrição do produto nos três casos: item não visto nesta leitura, item sem descrição na nota, ou o texto.
         @Override
         public DescricaoDoProduto descricaoDe(HashDoItem hashDoItem) {
             return descricoes.de(hashDoItem)

@@ -9,40 +9,13 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 
-/**
- * Mantém a API de leitura de pé até o contexto ser fechado.
- *
- * <h2>Por que este comando bloqueia, e por que isso basta</h2>
- *
- * <p>{@code AuditoriaApplication.main} chama {@code run(argumentos)} e, na linha
- * seguinte, {@code System.exit(SpringApplication.exit(contexto))} — sem
- * condicional, e é assim desde a Etapa 5. Se o comando devolvesse, o contexto
- * fecharia e o servidor recém-subido cairia junto.</p>
- *
- * <p>Não há condicional nova em {@code main}. O bloqueio acontece
- * <em>dentro</em> da chamada anterior: {@code SpringApplication.run} inicia o
- * servidor durante {@code refreshContext()} e só depois executa os
- * {@code CommandLineRunner}, na própria thread {@code main}. Enquanto este método
- * não devolve, {@code run()} não retornou, e a linha do {@code System.exit} não
- * foi alcançada. Nenhum arquivo da Etapa 5 precisou mudar (D009).</p>
- *
- * <p>No Ctrl+C, o gancho de encerramento do Spring fecha o contexto, o
- * {@link ContextClosedEvent} libera a espera, este método devolve, {@code run()}
- * retorna e o {@code System.exit} original roda normalmente.</p>
- *
- * <h2>Sem servidor, recusa em vez de pendurar</h2>
- *
- * <p>{@code application.properties} mantém {@code web-application-type=none}, e só
- * o perfil {@code api} o troca por {@code servlet}. Sem o perfil não há servidor
- * nenhum, e bloquear ali deixaria o processo parado para sempre sem atender nada —
- * o pior desfecho possível. Então o comando confere se o contexto é web e, se não
- * for, recusa dizendo a invocação exata.</p>
- */
+// Classe do comando servir, que mantém a interface web e a API no ar até o contexto ser fechado com Ctrl+C. Bloqueia dentro do run() do Spring, então o System.exit do AuditoriaApplication só roda quando o servidor para; sem o perfil api, recusa em vez de ficar parado sem atender nada.
 @Component
 class ComandoServir implements Comando {
 
     static final String NOME = "servir";
 
+    // Linha de comando que sobe o servidor, mostrada na ajuda e na recusa.
     static final String INVOCACAO =
             "java -Dspring.profiles.active=api -jar auditoria-ibs-cbs-<versao>.jar " + NOME;
 
@@ -50,6 +23,7 @@ class ComandoServir implements Comando {
     private final Saida saida;
     private final CountDownLatch ateFecharOContexto = new CountDownLatch(1);
 
+    // Construtor que recebe o contexto do Spring e a saída.
     ComandoServir(ApplicationContext contexto, Saida saida) {
         this.contexto = contexto;
         this.saida = saida;
@@ -86,6 +60,7 @@ class ComandoServir implements Comando {
                 """.formatted(NOME, INVOCACAO, NOME);
     }
 
+    // Confere se há servidor web e espera até o contexto ser fechado; sem o perfil api, recusa.
     @Override
     public void executar(Argumentos argumentos) {
         argumentos.exigirSomente(List.of());
@@ -98,33 +73,24 @@ class ComandoServir implements Comando {
         }
 
         saida.linha("API no ar. Encerre com Ctrl+C.");
-        // Emenda da Etapa 11: até a Etapa 10 esta linha dizia "Somente GET", e a
-        // frase deixou de ser verdadeira quando POST /api/analises passou a
-        // existir. O que continua só na CLI é o que a D009 recusou por motivo
-        // que não mudou.
+        // Mudou na Etapa 11: antes esta linha dizia "Somente GET", o que deixou de valer com o POST /api/analises.
         saida.linha("Leitura e envio de documento para análise. Importar catálogo e tratar achado "
                 + "continuam na CLI.");
         esperarOFechamentoDoContexto();
     }
 
-    /**
-     * Devolve o {@link ContextClosedEvent} para quem está esperando.
-     *
-     * <p>Chega na thread do gancho de encerramento, não na {@code main} — daí a
-     * espera ser numa {@link CountDownLatch}, e não numa variável qualquer.</p>
-     */
+    // Libera a espera quando o contexto é fechado; o aviso chega em outra thread, por isso a espera usa CountDownLatch.
     @EventListener
     void aoFecharOContexto(ContextClosedEvent fechamento) {
         ateFecharOContexto.countDown();
     }
 
+    // Método auxiliar que espera o contexto ser fechado.
     private void esperarOFechamentoDoContexto() {
         try {
             ateFecharOContexto.await();
         } catch (InterruptedException interrompido) {
-            // Restaura o sinal e devolve: quem interrompeu quer que o processo
-            // encerre, e engolir o sinal faria a thread main seguir como se nada
-            // tivesse acontecido.
+            // Restaura o sinal de interrupção e devolve, para o processo encerrar como pedido.
             Thread.currentThread().interrupt();
             saida.linha("Encerrando: a espera foi interrompida.");
         }

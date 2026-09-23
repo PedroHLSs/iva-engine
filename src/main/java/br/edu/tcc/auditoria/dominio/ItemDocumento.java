@@ -5,35 +5,7 @@ import br.edu.tcc.auditoria.dominio.excecao.ItemDocumentoInvalido;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-/**
- * Item de um documento fiscal, com os campos do grupo de IBS/CBS exatamente
- * como declarados.
- *
- * <h2>Ausente e zero são estados diferentes</h2>
- *
- * <p>Esta é a decisão central do modelo. Todo campo que pode não vir no XML é
- * {@code Optional}. Um item que não declarou base de cálculo de IBS tem
- * {@code baseCalculoIbs = Optional.empty()}; um item que declarou base zero tem
- * {@code Optional.of(BigDecimal.ZERO)}. São situações fiscalmente distintas —
- * uma é omissão de campo, a outra é informação prestada — e produzem
- * apontamentos distintos. Substituir ausência por zero apagaria a diferença e
- * faria o sistema afirmar algo que o contribuinte não declarou.</p>
- *
- * <p>Consequência prática: não existe construtor abreviado nem valor padrão.
- * Quem monta um item é obrigado pelo compilador a dizer, campo a campo, se o
- * dado veio ou não. A verbosidade é intencional.</p>
- *
- * <h2>Valores monetários</h2>
- *
- * <p>Todo valor é {@link BigDecimal}, nunca {@code double}. A escala declarada
- * é preservada como veio: para a auditoria, "0" e "0,00" são registros
- * diferentes do mesmo número. Como {@code BigDecimal.equals} distingue escala,
- * regras que comparem grandeza devem usar {@code compareTo}.</p>
- *
- * <p>Nenhum valor é validado contra faixa, sinal ou alíquota admitida: o
- * sistema audita o que foi declarado e precisa conseguir representar inclusive
- * o que está errado, sob pena de não ter o que apontar.</p>
- */
+// Representa um item da nota com os campos de IBS/CBS como vieram. Campo que não veio é Optional vazio, e isso é diferente de zero. Valores são BigDecimal, com as casas decimais mantidas, e não são validados contra faixa.
 public record ItemDocumento(
         int numeroItem,
         Optional<Ncm> ncm,
@@ -51,6 +23,7 @@ public record ItemDocumento(
         Optional<BigDecimal> valorIbsMunicipal,
         Optional<BigDecimal> valorCbs) {
 
+    // Valida que o número do item seja pelo menos 1, que o valor do item exista e que nenhum campo opcional venha nulo.
     public ItemDocumento {
         if (numeroItem < 1) {
             throw new ItemDocumentoInvalido(
@@ -75,17 +48,7 @@ public record ItemDocumento(
         exigirOptional(valorCbs, "valorCbs");
     }
 
-    /**
-     * Indica se o item não trouxe nenhum campo do grupo de IBS/CBS.
-     *
-     * <p>Diferente de ter trazido os campos zerados: aqui não há informação
-     * nenhuma a confrontar.</p>
-     *
-     * <p>Ainda não é consumido por nenhuma regra de auditoria. Existe para que a
-     * pergunta "este item simplesmente não tem grupo de IBS/CBS?" tenha uma
-     * resposta única no modelo, em vez de onze testes de isEmpty() repetidos em
-     * cada regra que precisar distinguir omissão total de declaração zerada.</p>
-     */
+    // Indica se o item não trouxe nenhum campo de IBS/CBS, o que é diferente de trazer tudo zerado. Ainda não é usado em produção.
     public boolean semNenhumCampoDeIbsCbs() {
         return cstIbs.isEmpty()
                 && cstCbs.isEmpty()
@@ -100,6 +63,7 @@ public record ItemDocumento(
                 && valorCbs.isEmpty();
     }
 
+    // Método auxiliar para verificar se um campo opcional é nulo e lançar uma exceção.
     private static void exigirOptional(Optional<?> valor, String nomeDoCampo) {
         if (valor == null) {
             throw new ItemDocumentoInvalido(

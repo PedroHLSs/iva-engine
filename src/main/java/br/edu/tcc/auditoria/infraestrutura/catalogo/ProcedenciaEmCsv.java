@@ -8,37 +8,23 @@ import java.time.LocalDate;
 import java.util.Optional;
 import java.util.function.Function;
 
-/**
- * Leitura das três colunas que todo CSV de catálogo tem obrigatoriamente.
- *
- * <p>Fica num lugar só para que nenhum importador possa esquecer de exigi-las:
- * registro sem vigência não pode ser resolvido no tempo, e registro sem fonte
- * gera apontamento que ninguém consegue conferir. Os dois casos recusam a linha
- * inteira.</p>
- *
- * <p>{@code vigenciaFim} em branco não é erro — é vigência ainda aberta.</p>
- */
+// Classe que lê as três colunas que todo CSV de catálogo tem: vigenciaInicio, vigenciaFim e fonteNormativa. Fica num lugar só para nenhum importador esquecer delas; vigenciaFim em branco não é erro, quer dizer que ainda está valendo.
 final class ProcedenciaEmCsv {
 
     static final String COLUNA_VIGENCIA_INICIO = "vigenciaInicio";
     static final String COLUNA_VIGENCIA_FIM = "vigenciaFim";
     static final String COLUNA_FONTE_NORMATIVA = "fonteNormativa";
 
+    // Construtor privado: ninguém cria objeto desta classe, só usa os métodos estáticos.
     private ProcedenciaEmCsv() {
     }
 
+    // Método estático que lê a vigência e a fonte da coluna fonteNormativa.
     static ProcedenciaNormativa ler(LinhaCsv linha) {
         return ler(linha, lida -> lida.textoObrigatorio(COLUNA_FONTE_NORMATIVA));
     }
 
-    /*
-     * Emenda de 14/09/2026, sobre a Etapa 2.
-     *
-     * A fonte deixou de ser sempre a coluna fonteNormativa: o CSV de
-     * classificação pode trazê-la por tributo, e quem sabe juntar as duas é o
-     * importador dele. As vigências continuam lidas só aqui, e antes da fonte,
-     * como eram — a primeira recusa de uma linha com os dois defeitos não mudou.
-     */
+    // Método estático que lê a vigência e usa a leitura da fonte que o importador passar. Existe desde 14/09/2026, porque a classificação pode trazer a fonte separada por tributo.
     static ProcedenciaNormativa ler(LinhaCsv linha, Function<LinhaCsv, String> leituraDaFonte) {
         LocalDate inicio = linha.dataObrigatoria(COLUNA_VIGENCIA_INICIO);
         Optional<LocalDate> fim = linha.data(COLUNA_VIGENCIA_FIM);

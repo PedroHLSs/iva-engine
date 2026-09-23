@@ -2,32 +2,7 @@ package br.edu.tcc.auditoria.infraestrutura.api;
 
 import java.time.LocalDate;
 
-/**
- * O documento auditado como a API o mostra.
- *
- * <h2>Pseudônimo sempre, chave de acesso só por configuração</h2>
- *
- * <p>{@code pseudonimo} é o resumo criptográfico da chave, calculado com o mesmo
- * sal de instalação que a Etapa 6 usa no papel de trabalho (D007). Ele identifica
- * o documento entre respostas sem dizer quem é: dois achados do mesmo documento
- * trazem o mesmo pseudônimo.</p>
- *
- * <p>{@code chaveAcesso} vem {@code null} por padrão, com o motivo escrito ao
- * lado. Os dígitos intermediários da chave são o CNPJ do emitente, por definição
- * do leiaute (D005): expor a chave é expor o CNPJ com um passo a mais de
- * trabalho. Quem precisa dela para conferir a nota no ERP liga
- * {@code auditoria.api.expor-chave-de-acesso} na instalação — não é query param
- * (D009).</p>
- *
- * <h2>Modelo, série, número, data e UF ficam ligados</h2>
- *
- * <p>Não são dado de participante: série e número são a numeração sequencial do
- * próprio emitente, e a data e a UF situam a operação. Juntos localizam a nota no
- * sistema da empresa sem que o CNPJ apareça. É a mesma leitura que a D007 fez
- * para a planilha, e ela vale aqui pelo mesmo motivo — com a ressalva, também da
- * D007, de que identificam a operação, e de que por isso a API escuta só em
- * localhost.</p>
- */
+// Representa a nota como a API mostra: pseudônimo, modelo, série, número, data e UF vão sempre. A chave de acesso vem null com o motivo, porque contém o CNPJ do emitente, e só aparece se a instalação ligar auditoria.api.expor-chave-de-acesso.
 public record DocumentoExposto(
         String pseudonimo,
         String chaveAcesso,
@@ -38,6 +13,7 @@ public record DocumentoExposto(
         LocalDate dataEmissao,
         String ufEmitente) {
 
+    // Valida que haja pseudônimo e que a chave venha ou com valor ou com o motivo de estar omitida, nunca os dois.
     public DocumentoExposto {
         if (pseudonimo == null || pseudonimo.isBlank()) {
             throw new RespostaInvalida(

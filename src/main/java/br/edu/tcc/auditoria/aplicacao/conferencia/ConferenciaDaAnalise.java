@@ -7,24 +7,14 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Uma análise inteira, no vocabulário de quem confere.
- *
- * <p>A identificação da execução vem junta, e não é enfeite: sem saber contra
- * qual catálogo e qual conjunto de regras o resultado foi produzido, um
- * apontamento que deixou de proceder por mudança de tabela fica indistinguível
- * de um erro do sistema. É a mesma razão pela qual a identificação abre o Resumo
- * do papel de trabalho (D007).</p>
- *
- * <p>Os arquivos ilegíveis andam ao lado do resumo, nunca dentro dele — ver
- * {@link ResumoDaConferencia}.</p>
- */
+// Representa uma análise inteira no vocabulário de quem confere, com a execução, o resumo, os produtos e os arquivos ilegíveis.
 public record ConferenciaDaAnalise(
         ExecucaoAuditoria execucao,
         ResumoDaConferencia resumo,
         List<ProdutoConferido> produtos,
         List<ArquivoIlegivel> arquivosIlegiveis) {
 
+    // Valida a conferência e confere que o resumo conta o mesmo número de produtos da lista.
     public ConferenciaDaAnalise {
         if (execucao == null) {
             throw new ConferenciaInvalida(
@@ -57,18 +47,12 @@ public record ConferenciaDaAnalise(
         return arquivosIlegiveis.size();
     }
 
-    /**
-     * Quantas notas distintas esta análise leu.
-     *
-     * <p>Decide qual tela abre: uma nota é a tela da nota, várias é a tela do
-     * lote. Um pacote com um documento só continua sendo uma nota, e é assim que
-     * tem de aparecer.</p>
-     */
+    // Retorna quantas notas a análise leu, o que decide se abre a tela da nota ou a do lote.
     public int quantidadeDeNotas() {
         return execucao.quantidadeDocumentos();
     }
 
-    /** O produto de endereço dado, se ele for desta análise. */
+    // Retorna o produto com o endereço indicado, se ele for desta análise.
     public Optional<ProdutoConferido> produto(String endereco) {
         if (endereco == null || endereco.isBlank()) {
             throw new ConferenciaInvalida("Não há endereço de produto a procurar.");

@@ -7,31 +7,23 @@ import br.edu.tcc.auditoria.dominio.catalogo.ItemAnexo;
 import java.util.Comparator;
 import java.util.List;
 
-/**
- * Leitura ordenada dos anexos a que o catálogo vincula um NCM.
- *
- * <p>Um NCM pode estar vinculado a mais de um anexo na mesma data — o catálogo
- * admite isso de propósito, porque afirmar o contrário seria afirmar sobre a
- * norma. Como consequência, as regras que leem esses vínculos precisam de uma
- * ordem estável: a lista devolvida pelo repositório reflete a ordem de carga, e
- * duas cargas do mesmo conteúdo em ordem diferente produziriam evidências em
- * sequência diferente. Ordenar pelo identificador do anexo elimina isso.</p>
- */
+// Busca os anexos em que o catálogo coloca um NCM e devolve sempre na mesma ordem, porque um NCM pode estar em mais de um anexo.
 final class AnexosDoItem {
 
     static final String TABELA = "catalogo:itemAnexo";
 
+    // Construtor privado: ninguém cria objeto desta classe, só usa os métodos estáticos.
     private AnexosDoItem() {
     }
 
-    /** Vínculos vigentes do NCM, em ordem de identificador do anexo. */
+    // Devolve os anexos válidos do NCM na data, ordenados pela identificação do anexo.
     static List<ItemAnexo> ordenados(ContextoNormativo contexto, Ncm ncm) {
         return contexto.anexosDoNcm(ncm).stream()
                 .sorted(Comparator.comparing(anexo -> anexo.identificadorDoAnexo().valor()))
                 .toList();
     }
 
-    /** Identificadores dos anexos vigentes do NCM, em ordem. */
+    // Devolve só as identificações dos anexos válidos do NCM, em ordem.
     static List<String> identificadoresOrdenados(ContextoNormativo contexto, Ncm ncm) {
         return ordenados(contexto, ncm).stream()
                 .map(anexo -> anexo.identificadorDoAnexo().valor())

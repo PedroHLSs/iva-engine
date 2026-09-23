@@ -10,30 +10,7 @@ import br.edu.tcc.auditoria.dominio.catalogo.RepositorioItemAnexo;
 import br.edu.tcc.auditoria.dominio.catalogo.RepositorioNcm;
 import br.edu.tcc.auditoria.dominio.regras.CoberturaDoCatalogo;
 
-/**
- * O catálogo carregado para uma rodada de auditoria, capaz de se resolver na
- * data de cada documento.
- *
- * <p>É aqui que a resolução por vigência acontece na prática: cada documento
- * recebe um {@link ContextoNormativo} montado na <strong>sua</strong> data de
- * emissão, e não na data em que a auditoria está rodando. Auditar hoje um
- * documento emitido há dois anos tem de confrontá-lo com a tabela que valia
- * quando ele foi emitido; qualquer outra coisa apontaria incoerência inventada
- * pela passagem do tempo.</p>
- *
- * <h2>A procedência vem junto, e não é enfeite</h2>
- *
- * <p>{@code natureza} diz, por tabela, se o conteúdo é transcrição de fonte
- * normativa ou dado de demonstração. Ela viaja com o catálogo porque a tela que
- * exibe o tratamento precisa avisar quem lê — e porque um aviso que dependesse de
- * configuração separada seria esquecido exatamente na instalação em que importa.
- * Carga anterior à declaração vem com {@link NaturezaDaCarga#naoDeclarada()}, que
- * <strong>não</strong> é sinônimo de normativa.</p>
- *
- * @param versao    versão da carga de catálogo, registrada na execução
- * @param cobertura o que esta carga declara cobrir, por tabela
- * @param natureza  a procedência declarada de cada tabela desta carga
- */
+// Representa um catálogo de dados normativos que pode ser usado para auditoria, incluindo versão, cobertura, natureza da carga e repositórios de dados.
 public record CatalogoParaAuditoria(
         String versao,
         CoberturaDoCatalogo cobertura,

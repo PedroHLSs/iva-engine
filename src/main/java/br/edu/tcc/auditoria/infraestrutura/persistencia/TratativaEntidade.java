@@ -12,19 +12,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Decisão humana gravada sobre um apontamento.
- *
- * <p><strong>Não há chave estrangeira para o apontamento, de propósito.</strong>
- * A tratativa é presa a {@code (hashItem, regraId, regraVersao)} — conteúdo do
- * item e critério aplicado —, e não à linha do apontamento. É o que a faz
- * sobreviver ao reprocessamento do lote: o apontamento pode ser regravado, a
- * tratativa continua sendo reencontrada.</p>
- *
- * <p>Pelo mesmo motivo, mudar a versão da regra faz o apontamento reabrir: a
- * chave deixa de bater e a decisão antiga permanece gravada, amarrada à versão
- * em que foi dada.</p>
- */
+// Representa a decisão de uma pessoa sobre um apontamento. Não tem chave estrangeira para o apontamento, de propósito: fica presa ao hash do item, à regra e à versão, e por isso sobrevive ao reprocessamento e reabre quando a versão da regra muda.
 @Entity
 @Table(name = "tratativa")
 class TratativaEntidade {
@@ -52,10 +40,11 @@ class TratativaEntidade {
     @Column(name = "registrado_em", nullable = false)
     private Instant registradoEm;
 
+    // Construtor vazio exigido pelo JPA.
     protected TratativaEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe o identificador e a chave: hash do item, regra e versão.
     TratativaEntidade(UUID id, String hashItem, String regraId, String regraVersao) {
         this.id = id;
         this.hashItem = hashItem;
@@ -63,7 +52,7 @@ class TratativaEntidade {
         this.regraVersao = regraVersao;
     }
 
-    /** Registra a decisão, substituindo a anterior sobre a mesma chave. */
+    // Registra a decisão, substituindo a anterior da mesma chave.
     void decidir(DecisaoDeTratativa decisao, String justificativa, Instant registradoEm) {
         this.decisao = decisao;
         this.justificativa = justificativa;

@@ -1,8 +1,8 @@
 package br.edu.tcc.auditoria.dominio.excecao;
 
-/** Sinaliza tentativa de construir um código de classificação tributária vazio ou malformado. */
 public class CodigoClassificacaoTributariaInvalido extends ExcecaoDeDominio {
 
+    // Construtor que recebe a mensagem de erro e chama RuntimeException com essa mensagem.
     public CodigoClassificacaoTributariaInvalido(String mensagem) {
         super(mensagem);
     }

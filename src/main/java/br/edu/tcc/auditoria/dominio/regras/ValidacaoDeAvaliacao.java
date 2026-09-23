@@ -6,19 +6,14 @@ import br.edu.tcc.auditoria.dominio.excecao.AvaliacaoInvalida;
 
 import java.util.OptionalInt;
 
-/**
- * Verificações comuns às variantes de {@link Avaliacao} que não têm um
- * {@link Achado} de onde herdar a identificação.
- *
- * <p>Fica fora da interface de propósito: todo membro declarado dentro de uma
- * interface é público, e estas verificações são detalhe de construção, não parte
- * do contrato que as regras enxergam.</p>
- */
+// Verificações usadas pelos resultados que não têm apontamento. Fica fora da interface Avaliacao para não ficar visível às regras.
 final class ValidacaoDeAvaliacao {
 
+    // Construtor privado: ninguém cria objeto desta classe, só usa os métodos estáticos.
     private ValidacaoDeAvaliacao() {
     }
 
+    // Confere se regra, versão, nota e item foram informados; na avaliação da nota inteira, o item vem vazio.
     static void exigirIdentificacao(
             String regraId, String regraVersao, ChaveAcesso chaveAcesso, OptionalInt numeroItem) {
 
@@ -38,6 +33,7 @@ final class ValidacaoDeAvaliacao {
         }
     }
 
+    // Método auxiliar que dá erro se um texto obrigatório vier vazio.
     private static void exigirTexto(String valor, String nomeDoCampo) {
         if (valor == null || valor.isBlank()) {
             throw new AvaliacaoInvalida("O campo \"%s\" da avaliação é obrigatório.".formatted(nomeDoCampo));

@@ -8,24 +8,7 @@ import br.edu.tcc.auditoria.dominio.ValorEmRisco;
 
 import java.util.List;
 
-/**
- * Uma linha do "por que este resultado", como a tela a recebe.
- *
- * <h2>A explicação tem tipo, e o tipo manda no que vem junto</h2>
- *
- * <p>São três procedências — apontamento gravado, pendência gravada e conforme
- * derivado — e cada uma traz campos diferentes. O construtor confere essa
- * coerência: um passo que se diz apontamento e chega sem evidência, ou um que se
- * diz derivação e chega com fundamento normativo, é recusado aqui em vez de
- * chegar pela metade na tela.</p>
- *
- * <p>É o mesmo cuidado do par "nulo com o campo irmão dizendo por quê" da D009,
- * aplicado a uma estrutura com três formas em vez de duas.</p>
- *
- * <p>{@code regraNome} e {@code motivoDoNomeDaRegraAusente} foram acrescentados
- * depois da Etapa 11: o cabeçalho do passo escrevia só o código, e "R06" não diz
- * a quem confere o produto que pergunta foi feita. Ver {@link NomeDaRegra}.</p>
- */
+// Representa uma linha do "por que este resultado" na tela do produto: a regra, o estado a que chegou, a versão e a explicação. A explicação é de um de três tipos, e o construtor confere que cada tipo traz só os campos dele.
 public record PassoExposto(
         String regraId,
         String regraNome,
@@ -37,6 +20,7 @@ public record PassoExposto(
         String motivoDaVersaoAusente,
         ExplicacaoExposta explicacao) {
 
+    // Valida o passo: exige regra, nome ou motivo, estado com rótulo e explicação, versão ou motivo, e a explicação.
     public PassoExposto {
         if (regraId == null || regraId.isBlank()) {
             throw new RespostaInvalida("O passo precisa dizer de que regra ele é.");
@@ -62,6 +46,7 @@ public record PassoExposto(
         }
     }
 
+    // Método estático que converte o passo da aplicação, pondo o nome da regra por extenso.
     static PassoExposto de(PassoDaConferencia passo) {
         NomeDaRegra nome = NomeDaRegra.de(passo.regraId());
         return new PassoExposto(
@@ -76,6 +61,7 @@ public record PassoExposto(
                 ExplicacaoExposta.de(passo.explicacao()));
     }
 
+    // Método auxiliar que devolve a versão registrada, ou null quando ela não foi gravada.
     private static String versaoOuNulo(VersaoDaRegra versao) {
         return switch (versao) {
             case VersaoDaRegra.Registrada registrada -> registrada.valor();
@@ -83,6 +69,7 @@ public record PassoExposto(
         };
     }
 
+    // Método auxiliar que devolve o motivo de a versão não estar gravada, ou null quando ela está.
     private static String motivoDaVersao(VersaoDaRegra versao) {
         return switch (versao) {
             case VersaoDaRegra.Registrada registrada -> null;
@@ -90,7 +77,7 @@ public record PassoExposto(
         };
     }
 
-    /** Os três tipos de explicação, com os campos que cada um usa. */
+    // Representa a explicação de um passo, de um dos três tipos: apontamento, pendência ou conforme calculado. Cada tipo usa só os seus campos.
     public record ExplicacaoExposta(
             String tipo,
             List<EvidenciaExposta> evidencias,
@@ -99,10 +86,12 @@ public record PassoExposto(
             String motivoDoValorAusente,
             String texto) {
 
+        // Os três tipos de explicação.
         static final String APONTAMENTO = "APONTAMENTO";
         static final String PENDENCIA = "PENDENCIA";
         static final String DERIVACAO = "DERIVACAO";
 
+        // Valida que a lista de evidências exista e que os campos batam com o tipo.
         public ExplicacaoExposta {
             if (evidencias == null) {
                 throw new RespostaInvalida(
@@ -120,6 +109,7 @@ public record PassoExposto(
             evidencias = List.copyOf(evidencias);
         }
 
+        // Método estático que converte a explicação da aplicação, de acordo com o tipo.
         static ExplicacaoExposta de(ExplicacaoDaVerificacao explicacao) {
             return switch (explicacao) {
                 case ExplicacaoDaVerificacao.PorApontamento apontamento -> new ExplicacaoExposta(
@@ -136,10 +126,12 @@ public record PassoExposto(
             };
         }
 
+        // Método auxiliar que devolve o valor em risco como texto, ou null quando não dá para calcular.
         private static String quantiaOuNulo(ValorEmRisco valor) {
             return valor.valor().map(java.math.BigDecimal::toPlainString).orElse(null);
         }
 
+        // Método auxiliar que exige o que um apontamento precisa: evidência, fundamento e valor ou motivo, sem texto avulso.
         private static void exigirApontamento(
                 List<EvidenciaExposta> evidencias,
                 TratamentoExposto.ReferenciaExposta fundamentacao,
@@ -166,6 +158,7 @@ public record PassoExposto(
             }
         }
 
+        // Método auxiliar que exige que pendência e conforme calculado tragam só o texto, sem evidência, fundamento nem valor.
         private static void exigirSemApontamento(
                 List<EvidenciaExposta> evidencias,
                 TratamentoExposto.ReferenciaExposta fundamentacao,
@@ -188,7 +181,7 @@ public record PassoExposto(
         }
     }
 
-    /** O que a regra olhou e o que encontrou. */
+    // Representa o que a regra olhou e o que encontrou; valor que falta vem null com o motivo.
     public record EvidenciaExposta(
             String campoAnalisado,
             String valorEncontrado,
@@ -197,6 +190,7 @@ public record PassoExposto(
             String motivoDoEsperadoAusente,
             String origem) {
 
+        // Valida que haja campo analisado e origem, e que os valores encontrado e esperado venham com valor ou motivo.
         public EvidenciaExposta {
             if (campoAnalisado == null || campoAnalisado.isBlank()) {
                 throw new RespostaInvalida("A evidência precisa dizer qual campo foi examinado.");
@@ -219,6 +213,7 @@ public record PassoExposto(
             }
         }
 
+        // Método estático que converte a evidência da aplicação, pondo o motivo onde falta valor.
         static EvidenciaExposta de(PassoDeEvidencia evidencia) {
             return new EvidenciaExposta(
                     evidencia.campoAnalisado(),

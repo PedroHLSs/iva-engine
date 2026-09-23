@@ -12,14 +12,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-/**
- * Comando {@code exportar}: emite o papel de trabalho de uma execução em xlsx.
- *
- * <p>Sem {@code --execucao}, exporta a mais recente — que é o caso comum, logo
- * depois de auditar. Com ela, reemite o papel de trabalho de qualquer rodada
- * anterior, com os apontamentos que <em>aquela</em> rodada produziu e a
- * identificação que ela tinha.</p>
- */
+// Classe do comando exportar, que grava o papel de trabalho de uma execução em xlsx. Sem --execucao, exporta a mais recente.
 @Component
 class ComandoExportar implements Comando {
 
@@ -31,6 +24,7 @@ class ComandoExportar implements Comando {
     private final ServicoDeExportacao servico;
     private final Saida saida;
 
+    // Construtor que recebe o serviço de exportação e a saída.
     ComandoExportar(ServicoDeExportacao servico, Saida saida) {
         this.servico = servico;
         this.saida = saida;
@@ -66,6 +60,7 @@ class ComandoExportar implements Comando {
                 """.formatted(NOME, servico.extensao(), ComandoAuditar.NOME);
     }
 
+    // Exporta a execução pedida, ou a mais recente, para o arquivo informado.
     @Override
     public void executar(Argumentos argumentos) {
         argumentos.exigirSomente(List.of(OPCAO_ARQUIVO, OPCAO_EXECUCAO));
@@ -81,6 +76,7 @@ class ComandoExportar implements Comando {
         imprimir(papel, arquivo);
     }
 
+    // Método auxiliar que mostra onde a planilha foi gravada e um resumo do conteúdo.
     private void imprimir(PapelDeTrabalho papel, Path arquivo) {
         saida.linha("Papel de trabalho gravado em %s", arquivo.toAbsolutePath());
         saida.linha("  execução ........... %s", papel.execucao().id());
@@ -104,6 +100,7 @@ class ComandoExportar implements Comando {
         papel.motivosAgrupados().stream().limit(3).forEach(this::imprimirMotivo);
     }
 
+    // Método auxiliar que mostra um motivo de não avaliação e quantas vezes apareceu.
     private void imprimirMotivo(MotivoAgrupado agrupado) {
         saida.linha("  %s x%d: %s", agrupado.regraId(), agrupado.quantidade(), agrupado.motivo());
     }

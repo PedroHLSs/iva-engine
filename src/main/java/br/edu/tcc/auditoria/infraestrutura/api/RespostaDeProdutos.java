@@ -2,7 +2,7 @@ package br.edu.tcc.auditoria.infraestrutura.api;
 
 import java.util.List;
 
-/** Uma página dos produtos de uma análise. */
+// Representa uma página dos produtos de uma análise, com a faixa de procedência e o aviso de uso.
 public record RespostaDeProdutos(
         String analiseId,
         PaginaExposta pagina,
@@ -10,6 +10,7 @@ public record RespostaDeProdutos(
         FaixaDeNatureza natureza,
         String aviso) {
 
+    // Valida que a página tenha análise, paginação, lista de produtos, faixa de procedência e aviso de uso.
     public RespostaDeProdutos {
         if (analiseId == null || analiseId.isBlank()) {
             throw new RespostaInvalida("A página de produtos precisa dizer de que análise ela é.");

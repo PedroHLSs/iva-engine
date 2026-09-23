@@ -4,24 +4,7 @@ import br.edu.tcc.auditoria.aplicacao.conferencia.GrupoDeProdutos;
 
 import java.util.List;
 
-/**
- * Um grupo da tela de lote: uma parametrização, e o tamanho do que ela alcança.
- *
- * <h2>O valor sai com o rótulo grudado nele</h2>
- *
- * <p>{@code rotuloDoValorDosProdutos} viaja junto do número de propósito. É a
- * soma do valor dos itens envolvidos, e não o tamanho do erro — abreviado para
- * "valor", numa coluna ao lado de "possível divergência", ele seria lido como
- * prejuízo. O rótulo vem do servidor para que nenhuma tela o encurte por conta
- * própria.</p>
- *
- * <h2>O nível do agrupamento vai escrito</h2>
- *
- * <p>Mesma disciplina da D010: componente ausente vem {@code null} com o campo
- * irmão dizendo por quê, e o grupo carrega o código do nível e a frase inteira.
- * Grupos de níveis diferentes não são comparáveis entre si, e a tela precisa
- * poder dizer isso.</p>
- */
+// Representa um grupo da tela do lote: NCM, cClassTrib e situação, com quantos produtos e notas ele alcança. O valor vai com o rótulo junto, porque é a soma dos itens envolvidos, e não o tamanho do erro; NCM ou cClassTrib que faltou vem null com o motivo.
 public record GrupoExposto(
         String ncm,
         String motivoDoNcmAusente,
@@ -39,11 +22,13 @@ public record GrupoExposto(
         List<EstadoContado> verificacoesPorEstado,
         int produtosComAlgumaVerificacaoNaoConcluida) {
 
+    // Motivos escritos quando a nota não declarou NCM ou cClassTrib para os itens do grupo.
     static final String NCM_NAO_DECLARADO =
             "o documento não declarou NCM para os itens deste grupo";
     static final String CLASSTRIB_NAO_DECLARADO =
             "o documento não declarou cClassTrib para os itens deste grupo";
 
+    // Valida o grupo: NCM e cClassTrib com valor ou motivo, situação e nível escritos, contagens coerentes, valor com rótulo e os quatro estados.
     public GrupoExposto {
         if ((ncm == null) == (motivoDoNcmAusente == null)) {
             throw new RespostaInvalida(
@@ -92,6 +77,7 @@ public record GrupoExposto(
         verificacoesPorEstado = List.copyOf(verificacoesPorEstado);
     }
 
+    // Método estático que converte o grupo da aplicação para a resposta.
     static GrupoExposto de(GrupoDeProdutos grupo) {
         return new GrupoExposto(
                 grupo.chave().ncm().orElse(null),

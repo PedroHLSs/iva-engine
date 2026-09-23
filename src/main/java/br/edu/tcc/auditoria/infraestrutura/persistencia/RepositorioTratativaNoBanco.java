@@ -15,23 +15,18 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Grava e lê tratativas, sempre pela chave de conteúdo.
- *
- * <p>Não há consulta que ignore a versão da regra. Isso é o que garante que uma
- * decisão dada contra um critério não silencie um apontamento produzido por
- * critério diferente: mudou a versão, a busca não encontra nada, e o apontamento
- * reabre.</p>
- */
+// Repositório que grava e lê as tratativas no banco, sempre com a versão da regra na busca: se a regra mudou de versão, a busca não acha nada e o apontamento reabre.
 @Repository
 class RepositorioTratativaNoBanco implements RepositorioTratativa {
 
     private final TratativaJpa tratativas;
 
+    // Construtor que recebe o repositório JPA de tratativas.
     RepositorioTratativaNoBanco(TratativaJpa tratativas) {
         this.tratativas = tratativas;
     }
 
+    // Busca a tratativa da chave: hash do item, regra e versão.
     @Override
     @Transactional(readOnly = true)
     public Optional<Tratativa> buscar(ChaveDeTratativa chave) {
@@ -40,6 +35,7 @@ class RepositorioTratativaNoBanco implements RepositorioTratativa {
                 .map(MapeadorDeTratativa::paraDominio);
     }
 
+    // Busca as tratativas de várias chaves de uma vez.
     @Override
     @Transactional(readOnly = true)
     public Map<ChaveDeTratativa, Tratativa> buscarTodas(Collection<ChaveDeTratativa> chaves) {
@@ -53,8 +49,7 @@ class RepositorioTratativaNoBanco implements RepositorioTratativa {
         Map<ChaveDeTratativa, Tratativa> encontradas = new LinkedHashMap<>();
         for (TratativaEntidade entidade : tratativas.findByHashItemIn(hashes)) {
             Tratativa tratativa = MapeadorDeTratativa.paraDominio(entidade);
-            // A consulta filtra pelo resumo do item; a versão da regra é conferida
-            // aqui, e é ela que faz a tratativa de outra versão não ser devolvida.
+            // A consulta filtra só pelo hash do item; a versão da regra é conferida aqui, para não devolver tratativa de outra versão.
             if (procuradas.contains(tratativa.chave())) {
                 encontradas.put(tratativa.chave(), tratativa);
             }
@@ -62,6 +57,7 @@ class RepositorioTratativaNoBanco implements RepositorioTratativa {
         return Map.copyOf(encontradas);
     }
 
+    // Grava a decisão, atualizando a tratativa da mesma chave ou criando uma nova.
     @Override
     @Transactional
     public void salvar(Tratativa tratativa) {

@@ -6,28 +6,7 @@ import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Function;
 
-/**
- * Vocabulário pelo qual o catálogo se refere aos campos de um item.
- *
- * <p>O catálogo diz, por {@code cClassTrib}, quais campos passam a ser exigidos.
- * Ele diz isso por nome, em texto, dentro do CSV. Para que R07 consiga conferir,
- * é preciso haver um vocabulário publicado, e este enum é ele: o nome aceito é
- * exatamente o do componente correspondente em {@link ItemDocumento}.</p>
- *
- * <p>Usar os nomes do próprio modelo, e não uma lista inventada aqui, tem duas
- * consequências boas. A primeira é que não há tradução a manter. A segunda é que
- * há teste por reflexão garantindo que cada nome ainda existe em
- * {@code ItemDocumento} — se um campo for renomeado, o teste falha em vez de a
- * regra passar a ignorar silenciosamente uma exigência do catálogo.</p>
- *
- * <p>A comparação de nome é exata. Aparar espaço e normalizar caixa é trabalho
- * da importação, não do domínio, e adivinhar o que o operador quis dizer seria
- * pior do que recusar: nome desconhecido faz R07 devolver {@code NAO_AVALIADO}
- * citando o nome, que é acionável.</p>
- *
- * <p>{@code valorItem} não está aqui de propósito: não é {@code Optional} no
- * modelo, sempre existe, e não faria sentido o catálogo exigi-lo.</p>
- */
+// Lista os nomes de campo que o catálogo pode exigir, iguais aos nomes usados em ItemDocumento. Se o catálogo usar um nome fora desta lista, a R07 responde NAO_AVALIADO.
 public enum CampoDoItem {
 
     NCM("ncm", ItemDocumento::ncm),
@@ -48,17 +27,17 @@ public enum CampoDoItem {
     private final String nomeNoCatalogo;
     private final Function<ItemDocumento, Optional<?>> leitura;
 
+    // Construtor que liga cada campo ao nome usado no catálogo e ao jeito de ler esse campo no item.
     CampoDoItem(String nomeNoCatalogo, Function<ItemDocumento, Optional<?>> leitura) {
         this.nomeNoCatalogo = nomeNoCatalogo;
         this.leitura = leitura;
     }
 
-    /** Nome pelo qual o CSV do catálogo se refere a este campo. */
     public String nomeNoCatalogo() {
         return nomeNoCatalogo;
     }
 
-    /** O campo reconhecido por este nome, vazio se o vocabulário não o conhece. */
+    // Procura o campo pelo nome escrito no catálogo; se o nome não estiver na lista, devolve vazio. O nome tem de ser exatamente igual.
     public static Optional<CampoDoItem> porNome(String nome) {
         if (nome == null) {
             return Optional.empty();
@@ -68,13 +47,7 @@ public enum CampoDoItem {
                 .findFirst();
     }
 
-    /**
-     * Indica se o item trouxe este campo.
-     *
-     * <p>Preenchido é ter vindo, não ser diferente de zero: um campo declarado
-     * com valor zero foi preenchido, e a distinção entre ausência e zero é o
-     * eixo do modelo.</p>
-     */
+    // Diz se o item trouxe este campo. Campo com valor zero conta como preenchido, porque vir zero é diferente de não vir nada.
     public boolean estaPreenchidoEm(ItemDocumento item) {
         return leitura.apply(item).isPresent();
     }

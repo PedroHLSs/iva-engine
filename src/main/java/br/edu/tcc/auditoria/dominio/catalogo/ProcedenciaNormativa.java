@@ -6,22 +6,10 @@ import br.edu.tcc.auditoria.dominio.excecao.RegistroNormativoInvalido;
 import java.time.LocalDate;
 import java.util.Optional;
 
-/**
- * Quando um registro do catálogo vale e de onde ele veio.
- *
- * <p>Os três dados que todo registro normativo carrega obrigatoriamente —
- * início de vigência, fim de vigência e fonte normativa — ficam reunidos aqui,
- * e não repetidos soltos em cada tipo de registro. Assim é impossível criar um
- * registro novo e esquecer de datá-lo ou de dizer de onde ele saiu.</p>
- *
- * <p>A fonte normativa é texto livre informado na carga. O domínio não conhece
- * nenhuma fonte, não valida formato de citação e não tem fonte padrão.</p>
- *
- * @param vigencia       período em que o registro vale; fim vazio é vigência aberta
- * @param fonteNormativa identificação do documento de onde o registro foi extraído
- */
+// Representa quando um registro do catálogo vale e de onde ele veio; a fonte é texto livre da carga, sem fonte padrão.
 public record ProcedenciaNormativa(PeriodoVigencia vigencia, String fonteNormativa) {
 
+    // Valida que a procedência tenha vigência e fonte normativa.
     public ProcedenciaNormativa {
         if (vigencia == null) {
             throw new RegistroNormativoInvalido(
@@ -34,12 +22,12 @@ public record ProcedenciaNormativa(PeriodoVigencia vigencia, String fonteNormati
         }
     }
 
-    /** Vigência fechada nos dois extremos. */
+    // Método estático que cria a procedência com vigência fechada nos dois extremos.
     public static ProcedenciaNormativa de(LocalDate vigenciaInicio, LocalDate vigenciaFim, String fonteNormativa) {
         return new ProcedenciaNormativa(PeriodoVigencia.de(vigenciaInicio, vigenciaFim), fonteNormativa);
     }
 
-    /** Vigência ainda aberta, sem último dia conhecido. */
+    // Método estático que cria a procedência com vigência aberta, sem último dia conhecido.
     public static ProcedenciaNormativa aPartirDe(LocalDate vigenciaInicio, String fonteNormativa) {
         return new ProcedenciaNormativa(PeriodoVigencia.aPartirDe(vigenciaInicio), fonteNormativa);
     }
@@ -52,6 +40,7 @@ public record ProcedenciaNormativa(PeriodoVigencia vigencia, String fonteNormati
         return vigencia.fim();
     }
 
+    // Indica se o registro vale na data indicada.
     public boolean vigenteEm(LocalDate data) {
         return vigencia.contem(data);
     }

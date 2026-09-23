@@ -11,28 +11,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * As versões sucessivas de um mesmo registro do catálogo, ordenadas no tempo.
- *
- * <p>É aqui que mora a invariante do catálogo: <strong>duas versões da mesma
- * chave não podem valer na mesma data.</strong> A série se recusa a existir se
- * houver sobreposição, e a recusa acontece na construção — antes de qualquer
- * consulta, e portanto antes de qualquer relatório sair errado.</p>
- *
- * <p>A invariante fica no domínio, e não no repositório, de propósito: ela não é
- * detalhe de como o catálogo é guardado. Trocar armazenamento em memória por
- * banco não pode ser oportunidade de perdê-la.</p>
- *
- * <p>Consequência de haver a invariante: {@link #vigenteEm(LocalDate)} devolve
- * no máximo um registro, e devolvê-lo não envolve escolha nenhuma. Se houvesse
- * sobreposição, alguém teria de decidir qual das duas versões responder — e
- * qualquer critério para isso seria inventado.</p>
- *
- * @param chave   identificação da série, comum a todas as versões
- * @param versoes versões ordenadas por início de vigência, ao menos uma
- */
+// Representa as versões sucessivas de um mesmo registro do catálogo, ordenadas no tempo; recusa na construção duas versões valendo na mesma data.
 public record SerieNormativa<T extends RegistroNormativo>(String chave, List<T> versoes) {
 
+    // Valida a série: exige versões da mesma chave, ordena por início de vigência e recusa vigências sobrepostas.
     public SerieNormativa {
         if (chave == null || chave.isBlank()) {
             throw new CatalogoInvalido("Uma série normativa precisa de chave.");
@@ -59,8 +41,7 @@ public record SerieNormativa<T extends RegistroNormativo>(String chave, List<T> 
                 .sorted(Comparator.comparing((T versao) -> versao.vigenciaInicio()))
                 .toList();
 
-        // Basta comparar vizinhas: numa lista ordenada por início de vigência,
-        // se duas quaisquer se sobrepõem, então duas adjacentes se sobrepõem.
+        // Basta comparar vizinhas: numa lista ordenada por início, se duas quaisquer se sobrepõem, duas adjacentes também se sobrepõem.
         for (int posicao = 1; posicao < ordenadas.size(); posicao++) {
             T anterior = ordenadas.get(posicao - 1);
             T seguinte = ordenadas.get(posicao);
@@ -81,7 +62,7 @@ public record SerieNormativa<T extends RegistroNormativo>(String chave, List<T> 
         versoes = ordenadas;
     }
 
-    /** Monta a série a partir das versões, tomando a chave da primeira delas. */
+    // Método estático que monta a série a partir das versões, tomando a chave da primeira.
     public static <T extends RegistroNormativo> SerieNormativa<T> de(Collection<T> versoes) {
         if (versoes == null || versoes.isEmpty()) {
             throw new CatalogoInvalido("Uma série normativa precisa de ao menos uma versão.");
@@ -93,14 +74,7 @@ public record SerieNormativa<T extends RegistroNormativo>(String chave, List<T> 
         return new SerieNormativa<>(primeira.chaveDeVigencia(), new ArrayList<>(versoes));
     }
 
-    /**
-     * A versão que vale na data, se alguma valer.
-     *
-     * <p>Data anterior à primeira vigência, posterior à última, ou caída num
-     * intervalo descoberto entre duas versões devolvem vazio. Vazio significa
-     * "o catálogo não diz nada sobre isso nesta data", e é a resposta correta —
-     * não um erro a ser contornado devolvendo a versão mais próxima.</p>
-     */
+    // Retorna a versão que vale na data; vazio quer dizer que o catálogo nada diz, e nunca se devolve a versão mais próxima.
     public Optional<T> vigenteEm(LocalDate data) {
         if (data == null) {
             throw new CatalogoInvalido("A data de consulta ao catálogo não pode ser nula.");
@@ -108,20 +82,21 @@ public record SerieNormativa<T extends RegistroNormativo>(String chave, List<T> 
         return versoes.stream().filter(versao -> versao.vigenteEm(data)).findFirst();
     }
 
-    /** Quantidade de versões da série. */
     public int quantidadeDeVersoes() {
         return versoes.size();
     }
 
+    // Método auxiliar que indica se dois períodos de vigência se sobrepõem.
     private static boolean seSobrepoem(PeriodoVigencia uma, PeriodoVigencia outra) {
         return comecaAteOFimDe(uma, outra) && comecaAteOFimDe(outra, uma);
     }
 
-    /** Verdadeiro se o início de {@code inicial} não passa do fim de {@code outra}; vigência aberta não tem fim. */
+    // Método auxiliar que indica se um período começa até o fim do outro; vigência aberta não tem fim.
     private static boolean comecaAteOFimDe(PeriodoVigencia inicial, PeriodoVigencia outra) {
         return outra.fim().map(ultimoDia -> !inicial.inicio().isAfter(ultimoDia)).orElse(true);
     }
 
+    // Método auxiliar que escreve o fim da vigência, ou "sem fim declarado", para a mensagem de erro.
     private static String descreverFim(Optional<LocalDate> fim) {
         return fim.map(LocalDate::toString).orElse("sem fim declarado");
     }

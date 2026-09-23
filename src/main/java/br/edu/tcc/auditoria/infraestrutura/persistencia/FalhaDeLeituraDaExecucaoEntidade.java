@@ -7,12 +7,7 @@ import jakarta.persistence.Table;
 
 import java.util.UUID;
 
-/**
- * Um arquivo que uma execução não conseguiu ler.
- *
- * <p>A {@code origem} chega aqui já sem chave de acesso em texto claro — ver
- * {@code OrigemSemIdentificador} e a restrição de formato da coluna na V7.</p>
- */
+// Representa a linha de um arquivo que uma execução não conseguiu ler. O nome já chega sem a pasta e sem o CNPJ de dentro da chave de acesso, limpo por OrigemDeArquivoIlegivel, e a V7 também restringe a coluna.
 @Entity
 @Table(name = "falha_de_leitura_da_execucao")
 class FalhaDeLeituraDaExecucaoEntidade {
@@ -24,7 +19,7 @@ class FalhaDeLeituraDaExecucaoEntidade {
     @Column(name = "execucao_id", nullable = false)
     private UUID execucaoId;
 
-    /** Ordem em que a falha ocorreu, para o relatório sair sempre igual. */
+    // Ordem em que a falha aconteceu, para o relatório sair sempre igual.
     @Column(name = "ordem", nullable = false)
     private int ordem;
 
@@ -37,10 +32,11 @@ class FalhaDeLeituraDaExecucaoEntidade {
     @Column(name = "motivo", nullable = false)
     private String motivo;
 
+    // Construtor vazio exigido pelo JPA.
     protected FalhaDeLeituraDaExecucaoEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe todos os campos da linha.
     FalhaDeLeituraDaExecucaoEntidade(
             UUID id, UUID execucaoId, int ordem, String origem, String tipoDeErro, String motivo) {
         this.id = id;

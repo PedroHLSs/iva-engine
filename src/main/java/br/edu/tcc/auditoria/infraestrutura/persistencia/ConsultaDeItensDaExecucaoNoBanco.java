@@ -17,24 +17,20 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Junta o que a análise leu (V7) com o conteúdo declarado de cada item (V2).
- *
- * <p>Duas consultas, não uma por item: um lote de quatrocentas notas tem
- * milhares de itens, e uma ida ao banco por item para desenhar uma tabela seria
- * trabalho real e visível.</p>
- */
+// Classe que junta o que a análise leu, da tabela da V7, com o que cada item declarou, da tabela da V2, em duas consultas, e não uma por item.
 @Component
 class ConsultaDeItensDaExecucaoNoBanco implements ConsultaDeItensDaExecucao {
 
     private final ItemDaExecucaoJpa doAcervo;
     private final ItemDocumentoJpa itens;
 
+    // Construtor que recebe os repositórios de itens da execução e de itens do documento.
     ConsultaDeItensDaExecucaoNoBanco(ItemDaExecucaoJpa doAcervo, ItemDocumentoJpa itens) {
         this.doAcervo = doAcervo;
         this.itens = itens;
     }
 
+    // Busca os itens lidos pela execução, com o conteúdo declarado e a descrição de cada um.
     @Override
     @Transactional(readOnly = true)
     public List<DadosDoItem> daExecucao(UUID execucaoId) {
@@ -61,10 +57,7 @@ class ConsultaDeItensDaExecucaoNoBanco implements ConsultaDeItensDaExecucao {
             ItemDocumentoEntidade item =
                     porEndereco.get(endereco(lido.chaveAcesso(), lido.numeroItem()));
             if (item == null) {
-                // A chave estrangeira da V7 cascateia, então o acervo não deveria
-                // apontar para item inexistente. Se aponta, o banco foi alterado
-                // por fora — e a chave não entra na mensagem, porque carrega o
-                // CNPJ do emitente.
+                // O banco não deveria apontar para item que não existe; se aponta, foi alterado por fora. A chave não entra na mensagem, porque contém o CNPJ.
                 throw new PersistenciaInconsistente(
                         ("O acervo da execução aponta para o item %d de um documento que não está "
                                 + "gravado.").formatted(lido.numeroItem()));
@@ -72,9 +65,7 @@ class ConsultaDeItensDaExecucaoNoBanco implements ConsultaDeItensDaExecucao {
             encontrados.add(new DadosDoItem(
                     new ChaveAcesso(lido.chaveAcesso()),
                     MapeadorDeDocumento.paraDominio(item),
-                    // A descrição vem da linha do acervo, que é o que ESTA análise
-                    // leu. item_documento não a guarda, e não deve: ele é
-                    // sobrescrito a cada reprocessamento.
+                    // A descrição vem da linha que ESTA análise leu, porque item_documento é sobrescrito a cada reprocessamento.
                     lido.descricao(),
                     new HashDoItem(lido.hashItem()),
                     new HashDoItem(item.hashItem())));
@@ -82,6 +73,7 @@ class ConsultaDeItensDaExecucaoNoBanco implements ConsultaDeItensDaExecucao {
         return List.copyOf(encontrados);
     }
 
+    // Método auxiliar que monta o endereço do item: chave de acesso e número.
     private static String endereco(String chaveAcesso, int numeroItem) {
         return chaveAcesso + "#" + numeroItem;
     }

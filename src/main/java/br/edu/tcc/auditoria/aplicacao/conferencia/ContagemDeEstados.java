@@ -5,34 +5,10 @@ import java.util.Collections;
 import java.util.EnumMap;
 import java.util.Map;
 
-/**
- * Quantos há de cada um dos quatro estados — sempre os quatro, inclusive os
- * zeros.
- *
- * <p>É a peça que aparece no resumo da nota, no resumo do lote e dentro de cada
- * produto. Em todos esses lugares vale a mesma regra: uma nota com seis
- * produtos sem divergência e quatro não concluídos não pode parecer uma nota
- * quase limpa.</p>
- *
- * <h2>Não existe um estado omitido</h2>
- *
- * <p>O construtor <strong>recusa</strong> mapa a que falte qualquer um dos
- * quatro, em vez de completá-lo com zero. Completar em silêncio faria o defeito
- * de quem montou a contagem virar um zero indistinguível de contagem
- * verdadeira; recusar faz o defeito aparecer no lugar onde ele foi cometido. Um
- * estado que não ocorreu se declara com {@code 0}, e a diferença entre "não
- * ocorreu" e "ninguém contou" é o assunto inteiro deste projeto.</p>
- *
- * <h2>Não há soma de dois estados, e a ausência é deliberada</h2>
- *
- * <p>Este tipo não oferece nenhum método que combine
- * {@link EstadoDeConferencia#SEM_DIVERGENCIA_IDENTIFICADA} com
- * {@link EstadoDeConferencia#NAO_FOI_POSSIVEL_CONCLUIR}, e não deve passar a
- * oferecer. Quem precisar de um total tem {@link #total()}, que soma os quatro e
- * se chama pelo que é.</p>
- */
+// Representa quantos produtos ou verificações há em cada um dos quatro estados, sempre os quatro, inclusive os zeros.
 public record ContagemDeEstados(Map<EstadoDeConferencia, Integer> porEstado) {
 
+    // Valida que a contagem traga os quatro estados, sem valor negativo e sem chave a mais.
     public ContagemDeEstados {
         if (porEstado == null) {
             throw new ConferenciaInvalida(
@@ -63,7 +39,7 @@ public record ContagemDeEstados(Map<EstadoDeConferencia, Integer> porEstado) {
         porEstado = Collections.unmodifiableMap(copia);
     }
 
-    /** Contagem dos estados dados, com zero escrito nos que não apareceram. */
+    // Método estático que conta os estados dados, escrevendo zero nos que não apareceram.
     public static ContagemDeEstados de(Collection<EstadoDeConferencia> estados) {
         if (estados == null) {
             throw new ConferenciaInvalida(
@@ -79,11 +55,12 @@ public record ContagemDeEstados(Map<EstadoDeConferencia, Integer> porEstado) {
         return new ContagemDeEstados(contagem);
     }
 
-    /** Os quatro em zero. Nenhum produto contado — que também é uma afirmação. */
+    // Método estático que retorna a contagem com os quatro estados em zero.
     public static ContagemDeEstados nenhum() {
         return new ContagemDeEstados(zerada());
     }
 
+    // Retorna a quantidade do estado indicado.
     public int quantidadeDe(EstadoDeConferencia estado) {
         if (estado == null) {
             throw new ConferenciaInvalida("Não há estado cuja quantidade consultar.");
@@ -91,12 +68,12 @@ public record ContagemDeEstados(Map<EstadoDeConferencia, Integer> porEstado) {
         return porEstado.get(estado);
     }
 
-    /** A soma dos quatro. O único total que este tipo calcula. */
+    // Retorna a soma dos quatro estados, que é o único total que este tipo calcula.
     public int total() {
         return porEstado.values().stream().mapToInt(Integer::intValue).sum();
     }
 
-    /** Soma duas contagens estado a estado, para consolidar nota em lote. */
+    // Soma duas contagens estado a estado, para consolidar as notas no lote.
     public ContagemDeEstados mais(ContagemDeEstados outra) {
         if (outra == null) {
             throw new ConferenciaInvalida("Não há contagem a somar.");
@@ -108,6 +85,7 @@ public record ContagemDeEstados(Map<EstadoDeConferencia, Integer> porEstado) {
         return new ContagemDeEstados(soma);
     }
 
+    // Método auxiliar que cria o mapa com os quatro estados em zero.
     private static Map<EstadoDeConferencia, Integer> zerada() {
         Map<EstadoDeConferencia, Integer> contagem = new EnumMap<>(EstadoDeConferencia.class);
         for (EstadoDeConferencia estado : EstadoDeConferencia.values()) {

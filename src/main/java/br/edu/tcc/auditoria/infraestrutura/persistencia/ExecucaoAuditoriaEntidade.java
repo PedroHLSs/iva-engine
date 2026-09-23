@@ -19,14 +19,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 
-/**
- * Recibo gravado de uma rodada de auditoria.
- *
- * <p>As duas contagens ficam em tabelas próprias em vez de colunas fixas: o
- * conjunto de regras muda entre versões, e uma coluna por regra transformaria
- * cada regra nova numa migration. As linhas incluem zero — regra que não apontou
- * nada aparece com zero, e não some.</p>
- */
+// Representa o recibo gravado de uma rodada de auditoria. As contagens por gravidade e por regra ficam em tabelas próprias, e não em colunas fixas, para regra nova não exigir migration; regra que não apontou nada aparece com zero.
 @Entity
 @Table(name = "execucao_auditoria")
 class ExecucaoAuditoriaEntidade {
@@ -70,10 +63,11 @@ class ExecucaoAuditoriaEntidade {
     @Column(name = "quantidade", nullable = false)
     private Map<String, Integer> achadosPorRegra = new LinkedHashMap<>();
 
+    // Construtor vazio exigido pelo JPA.
     protected ExecucaoAuditoriaEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe todos os campos do recibo, com as duas contagens.
     ExecucaoAuditoriaEntidade(
             UUID id,
             Instant dataHora,
@@ -92,8 +86,7 @@ class ExecucaoAuditoriaEntidade {
         this.versaoConjuntoRegras = versaoConjuntoRegras;
         this.quantidadeDocumentos = quantidadeDocumentos;
         this.quantidadeItens = quantidadeItens;
-        // EnumMap.putAll em vez do construtor de cópia: o construtor recusa mapa
-        // vazio que não seja EnumMap, e a contagem pode chegar de qualquer Map.
+        // Usa EnumMap.putAll, e não o construtor de cópia, porque ele recusa mapa vazio que não seja EnumMap.
         this.achadosPorSeveridade = new EnumMap<>(Severidade.class);
         this.achadosPorSeveridade.putAll(achadosPorSeveridade);
         this.achadosPorRegra = new LinkedHashMap<>(achadosPorRegra);

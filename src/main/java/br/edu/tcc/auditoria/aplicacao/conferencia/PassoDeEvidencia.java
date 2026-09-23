@@ -5,40 +5,22 @@ import br.edu.tcc.auditoria.dominio.OrigemEvidencia;
 
 import java.util.Optional;
 
-/**
- * Uma evidência do apontamento, no formato em que a tela a lê.
- *
- * <h2>Os dois vazios querem dizer coisas diferentes</h2>
- *
- * <p>É a distinção que {@code Evidencia} já faz no domínio, e que se perderia se
- * a tela escrevesse um traço nos dois casos. {@code valorEncontrado} vazio é o
- * campo que não veio no documento — costuma ser <em>o motivo</em> do
- * apontamento. {@code valorEsperado} vazio é a regra não ter referência a opor:
- * ela constatou incoerência interna, entre campos do próprio documento.</p>
- *
- * <p>Por isso os dois textos de ausência são constantes daqui e não frases que a
- * interface inventa. São diferentes de propósito.</p>
- *
- * <h2>A origem é traduzida por switch exaustivo</h2>
- *
- * <p>{@code OrigemEvidencia} é selada e tem três variantes. O {@code switch} de
- * {@link #origemDe} não tem {@code default}: uma origem nova quebra a compilação
- * aqui, em vez de aparecer na tela como texto vazio.</p>
- */
+// Representa uma evidência do apontamento no formato da tela; valor encontrado vazio e valor esperado vazio querem dizer coisas diferentes.
 public record PassoDeEvidencia(
         String campoAnalisado,
         Optional<String> valorEncontrado,
         Optional<String> valorEsperado,
         String origem) {
 
-    /** O que significa {@code valorEncontrado} vazio. */
+    // Texto que explica o valor encontrado vazio.
     public static final String NAO_VEIO_NO_DOCUMENTO = "o documento não trouxe este campo";
 
-    /** O que significa {@code valorEsperado} vazio. */
+    // Texto que explica o valor esperado vazio.
     public static final String SEM_REFERENCIA_A_OPOR =
             "a regra não tinha valor de referência a opor: ela conferiu campos do próprio documento "
                     + "entre si";
 
+    // Valida que a evidência tenha campo examinado, valores em Optional e origem.
     public PassoDeEvidencia {
         if (campoAnalisado == null || campoAnalisado.isBlank()) {
             throw new ConferenciaInvalida("A evidência precisa dizer qual campo foi examinado.");
@@ -54,6 +36,7 @@ public record PassoDeEvidencia(
         }
     }
 
+    // Método estático que cria o passo de exibição a partir da evidência do domínio.
     public static PassoDeEvidencia de(Evidencia evidencia) {
         if (evidencia == null) {
             throw new ConferenciaInvalida("Não há evidência a apresentar.");
@@ -65,6 +48,7 @@ public record PassoDeEvidencia(
                 origemDe(evidencia.origem()));
     }
 
+    // Método auxiliar que traduz a origem da evidência em texto, com switch exaustivo e sem default.
     private static String origemDe(OrigemEvidencia origem) {
         return switch (origem) {
             case OrigemEvidencia.DoDocumento doDocumento ->

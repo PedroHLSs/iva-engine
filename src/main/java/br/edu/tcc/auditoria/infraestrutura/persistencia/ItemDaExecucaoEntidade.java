@@ -9,7 +9,7 @@ import jakarta.persistence.Table;
 
 import java.util.UUID;
 
-/** Um item que uma execução leu, com ou sem apontamento. */
+// Representa um item que uma execução leu, com ou sem apontamento.
 @Entity
 @Table(name = "item_da_execucao")
 class ItemDaExecucaoEntidade {
@@ -27,29 +27,22 @@ class ItemDaExecucaoEntidade {
     @Column(name = "numero_item", nullable = false)
     private int numeroItem;
 
-    /** O resumo que ESTA execução leu, e não o que estiver em item_documento hoje. */
+    // O hash que ESTA execução leu, e não o que estiver em item_documento hoje.
     @Column(name = "hash_item", nullable = false)
     private String hashItem;
 
-    /*
-     * Acrescentadas na etapa de conferência, pela V8.
-     *
-     * As duas colunas são o par "valor ou motivo" da D009 levado ao banco, e a
-     * restrição da V8 garante que exatamente uma delas esteja preenchida. Elas
-     * ficam AQUI, e não em tabela à parte, porque esta linha já identifica a
-     * leitura daquele item: a descrição não tem chave própria e por isso não tem
-     * como divergir do item que descreve.
-     */
+    // Descrição do produto ou motivo de não haver: a V8 garante que só uma das duas colunas vem preenchida. Acrescentadas na Etapa 11, nesta linha, para a descrição não ter como se separar do item.
     @Column(name = "descricao_produto")
     private String descricaoProduto;
 
     @Column(name = "motivo_sem_descricao")
     private String motivoSemDescricao;
 
+    // Construtor vazio exigido pelo JPA.
     protected ItemDaExecucaoEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe todos os campos da linha, com a descrição ou o motivo de não haver.
     ItemDaExecucaoEntidade(
             UUID id,
             UUID execucaoId,
@@ -79,15 +72,7 @@ class ItemDaExecucaoEntidade {
         return hashItem;
     }
 
-    /**
-     * As duas colunas de volta como um estado só.
-     *
-     * <p>A terceira possibilidade — as duas nulas — só existe em linha gravada
-     * antes da V8 num banco onde o preenchimento retroativo dela não rodou. Ela é
-     * traduzida para a ausência que diz isso, e não para "o documento não
-     * declarou": a falta seria do sistema, e pô-la no documento seria mentir sobre
-     * o que o emitente escreveu.</p>
-     */
+    // Devolve a descrição num estado só. As duas colunas vazias só acontecem em linha gravada antes da V8, e isso é dito, em vez de culpar o documento.
     DescricaoDoProduto descricao() {
         if (descricaoProduto != null) {
             return new DescricaoDoProduto.Declarada(descricaoProduto);

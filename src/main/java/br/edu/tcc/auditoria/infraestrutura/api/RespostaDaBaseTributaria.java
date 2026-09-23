@@ -9,27 +9,7 @@ import br.edu.tcc.auditoria.dominio.regras.CoberturaDoCatalogo;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * A base normativa carregada, na data que se perguntou.
- *
- * <h2>A data volta escrita</h2>
- *
- * <p>Não existe "a base tributária" sem data, e por isso ela sai no corpo e não
- * só na URL: uma impressão desta tela continua dizendo a que dia se refere.</p>
- *
- * <h2>A resposta repete o que foi perguntado</h2>
- *
- * <p>{@code ncmPerguntado} e {@code classTribPerguntado} ecoam a consulta. É o
- * que distingue "ninguém perguntou por NCM" — bloco nulo, eco nulo — de
- * "perguntaram e a carga nada diz" — bloco presente, com motivo dentro. Sem o
- * eco, os dois casos chegariam iguais à tela.</p>
- *
- * <h2>A cobertura declarada abre a tela</h2>
- *
- * <p>Ela é o que separa "a carga não traz este registro" de "esta tabela não foi
- * carregada para esta data" (D004). Quem vai ler a base precisa dela antes de ler
- * qualquer linha, ou lerá silêncio como ausência.</p>
- */
+// Representa a base normativa carregada na data consultada. A data e o que foi perguntado voltam na resposta, para "ninguém perguntou" não se confundir com "a carga não tem", e a cobertura declarada vem primeiro, para silêncio da tabela não ser lido como ausência.
 public record RespostaDaBaseTributaria(
         LocalDate data,
         String versaoDoCatalogo,
@@ -45,9 +25,11 @@ public record RespostaDaBaseTributaria(
         FaixaDeNatureza natureza,
         String aviso) {
 
+    // Motivo escrito quando não há carga gravada e, portanto, nenhuma cobertura a mostrar.
     static final String SEM_CARGA_PARA_COBERTURA =
             "não há carga de catálogo gravada, e por isso não há cobertura declarada a mostrar";
 
+    // Valida a resposta: exige data, versão, cobertura batendo com a carga, um bloco por tributo, pergunta e resposta andando juntas, o texto de como consultar, a faixa de procedência e o aviso de uso.
     public RespostaDaBaseTributaria {
         if (data == null) {
             throw new RespostaInvalida(
@@ -99,14 +81,7 @@ public record RespostaDaBaseTributaria(
         aliquotas = List.copyOf(aliquotas);
     }
 
-    /**
-     * Monta a resposta, com o eco do que foi perguntado.
-     *
-     * <p>O eco vem de quem recebeu o pedido, e não é derivado da resposta de
-     * propósito: derivá-lo faria um NCM que a carga não conhece voltar em branco,
-     * e a tela mostraria "consultado: (nada)" logo acima do motivo dizendo que
-     * aquele NCM não está na carga.</p>
-     */
+    // Método estático que monta a resposta com o que foi perguntado. A pergunta vem do pedido, e não da resposta, para um NCM que a carga não conhece não voltar em branco.
     static RespostaDaBaseTributaria de(
             BaseTributariaEm base, String ncmPerguntado, String classTribPerguntado) {
 
@@ -135,15 +110,17 @@ public record RespostaDaBaseTributaria(
                 AvisoDeUso.TEXTO);
     }
 
+    // Método auxiliar que monta a cobertura declarada, ou o motivo de não haver carga.
     private static LeituraExposta<CoberturaExposta> cobertura(BaseTributariaEm base) {
         return base.cobertura()
                 .map(declarada -> new LeituraExposta<>(CoberturaExposta.de(declarada), (String) null))
                 .orElseGet(() -> new LeituraExposta<>(List.of(), SEM_CARGA_PARA_COBERTURA));
     }
 
-    /** O período e a fonte que a carga declarou cobrir, para uma tabela. */
+    // Representa o período e a fonte que a carga declarou cobrir, para uma tabela.
     public record CoberturaExposta(String tabela, TratamentoExposto.ReferenciaExposta referencia) {
 
+        // Valida que a cobertura tenha a tabela e a referência.
         public CoberturaExposta {
             if (tabela == null || tabela.isBlank()) {
                 throw new RespostaInvalida("A cobertura precisa dizer de que tabela ela é.");
@@ -153,6 +130,7 @@ public record RespostaDaBaseTributaria(
             }
         }
 
+        // Método estático que monta a cobertura das três tabelas: classificação tributária, NCM e itens de anexo.
         static List<CoberturaExposta> de(CoberturaDoCatalogo cobertura) {
             return List.of(
                     uma(TabelaNormativa.CLASSIFICACAO_TRIBUTARIA, cobertura.classificacoesTributarias()),
@@ -160,6 +138,7 @@ public record RespostaDaBaseTributaria(
                     uma(TabelaNormativa.ITEM_ANEXO, cobertura.itensDeAnexo()));
         }
 
+        // Método auxiliar que monta a cobertura de uma tabela.
         private static CoberturaExposta uma(
                 TabelaNormativa tabela, ProcedenciaNormativa procedencia) {
             return new CoberturaExposta(

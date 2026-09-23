@@ -13,15 +13,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Comando {@code auditar}: audita um diretório ou um pacote ZIP de documentos.
- *
- * <p>O resumo impresso ao final traz, junto: apontamentos por severidade,
- * apontamentos por regra, avaliações que não concluíram e arquivos que não
- * puderam ser lidos. Os quatro números são necessários para interpretar o
- * relatório — um lote com zero apontamentos e milhares de avaliações não
- * concluídas não é um lote limpo, e o resumo não pode deixar parecer que é.</p>
- */
+// Classe do comando auditar, que audita uma pasta ou um .zip de documentos e mostra o resumo: achados por gravidade e por regra, não avaliadas e arquivos que não foram lidos, para zero apontamento não parecer lote limpo.
 @Component
 class ComandoAuditar implements Comando {
 
@@ -33,6 +25,7 @@ class ComandoAuditar implements Comando {
     private final FonteDeLoteNoSistemaDeArquivos fonte;
     private final Saida saida;
 
+    // Construtor que recebe o serviço de auditoria, a fonte de lote e a saída.
     ComandoAuditar(ServicoDeAuditoria servico, FonteDeLoteNoSistemaDeArquivos fonte, Saida saida) {
         this.servico = servico;
         this.fonte = fonte;
@@ -59,6 +52,7 @@ class ComandoAuditar implements Comando {
                 """.formatted(NOME);
     }
 
+    // Audita a origem informada em --origem e mostra o resumo.
     @Override
     public void executar(Argumentos argumentos) {
         argumentos.exigirSomente(List.of(OPCAO_ORIGEM));
@@ -68,6 +62,7 @@ class ComandoAuditar implements Comando {
         imprimir(resultado);
     }
 
+    // Método auxiliar que mostra a execução, os achados, as avaliações e os arquivos não lidos.
     private void imprimir(ResultadoDaAuditoria resultado) {
         ExecucaoAuditoria execucao = resultado.execucao();
 

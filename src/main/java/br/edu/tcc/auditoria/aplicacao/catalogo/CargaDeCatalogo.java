@@ -17,42 +17,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Um catálogo normativo inteiro, pronto para ser gravado, com a cobertura que
- * quem o importou declarou.
- *
- * <p>Todo conteúdo aqui vem de arquivo fornecido pelo usuário em tempo de
- * execução. Nada disto está escrito no código do sistema, e nada disto entra por
- * migration — as tabelas nascem vazias.</p>
- *
- * <h2>A cobertura é declarada, não deduzida</h2>
- *
- * <p>{@link CoberturaDoCatalogo} diz, por tabela, qual período e qual fonte
- * normativa a carga cobre. É o que permite às regras separar duas coisas muito
- * diferentes: "o catálogo foi carregado para esta data e não traz este registro"
- * — que é apontamento — de "esta tabela não foi carregada para esta data" — que
- * é não avaliado. O sistema não infere cobertura a partir das linhas
- * importadas: uma carga incompleta pareceria completa.</p>
- *
- * <h2>A procedência é declarada por tabela</h2>
- *
- * <p>{@link NaturezaDaCarga} diz, por tabela, se o conteúdo é transcrição de
- * fonte normativa ou dado de demonstração. É fato sobre o arquivo importado, e
- * não configuração de quem roda: uma propriedade de instalação seria promessa de
- * quem configurou, e quem esquecesse de ligá-la veria dado fictício apresentado
- * como norma vigente.</p>
- *
- * <p>O construtor casa natureza e conteúdo tabela a tabela: tabela com registro
- * exige natureza declarada, e tabela vazia — o arquivo fornecido só com o
- * cabeçalho — não tem linha em que declará-la.</p>
- *
- * <h2>Vigências sobrepostas param a importação</h2>
- *
- * <p>O construtor agrupa cada tabela por chave de vigência e monta a
- * {@link SerieNormativa} correspondente, que recusa duas versões do mesmo
- * registro valendo na mesma data. A recusa acontece antes de qualquer gravação:
- * um catálogo ambíguo não chega ao banco. Ver D003.</p>
- */
+// Representa um catálogo normativo completo, pronto para ser gravado, com a cobertura e a natureza declaradas por quem o importou.
 public record CargaDeCatalogo(
         String versao,
         CoberturaDoCatalogo cobertura,
@@ -62,6 +27,7 @@ public record CargaDeCatalogo(
         List<ItemAnexo> itensDeAnexo,
         List<AliquotaVigente> aliquotas) {
 
+    // Valida a carga: exige versão, cobertura e natureza, confere cada tabela e recusa carga sem nenhum registro.
     public CargaDeCatalogo {
         if (versao == null || versao.isBlank()) {
             throw new CatalogoInvalido(
@@ -103,7 +69,6 @@ public record CargaDeCatalogo(
         }
     }
 
-    /** Quantidade total de registros da carga, somando as quatro tabelas. */
     public int quantidadeDeRegistros() {
         return classificacoesTributarias.size()
                 + registrosDeNcm.size()
@@ -111,13 +76,7 @@ public record CargaDeCatalogo(
                 + aliquotas.size();
     }
 
-    /**
-     * Natureza declarada exatamente quando há registro a que ela se refira.
-     *
-     * <p>Registro sem procedência é o buraco que a coluna obrigatória fecha;
-     * procedência sem registro é afirmação sobre conteúdo que não existe. Nenhum
-     * dos dois passa daqui.</p>
-     */
+    // Método auxiliar para garantir que a tabela tenha natureza declarada exatamente quando tem registros.
     private static void casar(
             Optional<Natureza> natureza, List<?> registros, String tabela) {
 
@@ -130,6 +89,7 @@ public record CargaDeCatalogo(
         }
     }
 
+    // Método auxiliar para validar a lista de registros de uma tabela, recusando lista nula, elemento nulo e vigências sobrepostas.
     private static <T extends RegistroNormativo> List<T> validar(List<T> registros, String tabela) {
         if (registros == null) {
             throw new CatalogoInvalido(
@@ -143,14 +103,13 @@ public record CargaDeCatalogo(
         return List.copyOf(registros);
     }
 
+    // Método auxiliar para recusar registros de mesma chave cujas vigências se sobrepõem.
     private static <T extends RegistroNormativo> void recusarVigenciasSobrepostas(Collection<T> registros) {
         Map<String, List<T>> porChave = new LinkedHashMap<>();
         for (T registro : registros) {
             porChave.computeIfAbsent(registro.chaveDeVigencia(), chave -> new ArrayList<>()).add(registro);
         }
-        // A construção da série é a validação: SerieNormativa recusa duas versões
-        // do mesmo registro valendo na mesma data. A série montada aqui é
-        // descartada de propósito — quem a monta para consulta é o repositório.
+        // Montar a SerieNormativa já é a validação: ela recusa duas versões do mesmo registro valendo na mesma data.
         for (Map.Entry<String, List<T>> serie : porChave.entrySet()) {
             new SerieNormativa<>(serie.getKey(), serie.getValue());
         }

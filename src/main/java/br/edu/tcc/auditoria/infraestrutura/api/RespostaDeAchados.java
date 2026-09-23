@@ -2,19 +2,14 @@ package br.edu.tcc.auditoria.infraestrutura.api;
 
 import java.util.List;
 
-/**
- * Os apontamentos de uma execução, recortados e filtrados.
- *
- * <p>A ordem é a do banco — da severidade mais grave para a menos grave, e depois
- * por documento, item e regra —, e é determinística. Paginar sobre ordem instável
- * devolveria a mesma linha em duas páginas e nenhuma vez em outra.</p>
- */
+// Representa uma página dos apontamentos de uma execução, com o filtro aplicado. A ordem vem do banco, da gravidade maior para a menor, e é sempre a mesma, para a paginação não repetir nem pular linha.
 public record RespostaDeAchados(
         String execucaoId,
         PaginaExposta pagina,
         FiltroExposto filtro,
         List<AchadoExposto> achados) {
 
+    // Valida que a resposta tenha execução, página, filtro e a lista de achados, vazia se nenhum atender ao filtro.
     public RespostaDeAchados {
         if (execucaoId == null || pagina == null || filtro == null) {
             throw new RespostaInvalida(

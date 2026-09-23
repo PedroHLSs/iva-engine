@@ -8,18 +8,7 @@ import jakarta.persistence.Table;
 import java.math.BigDecimal;
 import java.util.UUID;
 
-/**
- * Item de documento auditado, com os campos do grupo de IBS/CBS como declarados.
- *
- * <p><strong>Coluna nula significa campo não declarado no documento.</strong>
- * Nunca se grava zero no lugar de nulo: omitir a base de cálculo e declarar base
- * zero são fatos fiscais distintos, produzem apontamentos distintos e produzem
- * resumos de item distintos.</p>
- *
- * <p>As colunas monetárias são {@code numeric} sem precisão declarada, de modo
- * que a escala do que foi declarado seja preservada: para a auditoria, "0" e
- * "0,00" não são o mesmo registro.</p>
- */
+// Representa um item de documento auditado, com os campos de IBS/CBS como vieram. Coluna null quer dizer campo não declarado, e nunca se grava zero no lugar; as colunas de valor mantêm as casas decimais, porque "0" e "0,00" não são o mesmo registro.
 @Entity
 @Table(name = "item_documento")
 class ItemDocumentoEntidade {
@@ -79,16 +68,18 @@ class ItemDocumentoEntidade {
     @Column(name = "valor_cbs")
     private BigDecimal valorCbs;
 
+    // Construtor vazio exigido pelo JPA.
     protected ItemDocumentoEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe o identificador, a chave de acesso e o número do item.
     ItemDocumentoEntidade(UUID id, String chaveAcesso, int numeroItem) {
         this.id = id;
         this.chaveAcesso = chaveAcesso;
         this.numeroItem = numeroItem;
     }
 
+    // Atualiza os campos com o estado atual do item e o hash dele.
     void atualizar(
             String hashItem,
             String ncm,
@@ -123,19 +114,7 @@ class ItemDocumentoEntidade {
         this.valorCbs = valorCbs;
     }
 
-    /*
-     * Acessores de leitura, acrescentados na Etapa 11.
-     *
-     * A Etapa 5 escrevia esta entidade e nunca a lia de volta: o papel de
-     * trabalho e a API liam apontamento, não item. A tela de conferência de
-     * produto lê, e precisa de campo a campo.
-     *
-     * Nulo aqui significa "o documento não declarou o campo", e é traduzido para
-     * Optional.empty() no mapeamento — nunca para zero. É a mesma travessia que a
-     * D002 protege desde a leitura do XML, agora na volta.
-     *
-     * A Etapa 6 fez exatamente isto com DocumentoEntidade, pelo mesmo motivo.
-     */
+    // Acessores de leitura, acrescentados na Etapa 11 para a tela do produto; null aqui vira Optional vazio no mapeamento, nunca zero.
     String chaveAcesso() {
         return chaveAcesso;
     }

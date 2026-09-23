@@ -13,39 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * R07 — os campos que o catálogo marca como obrigatórios para aquele
- * {@code cClassTrib} vieram preenchidos no item?
- *
- * <p>Quais campos cada código exige é conteúdo normativo e chega na coluna
- * {@code camposObrigatoriosCondicionados} da tabela importada. A regra lê essa
- * lista e confere, campo a campo, se o item trouxe o dado. Nenhuma exigência
- * está escrita aqui.</p>
- *
- * <p>Preenchido significa ter vindo. Um campo declarado com valor zero está
- * preenchido; um campo ausente não está. Confundir os dois apagaria justamente o
- * que esta regra existe para detectar — ver {@link CampoDoItem}.</p>
- *
- * <p>Severidade crítica: campo estruturalmente necessário ausente deixa o grupo
- * de IBS/CBS do item sem como ser interpretado.</p>
- *
- * <h2>Nome que o vocabulário não reconhece</h2>
- *
- * <p>O catálogo pode citar um campo que este sistema não sabe ler. Nesse caso a
- * regra não tem como conferir aquela exigência, e não finge que conferiu: se não
- * houver nenhum campo conhecido faltando, o resultado é {@code NAO_AVALIADO}
- * citando os nomes não reconhecidos. Se houver campo conhecido faltando, o
- * achado sai — a falta é fato — e os nomes não reconhecidos entram como
- * evidência, para que não desapareçam do relatório.</p>
- *
- * <h2>Lista vazia</h2>
- *
- * <p>Registro encontrado e lista vazia é resposta completa do catálogo: aquele
- * código não condiciona campo nenhum. O resultado é {@code CONFORME}. Difere do
- * conjunto vazio de CSTs em R02, onde a lista vazia deixaria a pergunta sem
- * referência alguma; aqui "nenhum campo exigido" é uma exigência satisfeita por
- * qualquer item.</p>
- */
+// Regra R07: os campos que o catálogo exige para esse cClassTrib vieram preenchidos? Gravidade: crítica. Campo com zero conta como preenchido; só falta quando o campo não veio.
 public final class RegraCamposObrigatoriosPreenchidos extends RegraDeItem {
 
     public static final String ID = "R07";
@@ -66,6 +34,7 @@ public final class RegraCamposObrigatoriosPreenchidos extends RegraDeItem {
         return Severidade.CRITICA;
     }
 
+    // Aplica a regra: confere cada campo exigido. Se faltar um campo conhecido, gera achado; se o catálogo usar um nome que o sistema não conhece, vira NAO_AVALIADO ou entra como evidência.
     @Override
     protected Avaliacao avaliarItem(ItemDocumento item, Documento documento, ContextoNormativo contexto) {
         Optional<CodigoClassificacaoTributaria> codigo = item.codigoClassificacaoTributaria();
@@ -108,8 +77,7 @@ public final class RegraCamposObrigatoriosPreenchidos extends RegraDeItem {
         List<Evidencia> evidencias = new ArrayList<>();
         evidencias.add(doDocumento("cClassTrib", item, codigo.get().valor()));
         for (String nome : ausentes) {
-            // valorEncontrado vazio é o registro de que o campo não veio, e
-            // valorEsperado vazio porque a exigência é de presença, não de valor.
+            // Os dois valores ficam vazios: o encontrado porque o campo não veio, e o esperado porque a regra só cobra que o campo exista.
             evidencias.add(daTabela(
                     nome,
                     RegraClassificacaoTributariaExiste.TABELA,
@@ -136,6 +104,7 @@ public final class RegraCamposObrigatoriosPreenchidos extends RegraDeItem {
                         "Campo exigido e não informado impede o cálculo: não há o que quantificar sem o dado."));
     }
 
+    // Método auxiliar que monta a mensagem para quando o catálogo pede campos que o sistema não conhece.
     private static String motivoDeNomesNaoReconhecidos(
             CodigoClassificacaoTributaria codigo, List<String> naoReconhecidos) {
 

@@ -5,38 +5,14 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Os quatro números de uma nota, ou de um lote inteiro — mais os que a
- * precedência tornaria invisíveis.
- *
- * <h2>Por que não bastam quatro números</h2>
- *
- * <p>{@link SituacaoDoProduto} resolve cada produto numa situação só, e a
- * situação mais forte vence. Consequência aritmética: um produto com uma
- * divergência e três verificações que não concluíram é contado em "possível
- * divergência", e some da contagem de não concluídos. Se o resumo trouxesse só
- * as quatro contagens de produtos, o lote pareceria ter menos pendência do que
- * tem.</p>
- *
- * <p>Daí os dois campos que acompanham: {@link #produtosComAlgumaNaoConcluida()}
- * conta produtos com ao menos uma verificação pendente <em>qualquer que seja a
- * situação deles</em>, e {@link #verificacoesPorEstado()} traz os quatro no
- * nível da avaliação, onde nenhuma precedência foi aplicada.</p>
- *
- * <h2>Arquivo ilegível não mora aqui, e é de propósito</h2>
- *
- * <p>Um arquivo que não pôde ser lido não é nota sem divergência: é ausência, e
- * ausência não é um dos quatro estados. Ele não aparece neste tipo porque não
- * há nenhum campo deste tipo a que ele pudesse ser somado por descuido — a
- * contagem de ilegíveis viaja ao lado, na resposta da análise, com nome
- * próprio.</p>
- */
+// Representa os números de uma nota ou de um lote: produtos por situação, produtos com alguma pendência e verificações por estado.
 public record ResumoDaConferencia(
         ContagemDeEstados produtosPorSituacao,
         int produtosComAlgumaNaoConcluida,
         ContagemDeEstados verificacoesPorEstado,
         String comoFoiObtido) {
 
+    // Valida o resumo e confere que as três contagens são coerentes entre si.
     public ResumoDaConferencia {
         if (produtosPorSituacao == null || verificacoesPorEstado == null) {
             throw new ConferenciaInvalida(
@@ -93,7 +69,7 @@ public record ResumoDaConferencia(
         }
     }
 
-    /** O resumo das situações dadas, com os quatro números em cada nível. */
+    // Método estático que monta o resumo a partir das situações dos produtos.
     public static ResumoDaConferencia de(Collection<SituacaoDoProduto> produtos) {
         if (produtos == null) {
             throw new ConferenciaInvalida(
@@ -124,11 +100,11 @@ public record ResumoDaConferencia(
                 derivacao(porSituacao, comAlgumaNaoConcluida, porVerificacao));
     }
 
-    /** Quantos produtos a análise resumiu. */
     public int quantidadeDeProdutos() {
         return produtosPorSituacao.total();
     }
 
+    // Método auxiliar que escreve por extenso como os números do resumo foram obtidos.
     private static String derivacao(
             ContagemDeEstados porSituacao, int comAlgumaNaoConcluida, ContagemDeEstados porVerificacao) {
 

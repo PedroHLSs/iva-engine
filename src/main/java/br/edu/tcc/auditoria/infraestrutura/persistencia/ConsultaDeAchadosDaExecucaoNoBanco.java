@@ -18,14 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Lê os apontamentos que uma execução produziu, com a tratativa atual de cada um.
- *
- * <p>O recorte sai da tabela de vínculo {@code achado_da_execucao}, e não de
- * {@code ultima_execucao_id}: aquele campo guarda apenas quem viu o apontamento
- * por último, de modo que uma execução antiga passaria a "não ter" os
- * apontamentos que uma rodada posterior reencontrou.</p>
- */
+// Classe que lê do banco os apontamentos que uma execução produziu, com a tratativa atual de cada um. Usa a tabela achado_da_execucao, e não ultima_execucao_id, para uma execução antiga não perder os apontamentos que uma rodada nova reencontrou.
 @Component
 class ConsultaDeAchadosDaExecucaoNoBanco implements ConsultaDeAchadosDaExecucao {
 
@@ -33,6 +26,7 @@ class ConsultaDeAchadosDaExecucaoNoBanco implements ConsultaDeAchadosDaExecucao 
     private final AchadoJpa achados;
     private final TratativaJpa tratativas;
 
+    // Construtor que recebe os repositórios de vínculos, apontamentos e tratativas.
     ConsultaDeAchadosDaExecucaoNoBanco(
             AchadoDaExecucaoJpa vinculos, AchadoJpa achados, TratativaJpa tratativas) {
         this.vinculos = vinculos;
@@ -40,6 +34,7 @@ class ConsultaDeAchadosDaExecucaoNoBanco implements ConsultaDeAchadosDaExecucao 
         this.tratativas = tratativas;
     }
 
+    // Busca os apontamentos da execução, ordenados por gravidade, com a tratativa de cada um.
     @Override
     @Transactional(readOnly = true)
     public List<AchadoRegistrado> daExecucao(UUID execucaoId) {
@@ -63,15 +58,7 @@ class ConsultaDeAchadosDaExecucaoNoBanco implements ConsultaDeAchadosDaExecucao 
                 .toList();
     }
 
-    /**
-     * Do mais grave para o menos grave, e dentro da severidade pela ordem do
-     * documento, do item e da regra.
-     *
-     * <p>A ordem não pode sair do texto da severidade: em ordem alfabética
-     * "INFORMATIVA" viria antes de "MODERADA", e a planilha abriria pela
-     * observação em vez da incoerência. {@code Severidade} declara as constantes
-     * da mais grave para a menos grave, e é essa ordem que vale.</p>
-     */
+    // Método auxiliar que ordena da gravidade maior para a menor, pela ordem do enum e não pelo texto, e depois por documento, item e regra.
     private static Comparator<AchadoEntidade> porGravidadeEDepoisPorDocumento() {
         return Comparator
                 .comparingInt((AchadoEntidade entidade) -> entidade.severidade().ordinal())
@@ -80,6 +67,7 @@ class ConsultaDeAchadosDaExecucaoNoBanco implements ConsultaDeAchadosDaExecucao 
                 .thenComparing(AchadoEntidade::regraId);
     }
 
+    // Método auxiliar que busca de uma vez as tratativas dos itens encontrados.
     private Map<ChaveDeTratativa, Tratativa> buscarTratativas(List<AchadoEntidade> encontrados) {
         Set<String> hashes = encontrados.stream()
                 .map(AchadoEntidade::hashItem)
@@ -93,6 +81,7 @@ class ConsultaDeAchadosDaExecucaoNoBanco implements ConsultaDeAchadosDaExecucao 
         return porChave;
     }
 
+    // Método auxiliar que junta o apontamento com a tratativa da mesma chave, se houver.
     private static AchadoRegistrado montar(
             AchadoEntidade entidade, Map<ChaveDeTratativa, Tratativa> tratativas) {
 

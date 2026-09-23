@@ -6,39 +6,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * O tratamento que a base normativa indica para um produto, resolvido na carga
- * daquela análise e na data daquele documento.
- *
- * <h2>As duas coordenadas andam juntas</h2>
- *
- * <p>{@code versaoDoCatalogo} é a carga que a execução registrou;
- * {@code dataDeReferencia} é a emissão do documento. Uma sem a outra não
- * identifica nada: a mesma data resolve diferente em duas cargas, e a mesma carga
- * resolve diferente em duas datas. Os dois campos vão na resposta porque a tela
- * precisa dizê-los, não porque sejam decoração de rodapé.</p>
- *
- * <h2>IBS e CBS são blocos separados, e as parcelas do IBS não se somam</h2>
- *
- * <p>A tela apresenta CBS e IBS em quadros próprios porque podem divergir: um
- * produto pode estar coerente num e não no outro, e uma linha única esconderia
- * exatamente o caso que interessa conferir.</p>
- *
- * <p>Dentro do bloco do IBS, as parcelas estadual e municipal aparecem como duas
- * linhas, cada uma com a própria vigência e a própria fonte. <strong>O sistema
- * não as soma.</strong> Somar produziria um percentual que nenhuma linha da carga
- * declara — número inventado, ainda que por aritmética —, e é justamente o tipo
- * de afirmação que este projeto não faz. Quem precisar do total soma olhando as
- * duas parcelas, sabendo de onde cada uma veio.</p>
- *
- * <h2>Os três tributos aparecem sempre</h2>
- *
- * <p>{@code porTributo} traz um item para cada constante de {@link Tributo}, na
- * ordem em que o domínio as declara, mesmo quando a carga não alcança nenhuma
- * delas — nesse caso o item carrega o motivo. Omitir o tributo que o catálogo não
- * cobre faria a tela parecer completa estando muda, que é a forma mais cara de
- * erro nesta ferramenta.</p>
- */
+// Representa o tratamento que a base normativa indica para um produto, na carga da análise e na data do documento; as parcelas do IBS não são somadas.
 public record TratamentoIdentificado(
         String versaoDoCatalogo,
         LocalDate dataDeReferencia,
@@ -47,6 +15,7 @@ public record TratamentoIdentificado(
         LeituraDoCatalogo<ClassificacaoDoCatalogo> classificacao,
         List<TratamentoDeTributo> porTributo) {
 
+    // Valida que o tratamento tenha versão, data, os três blocos e os três tributos na ordem.
     public TratamentoIdentificado {
         if (versaoDoCatalogo == null || versaoDoCatalogo.isBlank()) {
             throw new ConferenciaInvalida(
@@ -65,15 +34,7 @@ public record TratamentoIdentificado(
         porTributo = exigirOsTresTributos(porTributo);
     }
 
-    /**
-     * O caso em que não dá para determinar nada, com o motivo repetido em cada
-     * bloco.
-     *
-     * <p>A forma da resposta é a mesma do caso determinado, de propósito: a tela
-     * percorre os mesmos campos e escreve o motivo onde escreveria o conteúdo, em
-     * vez de ter um desenho especial para o fracasso — desenho especial é o que
-     * costuma ser esquecido.</p>
-     */
+    // Método estático para quando não dá para determinar nada, repetindo o motivo em cada bloco.
     public static TratamentoIdentificado naoDeterminado(
             String versaoDoCatalogo, LocalDate dataDeReferencia, String motivo) {
 
@@ -90,7 +51,7 @@ public record TratamentoIdentificado(
                 porTributo);
     }
 
-    /** Se algum dos blocos trouxe conteúdo do catálogo. */
+    // Indica se algum dos blocos trouxe conteúdo do catálogo.
     public boolean algoFoiDeterminado() {
         return descricaoDoNcm.respondido()
                 || enquadramentos.respondido()
@@ -98,6 +59,7 @@ public record TratamentoIdentificado(
                 || porTributo.stream().anyMatch(item -> item.aliquotas().respondido());
     }
 
+    // Método auxiliar que exige um item para cada tributo, na ordem em que o domínio os declara.
     private static List<TratamentoDeTributo> exigirOsTresTributos(List<TratamentoDeTributo> porTributo) {
         if (porTributo == null) {
             throw new ConferenciaInvalida(

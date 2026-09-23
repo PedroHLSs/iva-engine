@@ -2,14 +2,7 @@ package br.edu.tcc.auditoria.infraestrutura.api;
 
 import java.util.List;
 
-/**
- * As notas e os itens que compõem um grupo do lote.
- *
- * <p>É o caminho de volta ao concreto: do erro de parametrização para as notas em
- * que ele aparece, e de lá para o detalhe de cada produto. O grupo vem repetido no
- * cabeçalho para que a página diga a que agrupamento ela pertence, sem depender de
- * a tela ter guardado isso da chamada anterior.</p>
- */
+// Representa uma página das notas e itens de um grupo do lote. O grupo vem repetido no começo, para a página dizer de que grupo ela é.
 public record RespostaDeProdutosDoGrupo(
         String analiseId,
         GrupoExposto grupo,
@@ -18,6 +11,7 @@ public record RespostaDeProdutosDoGrupo(
         FaixaDeNatureza natureza,
         String aviso) {
 
+    // Valida que a página tenha análise, grupo, paginação, lista de produtos, faixa de procedência e aviso de uso.
     public RespostaDeProdutosDoGrupo {
         if (analiseId == null || analiseId.isBlank()) {
             throw new RespostaInvalida("A página precisa dizer de que análise ela é.");

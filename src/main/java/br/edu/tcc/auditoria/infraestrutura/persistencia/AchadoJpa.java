@@ -11,29 +11,14 @@ import java.util.Optional;
 import java.util.List;
 import java.util.UUID;
 
-/** Acesso aos apontamentos gravados. */
+// Repositório utilizado para acessar os apontamentos gravados.
 interface AchadoJpa extends JpaRepository<AchadoEntidade, UUID> {
 
-    /** Busca pela identidade do apontamento, que é a mesma chave da tratativa. */
+    // Busca pela identidade do apontamento, que é a mesma chave da tratativa.
     Optional<AchadoEntidade> findByHashItemAndRegraIdAndRegraVersao(
             String hashItem, String regraId, String regraVersao);
 
-    /**
-     * Apontamentos que atendem ao filtro, do mais grave para o menos grave.
-     *
-     * <p>A ordenação não pode sair do texto da severidade: em ordem alfabética
-     * "INFORMATIVA" viria antes de "MODERADA", e o relatório abriria pela
-     * observação em vez da incoerência. O {@code case} abaixo recebe as
-     * constantes por parâmetro e devolve a ordem de gravidade declarada no enum.
-     * Dentro da mesma severidade a ordem é documento, item e regra, para que duas
-     * consultas iguais produzam a mesma listagem.</p>
-     *
-     * <p>{@code apenasAbertos} usa {@code not exists} contra a tratativa em vez de
-     * junção: não há chave estrangeira entre as duas tabelas, e é deliberado —
-     * ver {@link TratativaEntidade}. Note que a comparação inclui
-     * {@code regraVersao}: apontamento cuja regra mudou de versão conta como
-     * aberto, mesmo havendo tratativa na versão anterior.</p>
-     */
+    // Busca os apontamentos do filtro, do mais grave para o menos grave e depois por documento, item e regra. A gravidade é ordenada pelo case, e não pelo texto, e apenasAbertos considera a versão da regra: se ela mudou, o apontamento conta como aberto.
     @Query("""
             select a from AchadoEntidade a
             where (:severidade is null or a.severidade = :severidade)
@@ -63,7 +48,7 @@ interface AchadoJpa extends JpaRepository<AchadoEntidade, UUID> {
             @Param("moderada") Severidade moderada,
             Pageable pagina);
 
-    /** Quantos apontamentos atendem ao filtro, ignorando o limite da listagem. */
+    // Conta os apontamentos do filtro, sem o limite da listagem.
     @Query("""
             select count(a) from AchadoEntidade a
             where (:severidade is null or a.severidade = :severidade)

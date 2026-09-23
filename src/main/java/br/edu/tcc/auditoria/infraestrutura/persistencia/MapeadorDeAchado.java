@@ -11,35 +11,24 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-/**
- * Tradução entre apontamento do domínio e linha gravada.
- *
- * <p>Dois pontos merecem atenção:</p>
- *
- * <ul>
- *   <li><strong>{@code OrigemEvidencia} é um tipo selado de três variantes</strong>
- *       com formatos diferentes, e o banco guarda três colunas achatadas. O
- *       {@code switch} de padrões abaixo cobre as três; se uma quarta variante
- *       surgir, o compilador reclama aqui em vez de o sistema gravar origem
- *       incompleta em silêncio.</li>
- *   <li><strong>{@code ValorEmRisco} nunca vira coluna vazia sem explicação.</strong>
- *       Ou grava o montante, ou grava o motivo de não haver montante, e o banco
- *       recusa qualquer outra combinação.</li>
- * </ul>
- */
+// Classe que converte o apontamento entre o domínio e a linha gravada. A origem da evidência vira três colunas, com um switch que o compilador obriga a cobrir todos os tipos, e o valor em risco sempre grava o valor ou o motivo.
 final class MapeadorDeAchado {
 
+    // Nomes gravados para cada tipo de origem da evidência.
     static final String ORIGEM_DO_DOCUMENTO = "DO_DOCUMENTO";
     static final String ORIGEM_DE_TABELA_NORMATIVA = "DE_TABELA_NORMATIVA";
     static final String ORIGEM_DA_REGRA = "DA_REGRA";
 
+    // Construtor privado: ninguém cria objeto desta classe, só usa os métodos estáticos.
     private MapeadorDeAchado() {
     }
 
+    // Método estático que converte a lista de evidências para gravar.
     static List<EvidenciaEmbutida> paraEntidade(List<Evidencia> evidencias) {
         return evidencias.stream().map(MapeadorDeAchado::paraEntidade).toList();
     }
 
+    // Método estático que converte uma evidência para gravar, de acordo com o tipo de origem.
     static EvidenciaEmbutida paraEntidade(Evidencia evidencia) {
         return switch (evidencia.origem()) {
             case OrigemEvidencia.DoDocumento origem -> montar(
@@ -51,6 +40,7 @@ final class MapeadorDeAchado {
         };
     }
 
+    // Método estático que remonta o apontamento do domínio a partir da linha gravada.
     static Achado paraDominio(AchadoEntidade entidade) {
         return new Achado(
                 entidade.regraId(),
@@ -65,6 +55,7 @@ final class MapeadorDeAchado {
                 valorEmRisco(entidade));
     }
 
+    // Método estático que remonta a evidência do domínio a partir da linha gravada.
     static Evidencia paraDominio(EvidenciaEmbutida embutida) {
         return new Evidencia(
                 embutida.campoAnalisado(),
@@ -73,6 +64,7 @@ final class MapeadorDeAchado {
                 origem(embutida));
     }
 
+    // Método auxiliar que remonta a origem da evidência; recusa tipo desconhecido.
     private static OrigemEvidencia origem(EvidenciaEmbutida embutida) {
         return switch (embutida.origemTipo()) {
             case ORIGEM_DO_DOCUMENTO -> new OrigemEvidencia.DoDocumento(embutida.origemPrimeiroTermo());
@@ -86,6 +78,7 @@ final class MapeadorDeAchado {
         };
     }
 
+    // Método auxiliar que remonta o valor em risco; recusa linha sem valor e sem motivo.
     private static ValorEmRisco valorEmRisco(AchadoEntidade entidade) {
         if (entidade.valorEmRisco() != null) {
             return ValorEmRisco.calculado(entidade.valorEmRisco());
@@ -99,6 +92,7 @@ final class MapeadorDeAchado {
         return ValorEmRisco.naoCalculavel(entidade.motivoValorAusente());
     }
 
+    // Método auxiliar que monta a evidência para gravar.
     private static EvidenciaEmbutida montar(
             Evidencia evidencia, String tipo, String primeiroTermo, String segundoTermo) {
         return new EvidenciaEmbutida(

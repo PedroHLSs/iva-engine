@@ -8,7 +8,7 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.util.UUID;
 
-/** Vínculo entre NCM e anexo numa carga. Espelha {@code ItemAnexo} do domínio. */
+// Representa um vínculo entre NCM e anexo numa carga; espelha o ItemAnexo do domínio.
 @Entity
 @Table(name = "item_anexo")
 class ItemAnexoEntidade {
@@ -38,10 +38,11 @@ class ItemAnexoEntidade {
     @Column(name = "fonte_normativa", nullable = false)
     private String fonteNormativa;
 
+    // Construtor vazio exigido pelo JPA.
     protected ItemAnexoEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe todos os campos da linha.
     ItemAnexoEntidade(
             UUID id,
             UUID cargaId,

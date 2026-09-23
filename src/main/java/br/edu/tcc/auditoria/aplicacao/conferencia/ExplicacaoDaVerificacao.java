@@ -6,29 +6,16 @@ import br.edu.tcc.auditoria.dominio.ValorEmRisco;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Por que uma regra concluiu o que concluiu sobre este produto.
- *
- * <h2>Três variantes porque há três procedências, e não três estilos de texto</h2>
- *
- * <p>Um apontamento foi gravado com evidências, fundamento e vigência: a
- * explicação dele é o que ele carrega. Uma pendência foi gravada com o motivo que
- * a própria regra escreveu ao desistir: a explicação dela é esse motivo. Um
- * conforme não foi gravado de jeito nenhum — o banco não guarda avaliação
- * conforme (D009) —, e a explicação dele é a conta que o derivou.</p>
- *
- * <p>Escrever os três com a mesma frase genérica seria a forma mais fácil de a
- * tela parecer completa sem dizer nada. O tipo é selado justamente para que um
- * quarto caso não possa ser acrescentado sem que se decida o que ele explica.</p>
- */
+// Interface selada que explica por que uma regra concluiu o que concluiu: por apontamento, por pendência ou por derivação.
 public sealed interface ExplicacaoDaVerificacao {
 
-    /** A regra apontou, e estas são as evidências que ela gravou. */
+    // Representa a explicação de um apontamento, com as evidências, o fundamento e o valor em risco gravados.
     record PorApontamento(
             List<PassoDeEvidencia> evidencias,
             ReferenciaNormativa fundamentacao,
             ValorEmRisco valorEmRisco) implements ExplicacaoDaVerificacao {
 
+        // Valida que o apontamento tenha evidências, fundamentação e valor em risco.
         public PorApontamento {
             if (evidencias == null || evidencias.isEmpty()) {
                 throw new ConferenciaInvalida(
@@ -51,7 +38,7 @@ public sealed interface ExplicacaoDaVerificacao {
             evidencias = List.copyOf(evidencias);
         }
 
-        /** Monta a explicação a partir do que o apontamento gravou. */
+        // Método estático que monta a explicação a partir do que o apontamento gravou.
         public static PorApontamento de(Achado achado) {
             if (achado == null) {
                 throw new ConferenciaInvalida("Não há apontamento a explicar.");
@@ -66,16 +53,10 @@ public sealed interface ExplicacaoDaVerificacao {
         }
     }
 
-    /**
-     * A regra não concluiu, e este é o motivo que ela escreveu.
-     *
-     * <p>O texto é o da regra, repetido sem edição. Ele é quem diz se faltou
-     * campo no documento, se faltou tabela no catálogo ou se a data ficou fora da
-     * cobertura declarada — três problemas de donos diferentes, e a diferença é
-     * toda a utilidade da pendência.</p>
-     */
+    // Representa a explicação de uma pendência, com o motivo que a própria regra escreveu, sem edição.
     record PorPendencia(String motivo) implements ExplicacaoDaVerificacao {
 
+        // Valida que a pendência traga o motivo.
         public PorPendencia {
             if (motivo == null || motivo.isBlank()) {
                 throw new ConferenciaInvalida(
@@ -86,23 +67,17 @@ public sealed interface ExplicacaoDaVerificacao {
         }
     }
 
-    /**
-     * A regra concluiu sem encontrar violação, e este resultado foi derivado.
-     *
-     * <p>A frase diz a conta, e diz que é conta. <strong>Não diz "conferido"</strong>:
-     * o sistema não conferiu nada, aplicou as regras cadastradas sobre os campos
-     * que elas alcançam e nenhuma delas encontrou violação. São afirmações
-     * diferentes, e a segunda é a verdadeira.</p>
-     */
+    // Representa a explicação de um resultado sem violação, derivado por conta; não diz "conferido".
     record PorDerivacao(String conta) implements ExplicacaoDaVerificacao {
 
+        // Valida que a derivação diga como foi feita.
         public PorDerivacao {
             if (conta == null || conta.isBlank()) {
                 throw new ConferenciaInvalida("A derivação precisa dizer como foi feita.");
             }
         }
 
-        /** A conta, escrita por extenso, para a regra indicada. */
+        // Método estático que escreve por extenso a conta que derivou o resultado da regra indicada.
         public static PorDerivacao daRegra(String regraId) {
             if (regraId == null || regraId.isBlank()) {
                 throw new ConferenciaInvalida("Não há regra cuja derivação explicar.");

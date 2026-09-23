@@ -8,14 +8,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.util.UUID;
 
-/**
- * Uma importação de catálogo normativo.
- *
- * <p>Cada carga é um conjunto próprio de registros. A auditoria usa a mais
- * recente e grava a versão dela na execução, para que um relatório antigo
- * continue dizendo contra qual catálogo foi produzido mesmo depois de novas
- * importações.</p>
- */
+// Representa a linha de uma carga de catálogo importada. A auditoria grava a versão da carga na execução, para um relatório antigo continuar dizendo contra qual catálogo foi feito.
 @Entity
 @Table(name = "carga_catalogo")
 class CargaCatalogoEntidade {
@@ -30,10 +23,11 @@ class CargaCatalogoEntidade {
     @Column(name = "importado_em", nullable = false)
     private Instant importadoEm;
 
+    // Construtor vazio exigido pelo JPA.
     protected CargaCatalogoEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe o identificador, a versão e o momento da importação.
     CargaCatalogoEntidade(UUID id, String versao, Instant importadoEm) {
         this.id = id;
         this.versao = versao;

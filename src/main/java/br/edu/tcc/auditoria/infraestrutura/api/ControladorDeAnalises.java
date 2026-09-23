@@ -24,30 +24,12 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.UUID;
 
-/**
- * A primeira porta de escrita da API.
- *
- * <p>Ela emenda a D009, que decidiu HTTP somente para leitura, e a emenda é
- * estreita: <strong>importar catálogo e tratar achado continuam fora</strong>,
- * pelos mesmos motivos de lá — o primeiro decide o que o sistema afirma sobre a
- * norma, o segundo é ato de uma pessoa identificada, e não há autenticação aqui.
- * O que entrou foi analisar, porque a pergunta que a ferramenta passou a
- * responder não existe sem a nota entrar, e mandar quem trabalha no fiscal
- * digitar {@code java -jar} não é ter produto.</p>
- *
- * <p>O bind continua em {@code 127.0.0.1}, e agora ele segura uma porta de
- * escrita. Ver {@code application-api.properties}.</p>
- *
- * <h2>O arquivo enviado é entrada não confiável</h2>
- *
- * <p>Nada do que chega é usado para montar caminho, e o pacote passa pelo
- * {@code GuardaDePacote} antes de qualquer leitura. A área temporária vive
- * dentro do {@code try}, e some no fim dele mesmo quando a análise falha.</p>
- */
+// Controlador de /api/analises, a única porta de escrita da API: recebe um .xml ou um .zip, roda a análise e devolve o resultado. Importar catálogo e tratar achado continuam fora, o servidor só escuta em 127.0.0.1, e o arquivo recebido passa pelo GuardaDePacote antes de ser lido.
 @RestController
 @RequestMapping("/api/analises")
 class ControladorDeAnalises {
 
+    // Nome do campo do formulário em que o arquivo chega.
     static final String CAMPO_DO_ARQUIVO = "arquivo";
 
     private final ServicoDeAnalise analises;
@@ -55,6 +37,7 @@ class ControladorDeAnalises {
     private final MontadorDaConferenciaExposta conferencias;
     private final LimitesDeUpload limites;
 
+    // Construtor que recebe o serviço de análise, os dois montadores de resposta e os limites de envio.
     ControladorDeAnalises(
             ServicoDeAnalise analises,
             MontadorDeRecibo recibos,
@@ -66,6 +49,7 @@ class ControladorDeAnalises {
         this.limites = limites;
     }
 
+    // Recebe o arquivo, roda a análise e devolve o resultado com o endereço dela. A área temporária é apagada no fim, mesmo se a análise falhar.
     @PostMapping
     ResponseEntity<RespostaDaConferencia> analisar(
             @RequestParam(CAMPO_DO_ARQUIVO) MultipartFile arquivo) {
@@ -93,19 +77,13 @@ class ControladorDeAnalises {
         }
     }
 
+    // Devolve o resultado de uma análise já feita.
     @GetMapping("/{id}")
     RespostaDaConferencia detalhar(@PathVariable UUID id) {
         return conferencias.resultado(id);
     }
 
-    /**
-     * Os produtos da análise, paginados.
-     *
-     * <p>Cada linha traz a situação do produto <strong>e as quatro contagens
-     * dele</strong>: a situação sozinha diria "possível divergência" sobre um
-     * produto que também tem três verificações sem conclusão, e a tela precisa
-     * das duas coisas.</p>
-     */
+    // Lista uma página dos produtos da análise, cada um com a situação e as quatro contagens.
     @GetMapping("/{id}/produtos")
     RespostaDeProdutos produtos(
             @PathVariable UUID id,
@@ -114,30 +92,13 @@ class ControladorDeAnalises {
         return conferencias.produtos(id, Parametros.pagina(pagina), Parametros.tamanho(tamanho));
     }
 
-    /**
-     * O detalhe de um produto: a tela em que a conferência de fato acontece.
-     *
-     * <p>O endereço é o resumo do item, e não um identificador de linha. Dois
-     * efeitos, os dois desejados: ele não carrega nada em texto claro, e deixa de
-     * existir quando o item é reprocessado com outro conteúdo — caso em que a
-     * resposta é 404 dizendo isso, e não o detalhe de um item que virou outro.</p>
-     */
+    // Devolve o detalhe de um produto. O endereço é o resumo do item: não mostra nada em texto claro e deixa de valer se o item for reprocessado com outro conteúdo.
     @GetMapping("/{id}/produtos/{endereco}")
     RespostaDoDetalhe detalharProduto(@PathVariable UUID id, @PathVariable String endereco) {
         return conferencias.detalhe(id, endereco);
     }
 
-    /**
-     * A tela do lote: grupos por NCM, cClassTrib e situação.
-     *
-     * <p>Quem trabalha no fiscal corrige cadastro, não nota. Um NCM classificado
-     * errado aparece em quatrocentas notas e continua sendo um erro de
-     * parametrização, e é assim que ele tem de aparecer.</p>
-     *
-     * <p>{@code ordem} é opcional e cai na padrão — valor dos produtos envolvidos,
-     * decrescente. A resposta diz o que essa ordem mede, porque ela mede exposição
-     * e não gravidade, e oferece a alternativa por quantidade.</p>
-     */
+    // Devolve a tela do lote, com os produtos agrupados por NCM, cClassTrib e situação. A ordem é opcional; a padrão é pelo valor dos produtos envolvidos, que mede exposição, e não gravidade.
     @GetMapping("/{id}/grupos")
     RespostaDeGrupos grupos(
             @PathVariable UUID id, @RequestParam(required = false) String ordem) {
@@ -147,14 +108,7 @@ class ControladorDeAnalises {
                         ordem, OrdemDosGrupos.class, "ordem", OrdemDosGrupos.padrao()));
     }
 
-    /**
-     * As notas e os itens que compõem um grupo.
-     *
-     * <p>O grupo se identifica pelos três componentes que o definem, e não por um
-     * código sintético: assim a URL diz o que está sendo olhado, e um NCM ou um
-     * cClassTrib ausente se escreve omitindo o parâmetro — que é a mesma ausência
-     * que o agrupamento registrou.</p>
-     */
+    // Lista as notas e os itens de um grupo. O grupo vem pelos três campos que o definem: NCM ou cClassTrib ausente é só omitir o parâmetro, e a situação é obrigatória.
     @GetMapping("/{id}/grupos/produtos")
     RespostaDeProdutosDoGrupo produtosDoGrupo(
             @PathVariable UUID id,
@@ -179,13 +133,7 @@ class ControladorDeAnalises {
                 id, chave, Parametros.pagina(pagina), Parametros.tamanho(tamanho));
     }
 
-    /**
-     * Um envio maior que o teto do contêiner nem chega ao método acima.
-     *
-     * <p>O contêiner de servlet corta antes, e a exceção dele é genérica. Este
-     * tratador a traduz para a mesma recusa que a área da análise daria, para que
-     * a pessoa receba a mesma explicação nos dois caminhos.</p>
-     */
+    // Responde 413 quando o arquivo passa do limite do servidor, que corta o envio antes de chegar aos métodos acima, com a mesma explicação que a análise daria.
     @org.springframework.web.bind.annotation.ExceptionHandler(
             org.springframework.web.multipart.MaxUploadSizeExceededException.class)
     ResponseEntity<ErroExposto> envioGrandeDemais() {

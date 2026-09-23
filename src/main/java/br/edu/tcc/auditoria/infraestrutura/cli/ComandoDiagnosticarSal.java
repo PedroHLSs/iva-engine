@@ -10,18 +10,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Diz de onde o sal veio e qual é a impressão digital dele. Nunca o sal.
- *
- * <p>Atravessa o guarda de troca de sal de propósito: é a ferramenta para
- * entender a recusa, e barrá-la deixaria a pessoa com um sistema que não sobe e
- * nenhuma forma de descobrir por quê.</p>
- *
- * <p>Não mostra o sal, e não é descuido de conveniência: quem precisa do sal
- * tem o arquivo, cujo caminho este comando informa. Imprimi-lo no terminal o
- * deixaria no histórico do shell, no rolo de uma apresentação e no log de
- * qualquer sessão gravada.</p>
- */
+// Classe do comando diagnosticar-sal, que mostra de onde o sal veio e a impressão digital dele, nunca o sal. Passa pelo guarda de troca de sal de propósito, porque é a ferramenta para entender a recusa.
 @Component
 class ComandoDiagnosticarSal implements Comando {
 
@@ -32,6 +21,7 @@ class ComandoDiagnosticarSal implements Comando {
     private final AcervoSalgado acervo;
     private final Saida saida;
 
+    // Construtor que recebe o sal resolvido, o registro da impressão digital, o acervo e a saída.
     ComandoDiagnosticarSal(
             SalResolvido salResolvido,
             RegistroDaImpressaoDigital registro,
@@ -67,6 +57,7 @@ class ComandoDiagnosticarSal implements Comando {
                 """.formatted(NOME);
     }
 
+    // Mostra a origem do sal, o arquivo, a permissão e a impressão digital em uso.
     @Override
     public void executar(Argumentos argumentos) {
         argumentos.exigirSomente(List.of());
@@ -85,6 +76,7 @@ class ComandoDiagnosticarSal implements Comando {
         relatarOAcervo(emUso);
     }
 
+    // Método auxiliar que compara a impressão digital em uso com a gravada no banco e diz se conferem.
     private void relatarOAcervo(ImpressaoDigitalDoSal emUso) {
         long documentos = acervo.quantidadeDeDocumentos();
         Optional<RegistroDaImpressaoDigital.Registro> gravada = registro.registrada();

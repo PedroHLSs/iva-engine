@@ -17,17 +17,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-/**
- * Linha da tabela de classificação tributária de uma carga.
- *
- * <p>Espelha {@code ClassificacaoTributaria} do domínio, sem nenhuma regra: o
- * domínio não tem anotação de JPA e não vai ter (D001), então o mapeamento entre
- * os dois é explícito e mora aqui.</p>
- *
- * <p>{@code percentualReducao} nulo significa que o catálogo não declarou
- * redução, e é diferente de redução de zero. A coluna é {@code numeric} sem
- * precisão declarada para que a escala do valor importado seja preservada.</p>
- */
+// Representa uma linha da tabela de classificação tributária de uma carga; espelha a ClassificacaoTributaria do domínio. percentualReducao null quer dizer que a carga não declarou redução, o que é diferente de redução zero, e a coluna mantém as casas decimais importadas.
 @Entity
 @Table(name = "classificacao_tributaria")
 class ClassificacaoTributariaEntidade {
@@ -60,7 +50,7 @@ class ClassificacaoTributariaEntidade {
     @Column(name = "fonte_normativa", nullable = false)
     private String fonteNormativa;
 
-    /** Conjunto: a ordem dos CSTs compatíveis não significa nada. */
+    // Conjunto, porque a ordem dos CSTs compatíveis não significa nada.
     @ElementCollection
     @CollectionTable(
             name = "classificacao_tributaria_cst",
@@ -68,7 +58,7 @@ class ClassificacaoTributariaEntidade {
     @Column(name = "cst", nullable = false)
     private Set<String> cstsCompativeis = new LinkedHashSet<>();
 
-    /** Lista: a ordem da carga é preservada para que a mensagem do apontamento não varie. */
+    // Lista na ordem da carga, para a mensagem do apontamento não variar.
     @ElementCollection
     @CollectionTable(
             name = "classificacao_tributaria_campo_obrigatorio",
@@ -77,10 +67,11 @@ class ClassificacaoTributariaEntidade {
     @Column(name = "campo", nullable = false)
     private List<String> camposObrigatoriosCondicionados = new ArrayList<>();
 
+    // Construtor vazio exigido pelo JPA.
     protected ClassificacaoTributariaEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe todos os campos da linha.
     ClassificacaoTributariaEntidade(
             UUID id,
             UUID cargaId,

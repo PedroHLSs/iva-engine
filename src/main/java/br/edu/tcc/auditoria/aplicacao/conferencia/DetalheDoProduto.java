@@ -5,17 +5,7 @@ import br.edu.tcc.auditoria.aplicacao.consulta.DadosDoDocumento;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Tudo o que a tela mais importante precisa sobre um produto.
- *
- * <p>Quatro blocos, nesta ordem, porque é a ordem em que a pergunta se responde:
- * o que veio no documento, que tratamento a base normativa indica, os dois lado a
- * lado, e por que as regras chegaram ao resultado que chegaram.</p>
- *
- * <p>A identificação do documento vem junto e não é cabeçalho decorativo: o
- * tratamento foi resolvido na data de emissão dele, e sem a data à vista a
- * fundamentação exibida não é conferível.</p>
- */
+// Representa tudo o que a tela de detalhe precisa sobre um produto: documento, tratamento, comparação e passos.
 public record DetalheDoProduto(
         DadosDoDocumento documento,
         ProdutoConferido produto,
@@ -23,6 +13,7 @@ public record DetalheDoProduto(
         ComparacaoDeclaradoEIndicado comparacao,
         List<PassoDaConferencia> passos) {
 
+    // Valida o detalhe e confere que há um passo para cada verificação do produto.
     public DetalheDoProduto {
         if (documento == null) {
             throw new ConferenciaInvalida("O detalhe precisa dizer de que documento o produto é.");
@@ -55,7 +46,7 @@ public record DetalheDoProduto(
         passos = List.copyOf(passos);
     }
 
-    /** Identidade estável do produto — o resumo do item, sem identificador em texto claro. */
+    // Retorna o endereço do produto, que é o resumo do item e não traz identificador em texto claro.
     public String endereco() {
         return produto.endereco();
     }

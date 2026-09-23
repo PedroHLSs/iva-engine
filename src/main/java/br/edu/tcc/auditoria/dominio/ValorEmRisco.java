@@ -5,45 +5,29 @@ import br.edu.tcc.auditoria.dominio.excecao.ValorEmRiscoInvalido;
 import java.math.BigDecimal;
 import java.util.Optional;
 
-/**
- * Montante associado a um {@link Achado}, quando é possível quantificá-lo.
- *
- * <p>Nem todo apontamento tem valor calculável: uma combinação inválida de
- * códigos, ou um campo ausente, não produzem diferença monetária aferível. O
- * tipo é selado em duas variantes justamente para que a ausência nunca fique
- * sem explicação — {@link NaoCalculavel} exige o motivo no construtor, de modo
- * que é impossível esquecer de registrá-lo.</p>
- *
- * <p>Um {@code Optional<BigDecimal>} solto permitiria o vazio silencioso; aqui
- * o vazio sempre vem acompanhado da razão, e {@link #valor()} continua
- * entregando o {@code Optional<BigDecimal>} para quem só precisa do número.</p>
- */
+// Interface que guarda o valor em risco de um apontamento: ou o valor calculado, ou o motivo de não dar para calcular. O motivo é obrigatório, para o vazio nunca ficar sem explicação.
 public sealed interface ValorEmRisco {
 
-    /** O montante, quando calculável; vazio caso contrário. */
+    // Retorna o valor, ou vazio quando não dá para calcular.
     Optional<BigDecimal> valor();
 
-    /** O motivo de não haver montante, quando não há; vazio caso contrário. */
+    // Retorna o motivo de não haver valor, ou vazio quando há valor.
     Optional<String> motivoDaAusencia();
 
-    /** Apontamento com montante aferido. */
+    // Cria o valor em risco calculado.
     static ValorEmRisco calculado(BigDecimal quantia) {
         return new Calculado(quantia);
     }
 
-    /** Apontamento sem montante aferível, com o motivo registrado. */
+    // Cria o valor em risco que não dá para calcular, com o motivo.
     static ValorEmRisco naoCalculavel(String motivo) {
         return new NaoCalculavel(motivo);
     }
 
-    /**
-     * Montante aferido para o apontamento.
-     *
-     * <p>A escala é preservada como calculada; comparações de grandeza devem
-     * usar {@code compareTo}, não {@code equals}.</p>
-     */
+    // Representa o valor calculado; mantém as casas decimais, então compare com compareTo, não com equals.
     record Calculado(BigDecimal quantia) implements ValorEmRisco {
 
+        // Valida que o valor calculado exista.
         public Calculado {
             if (quantia == null) {
                 throw new ValorEmRiscoInvalido(
@@ -63,13 +47,10 @@ public sealed interface ValorEmRisco {
         }
     }
 
-    /**
-     * Apontamento cujo montante não é aferível.
-     *
-     * @param motivo por que não há valor a calcular
-     */
+    // Representa o apontamento sem valor calculável, com o motivo.
     record NaoCalculavel(String motivo) implements ValorEmRisco {
 
+        // Valida que o motivo esteja preenchido.
         public NaoCalculavel {
             if (motivo == null || motivo.isBlank()) {
                 throw new ValorEmRiscoInvalido(

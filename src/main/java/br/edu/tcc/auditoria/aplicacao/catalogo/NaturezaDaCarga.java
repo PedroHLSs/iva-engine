@@ -9,41 +9,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/**
- * A natureza de cada tabela da carga, e o que ela diz sobre a carga inteira.
- *
- * <h2>Por tabela, e não por carga</h2>
- *
- * <p>Um único sinalizador não consegue descrever o caso que interessa: alguém
- * carregar um anexo real e o resto fictício. Esse é o cenário que a bagunça de
- * {@code exemplos/} quase produziu, e é justamente onde uma marcação binária
- * falha — ela teria de escolher entre chamar a carga de real ou de fictícia, e as
- * duas respostas estariam erradas.</p>
- *
- * <p>Guardada por tabela, a derivação consegue dizer "parcialmente fictício" e
- * <strong>listar quais tabelas</strong>. Quem lê sabe em que parte da tela pode
- * confiar.</p>
- *
- * <h2>Tabela vazia não tem natureza, e isso não é omissão</h2>
- *
- * <p>A natureza é declarada linha a linha. Uma tabela fornecida só com o
- * cabeçalho — que é como esta carga declara "não trago registro nenhum aqui" —
- * não tem linha onde declará-la. {@link Optional} vazio é essa ausência, e
- * {@link CargaDeCatalogo} confere que ela coincide exatamente com a lista
- * vazia.</p>
- */
+// Representa a natureza declarada de cada tabela da carga e o que ela diz sobre a carga inteira; tabela sem registro fica com Optional vazio.
 public record NaturezaDaCarga(
         Optional<Natureza> classificacoesTributarias,
         Optional<Natureza> registrosDeNcm,
         Optional<Natureza> itensDeAnexo,
         Optional<Natureza> aliquotas) {
 
-    /** Nome de tabela como ele aparece na tela e no banco. */
+    // Nomes das tabelas como aparecem na tela e no banco.
     public static final String CLASSIFICACOES_TRIBUTARIAS = "CLASSIFICACAO_TRIBUTARIA";
     public static final String REGISTROS_DE_NCM = "NCM";
     public static final String ITENS_DE_ANEXO = "ITEM_ANEXO";
     public static final String ALIQUOTAS = "ALIQUOTA";
 
+    // Valida que nenhuma tabela venha com natureza nula.
     public NaturezaDaCarga {
         exigir(classificacoesTributarias, CLASSIFICACOES_TRIBUTARIAS);
         exigir(registrosDeNcm, REGISTROS_DE_NCM);
@@ -51,30 +30,13 @@ public record NaturezaDaCarga(
         exigir(aliquotas, ALIQUOTAS);
     }
 
-    /**
-     * A carga foi gravada antes de a natureza passar a ser declarada.
-     *
-     * <p>Nenhuma tabela tem natureza, e a tela diz isso. <strong>Não se supõe
-     * {@code NORMATIVO}</strong>: supor faria o sistema afirmar que dado de
-     * procedência desconhecida é norma vigente, que é a afirmação mais cara que
-     * ele poderia fazer por engano.</p>
-     */
+    // Retorna a natureza de uma carga gravada antes de a declaração existir, sem supor que ela seja normativa.
     public static NaturezaDaCarga naoDeclarada() {
         return new NaturezaDaCarga(
                 Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
     }
 
-    /**
-     * A mesma procedência para todas as tabelas que têm registro.
-     *
-     * <p>Atalho para a carga que veio de uma origem só — o caso comum de um
-     * acervo de demonstração inteiro, ou de um catálogo transcrito de uma vez.</p>
-     *
-     * <p><strong>O caminho de importação não usa este atalho.</strong> Lá cada
-     * arquivo declara a sua, e é justamente a possibilidade de elas diferirem que
-     * permite representar o caso parcialmente fictício. Usá-lo na importação
-     * apagaria a mistura que a marcação existe para mostrar.</p>
-     */
+    // Atalho que aplica a mesma natureza a todas as tabelas com registro; a importação não o usa, porque lá cada arquivo declara a sua.
     public static NaturezaDaCarga deUmaSoProcedencia(
             Natureza natureza,
             List<?> classificacoesTributarias,
@@ -92,6 +54,7 @@ public record NaturezaDaCarga(
                 seHouver(natureza, aliquotas));
     }
 
+    // Método auxiliar que devolve a natureza apenas quando a tabela tem registros.
     private static Optional<Natureza> seHouver(Natureza natureza, List<?> registros) {
         if (registros == null) {
             throw new CatalogoInvalido(
@@ -100,7 +63,7 @@ public record NaturezaDaCarga(
         return registros.isEmpty() ? Optional.empty() : Optional.of(natureza);
     }
 
-    /** As naturezas declaradas, por tabela, na ordem em que a carga as traz. */
+    // Retorna as naturezas declaradas por tabela, na ordem em que a carga as traz.
     public Map<String, Natureza> declaradas() {
         Map<String, Natureza> porTabela = new LinkedHashMap<>();
         classificacoesTributarias.ifPresent(
@@ -108,13 +71,11 @@ public record NaturezaDaCarga(
         registrosDeNcm.ifPresent(natureza -> porTabela.put(REGISTROS_DE_NCM, natureza));
         itensDeAnexo.ifPresent(natureza -> porTabela.put(ITENS_DE_ANEXO, natureza));
         aliquotas.ifPresent(natureza -> porTabela.put(ALIQUOTAS, natureza));
-        // unmodifiableMap sobre LinkedHashMap, e nao Map.copyOf: a copia imutavel
-        // do Map nao preserva ordem de insercao, e a faixa listaria as tabelas em
-        // ordem diferente a cada abertura da tela.
+        // Usa unmodifiableMap, e não Map.copyOf, para preservar a ordem das tabelas na faixa da tela.
         return Collections.unmodifiableMap(porTabela);
     }
 
-    /** As tabelas cujo conteúdo é de demonstração. */
+    // Retorna a lista das tabelas cujo conteúdo é de demonstração.
     public List<String> tabelasFicticias() {
         List<String> ficticias = new ArrayList<>();
         declaradas().forEach((tabela, natureza) -> {
@@ -125,12 +86,7 @@ public record NaturezaDaCarga(
         return List.copyOf(ficticias);
     }
 
-    /**
-     * O que a carga é, no conjunto.
-     *
-     * <p>Derivado das tabelas, e não declarado à parte: duas declarações do mesmo
-     * fato podem divergir, e a derivada é a que não tem como mentir.</p>
-     */
+    // Retorna a situação da carga inteira, derivada das naturezas de cada tabela em vez de declarada à parte.
     public SituacaoDaNatureza situacao() {
         Map<String, Natureza> declaradas = declaradas();
         if (declaradas.isEmpty()) {
@@ -144,6 +100,7 @@ public record NaturezaDaCarga(
         return temFicticio ? SituacaoDaNatureza.INTEIRAMENTE_FICTICIO : SituacaoDaNatureza.NORMATIVO;
     }
 
+    // Método auxiliar para verificar se a natureza da tabela é nula e lançar uma exceção com uma mensagem apropriada.
     private static void exigir(Optional<Natureza> natureza, String tabela) {
         if (natureza == null) {
             throw new CatalogoInvalido(

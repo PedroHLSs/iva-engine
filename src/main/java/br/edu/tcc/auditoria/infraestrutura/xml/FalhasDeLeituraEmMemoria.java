@@ -4,22 +4,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-/**
- * Guarda as falhas de um lote em memória, na ordem em que aconteceram.
- *
- * <p>Serve para lote de tamanho conhecido — que é o caso de uso do sistema, um
- * acervo de documentos de um período. Lote grande o bastante para que a lista de
- * falhas não caiba na memória é lote cujas falhas ninguém vai ler de qualquer
- * forma, e nesse cenário o destino certo é outra implementação de
- * {@link RegistroDeFalhasDeLeitura}.</p>
- *
- * <p>A lista é sincronizada porque o fluxo do {@link LeitorLote} pode ser
- * consumido em paralelo por quem o recebe.</p>
- */
+// Classe que guarda as falhas de um lote na memória, na ordem em que aconteceram. A lista é sincronizada porque a leitura pode ser em paralelo.
 public final class FalhasDeLeituraEmMemoria implements RegistroDeFalhasDeLeitura {
 
     private final List<FalhaDeLeitura> falhas = Collections.synchronizedList(new ArrayList<>());
 
+    // Registra uma falha de leitura.
     @Override
     public void registrar(FalhaDeLeitura falha) {
         if (falha == null) {
@@ -28,17 +18,19 @@ public final class FalhasDeLeituraEmMemoria implements RegistroDeFalhasDeLeitura
         falhas.add(falha);
     }
 
-    /** Cópia das falhas registradas até agora, na ordem em que foram registradas. */
+    // Devolve uma cópia das falhas registradas até agora, na ordem em que aconteceram.
     public List<FalhaDeLeitura> falhas() {
         synchronized (falhas) {
             return List.copyOf(falhas);
         }
     }
 
+    // Diz se nenhuma falha foi registrada.
     public boolean vazio() {
         return falhas.isEmpty();
     }
 
+    // Retorna quantas falhas foram registradas.
     public int quantidade() {
         return falhas.size();
     }

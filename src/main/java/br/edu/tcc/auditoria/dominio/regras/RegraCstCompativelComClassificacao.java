@@ -14,38 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * R02 — o par formado pelo CST declarado e pelo {@code cClassTrib} declarado é
- * admitido pelo catálogo vigente na data do documento?
- *
- * <p>O item traz dois CSTs, um de IBS e um de CBS, e a regra confronta cada um
- * que tenha vindo contra o conjunto que o catálogo associa ao
- * {@code cClassTrib}. Quais pares existem é conteúdo normativo: a regra não
- * conhece nenhum, apenas compara o declarado com a lista importada.</p>
- *
- * <p>A severidade é moderada porque um par recusado é incoerência entre códigos
- * e, por si, não altera montante declarado. O que ele altera é o tratamento que
- * o documento afirma estar aplicando.</p>
- *
- * <h2>Duas ausências que não viram achado</h2>
- *
- * <ul>
- *   <li><strong>O catálogo não tem o {@code cClassTrib} na data.</strong> Sem o
- *       registro não há lista de referência, e portanto não há par a conferir.
- *       Quem aponta código inexistente é R01; R02 não repete o apontamento nem o
- *       disfarça de conformidade.</li>
- *   <li><strong>O registro existe e não lista nenhum CST compatível.</strong>
- *       Poderia ser lido como "nenhum CST é admitido", o que tornaria todo item
- *       um achado. Mas coluna preenchida em branco é indistinguível de coluna
- *       que ninguém preencheu, e transformar essa dúvida em acusação é o oposto
- *       do que uma auditoria deve fazer. Fica {@code NAO_AVALIADO}, com o motivo
- *       dizendo exatamente isso — visível no relatório, e corrigível na carga.</li>
- * </ul>
- *
- * <p>Quando só um dos dois CSTs veio, a regra julga o par que existe e diz
- * conforme sobre ele. O CST que não veio não forma par nenhum, e sua ausência é
- * assunto de R07, que sabe quais campos o catálogo exige para aquele código.</p>
- */
+// Regra R02: o CST do item combina com o cClassTrib, segundo o catálogo? Gravidade: moderada. Se o código não estiver no catálogo ou não tiver lista de CST, vira NAO_AVALIADO.
 public final class RegraCstCompativelComClassificacao extends RegraDeItem {
 
     public static final String ID = "R02";
@@ -66,6 +35,7 @@ public final class RegraCstCompativelComClassificacao extends RegraDeItem {
         return Severidade.MODERADA;
     }
 
+    // Aplica a regra: compara cada CST do item com a lista de CSTs aceitos para o cClassTrib e aponta os que não estão na lista.
     @Override
     protected Avaliacao avaliarItem(ItemDocumento item, Documento documento, ContextoNormativo contexto) {
         Optional<CodigoClassificacaoTributaria> codigo = item.codigoClassificacaoTributaria();
@@ -126,13 +96,7 @@ public final class RegraCstCompativelComClassificacao extends RegraDeItem {
                         "Par de códigos recusado pelo catálogo não produz, por si, diferença de valor aferível."));
     }
 
-    /**
-     * CSTs efetivamente declarados, em ordem fixa.
-     *
-     * <p>A ordem é a de declaração no item — IBS e depois CBS — e não a de
-     * iteração de nenhuma coleção, para que duas execuções sobre o mesmo
-     * documento produzam as evidências na mesma sequência.</p>
-     */
+    // Método auxiliar que junta os CSTs do item, sempre primeiro o do IBS e depois o da CBS, para as evidências saírem na mesma ordem.
     private static List<CstDeclarado> declarados(ItemDocumento item) {
         List<CstDeclarado> declarados = new ArrayList<>();
         item.cstIbs().ifPresent(cst -> declarados.add(new CstDeclarado("cstIbs", cst)));
@@ -140,18 +104,12 @@ public final class RegraCstCompativelComClassificacao extends RegraDeItem {
         return List.copyOf(declarados);
     }
 
-    /**
-     * Os CSTs admitidos, em ordem alfabética.
-     *
-     * <p>O conjunto do registro é imutável e não promete ordem de iteração; ler
-     * dele sem ordenar faria o texto da evidência variar entre execuções, e a
-     * ordem determinística da saída é requisito do motor.</p>
-     */
+    // Método auxiliar que devolve os CSTs aceitos em ordem alfabética, para a saída ser sempre igual.
     private static List<String> cstsCompativeisOrdenados(ClassificacaoTributaria classificacao) {
         return classificacao.cstsCompativeis().stream().map(CodigoCst::valor).sorted().toList();
     }
 
-    /** Um CST que veio no item, junto do nome do campo em que veio. */
+    // Guarda um CST que veio no item e o nome do campo onde ele veio.
     private record CstDeclarado(String campo, CodigoCst cst) {
     }
 }

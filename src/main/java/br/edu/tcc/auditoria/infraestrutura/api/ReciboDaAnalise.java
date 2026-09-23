@@ -3,29 +3,7 @@ package br.edu.tcc.auditoria.infraestrutura.api;
 import java.time.Instant;
 import java.util.List;
 
-/**
- * O comprovante de uma análise: o que entrou, o que foi lido e o que não foi.
- *
- * <h2>Esta resposta não diz nenhum desfecho, e isso é deliberado</h2>
- *
- * <p>Não há aqui contagem de apontamento, de conforme nem de não avaliado — nem
- * como zero. A razão é que os quatro estados da interface só significam alguma
- * coisa quando aparecem <strong>os quatro juntos</strong>, e apresentá-los pela
- * metade num comprovante de recebimento seria construir exatamente a leitura
- * que esta etapa existe para impedir: "zero apontamentos, então está limpo".</p>
- *
- * <p>A garantia é estrutural, não documental: <strong>não existe neste tipo
- * nenhum campo de desfecho</strong>, então não há número a interpretar errado.
- * Quem quiser o resultado da conferência vai buscá-lo no endereço de
- * {@link #recurso()}.</p>
- *
- * <h2>O que ele diz</h2>
- *
- * <p>Fala só de leitura: quantos documentos e itens entraram, contra qual
- * catálogo e qual conjunto de regras, e quais arquivos não puderam ser lidos.
- * {@code arquivosIlegiveis} é contagem própria, ao lado de tudo, e nunca é
- * somada a nada — arquivo que não pôde ser lido não é nota, é ausência.</p>
- */
+// Representa o comprovante de uma análise: quantos documentos e itens entraram, contra qual catálogo e quais regras, e quais arquivos não foram lidos. De propósito, não tem nenhum campo de resultado; o resultado da conferência fica no endereço de recurso().
 public record ReciboDaAnalise(
         String id,
         String recurso,
@@ -38,6 +16,7 @@ public record ReciboDaAnalise(
         List<ArquivoIlegivelExposto> arquivosQueNaoForamLidos,
         String comoFoiALeitura) {
 
+    // Valida o recibo: exige identificador, endereço, data e hora, versões, contagens não negativas, a lista de ilegíveis batendo com a contagem e o texto de como foi a leitura.
     public ReciboDaAnalise {
         if (id == null || id.isBlank()) {
             throw new RespostaInvalida("O recibo da análise precisa do identificador.");
@@ -73,6 +52,7 @@ public record ReciboDaAnalise(
         arquivosQueNaoForamLidos = List.copyOf(arquivosQueNaoForamLidos);
     }
 
+    // Método auxiliar para verificar se um campo de texto obrigatório está vazio e lançar uma exceção.
     private static void exigirTexto(String valor, String nomeDoCampo) {
         if (valor == null || valor.isBlank()) {
             throw new RespostaInvalida(

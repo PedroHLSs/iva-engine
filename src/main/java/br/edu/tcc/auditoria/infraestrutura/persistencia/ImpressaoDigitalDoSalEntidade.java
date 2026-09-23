@@ -7,17 +7,12 @@ import jakarta.persistence.Table;
 
 import java.time.Instant;
 
-/**
- * A impressão digital do sal de instalação, em linha única.
- *
- * <p>Guarda o resumo do sal, nunca o sal. Ver a migration {@code V6} para o
- * motivo de a tabela existir.</p>
- */
+// Representa a linha única com a impressão digital do sal da instalação; guarda o resumo, nunca o sal.
 @Entity
 @Table(name = "impressao_digital_do_sal")
 class ImpressaoDigitalDoSalEntidade {
 
-    /** A tabela tem uma linha só, e a restrição do banco garante isso. */
+    // Identificador da única linha; a restrição do banco garante que só há uma.
     static final short LINHA_UNICA = 1;
 
     @Id
@@ -36,10 +31,11 @@ class ImpressaoDigitalDoSalEntidade {
     @Column(name = "adotada_de_acervo_existente", nullable = false)
     private boolean adotadaDeAcervoExistente;
 
+    // Construtor vazio exigido pelo JPA.
     protected ImpressaoDigitalDoSalEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe a impressão digital, quando foi registrada, a origem e se foi adotada sobre acervo existente.
     ImpressaoDigitalDoSalEntidade(
             String valor, Instant registradaEm, String origem, boolean adotadaDeAcervoExistente) {
         this.id = LINHA_UNICA;

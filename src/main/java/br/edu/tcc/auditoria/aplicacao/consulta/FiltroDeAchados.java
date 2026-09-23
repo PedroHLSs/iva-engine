@@ -5,17 +5,7 @@ import br.edu.tcc.auditoria.dominio.Severidade;
 
 import java.util.Optional;
 
-/**
- * Recorte de uma listagem de apontamentos.
- *
- * <p>Todo critério é opcional; filtro sem nenhum critério lista tudo, do mais
- * grave para o menos grave. O limite existe porque um lote real produz
- * apontamento demais para caber num terminal, e não porque o resto seja
- * descartável — quem precisa do relatório inteiro pede um limite maior.</p>
- *
- * @param apenasAbertos quando verdadeiro, omite os apontamentos que já têm
- *                      tratativa aplicável
- */
+// Representa o recorte de uma listagem de apontamentos: todos os critérios são opcionais, e sem nenhum a listagem traz tudo, até o limite.
 public record FiltroDeAchados(
         Optional<Severidade> severidade,
         Optional<String> regraId,
@@ -23,9 +13,10 @@ public record FiltroDeAchados(
         boolean apenasAbertos,
         int limite) {
 
-    /** Limite usado quando quem consulta não informa um. */
+    // Limite usado quando quem consulta não informa um.
     public static final int LIMITE_PADRAO = 50;
 
+    // Valida que os critérios venham em Optional, que o filtro por regra não venha vazio e que o limite seja ao menos 1.
     public FiltroDeAchados {
         exigirOptional(severidade, "severidade");
         exigirOptional(regraId, "regraId");
@@ -42,12 +33,13 @@ public record FiltroDeAchados(
         }
     }
 
-    /** Filtro sem nenhum critério, com o limite padrão. */
+    // Método estático que cria um filtro sem nenhum critério, com o limite padrão.
     public static FiltroDeAchados tudo() {
         return new FiltroDeAchados(
                 Optional.empty(), Optional.empty(), Optional.empty(), false, LIMITE_PADRAO);
     }
 
+    // Método auxiliar para verificar se o critério é nulo e lançar uma exceção.
     private static void exigirOptional(Optional<?> valor, String nomeDoCampo) {
         if (valor == null) {
             throw new ConsultaInvalida(

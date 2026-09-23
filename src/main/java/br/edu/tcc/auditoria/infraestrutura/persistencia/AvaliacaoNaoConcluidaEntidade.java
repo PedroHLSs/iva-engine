@@ -7,14 +7,7 @@ import jakarta.persistence.Table;
 
 import java.util.UUID;
 
-/**
- * Uma avaliação que não concluiu, numa execução.
- *
- * <p>Escopada por execução e sem deduplicação, ao contrário do apontamento: não
- * concluir é fato da rodada, não do documento. Rodar de novo com um catálogo
- * mais completo produz outro resultado, e os dois precisam continuar existindo
- * lado a lado — ver {@code V5__nao_avaliado_e_achado_por_execucao.sql}.</p>
- */
+// Representa uma avaliação que não concluiu numa execução. É gravada por execução e sem juntar repetidas, porque não concluir é fato da rodada: com um catálogo mais completo, outra rodada pode concluir.
 @Entity
 @Table(name = "avaliacao_nao_concluida")
 class AvaliacaoNaoConcluidaEntidade {
@@ -41,10 +34,11 @@ class AvaliacaoNaoConcluidaEntidade {
     @Column(name = "motivo", nullable = false)
     private String motivo;
 
+    // Construtor vazio exigido pelo JPA.
     protected AvaliacaoNaoConcluidaEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe todos os campos da linha.
     AvaliacaoNaoConcluidaEntidade(
             UUID id,
             UUID execucaoId,

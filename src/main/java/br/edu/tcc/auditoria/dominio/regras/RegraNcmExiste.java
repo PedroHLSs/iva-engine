@@ -11,23 +11,7 @@ import br.edu.tcc.auditoria.dominio.catalogo.ProcedenciaNormativa;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * R06 — o NCM declarado no item consta do catálogo de NCM vigente na data de
- * emissão do documento?
- *
- * <p>A pergunta só faz sentido datada: a tabela de NCM muda com o tempo, e um
- * código que existe hoje pode não existir na data em que o documento foi
- * emitido — e vice-versa. Quem resolve a data é o {@link ContextoNormativo}; a
- * regra apenas pergunta.</p>
- *
- * <p>O construtor validou a forma do NCM (oito dígitos) lá atrás; aqui se
- * verifica a existência, que é outra coisa. Um NCM com forma válida e sem
- * registro no catálogo deixa o item sem âncora para as regras que dependem de
- * anexo, daí a severidade crítica.</p>
- *
- * <p>Sobre por que "o catálogo nada diz" vira achado nesta regra e não nas
- * outras, ver {@link CoberturaDoCatalogo}.</p>
- */
+// Regra R06: o NCM do item existe no catálogo na data da nota? Gravidade: crítica. Só vira achado se a data estiver dentro do período que a tabela carregada cobre.
 public final class RegraNcmExiste extends RegraDeItem {
 
     public static final String ID = "R06";
@@ -37,6 +21,7 @@ public final class RegraNcmExiste extends RegraDeItem {
 
     private final ProcedenciaNormativa cobertura;
 
+    // Construtor que recebe o período coberto pela tabela de NCM.
     public RegraNcmExiste(ProcedenciaNormativa coberturaDaTabela) {
         this.cobertura = exigirCobertura(coberturaDaTabela, "NCM");
     }
@@ -56,6 +41,7 @@ public final class RegraNcmExiste extends RegraDeItem {
         return Severidade.CRITICA;
     }
 
+    // Aplica a regra: sem NCM ou fora do período coberto, NAO_AVALIADO; achou no catálogo, CONFORME; não achou, gera achado.
     @Override
     protected Avaliacao avaliarItem(ItemDocumento item, Documento documento, ContextoNormativo contexto) {
         Optional<Ncm> ncm = item.ncm();
@@ -81,6 +67,7 @@ public final class RegraNcmExiste extends RegraDeItem {
                         "NCM não reconhecido não permite chegar a tratamento de referência nem a diferença de valor."));
     }
 
+    // Método auxiliar que monta a mensagem para quando a tabela não cobre a data da nota.
     private String motivoDeCoberturaInsuficiente(Documento documento) {
         return ("A tabela de NCM carregada cobre a partir de %s%s e não alcança a data de emissão %s. "
                 + "Sem cobertura, silêncio do catálogo é falta de dado, não ausência do código.").formatted(

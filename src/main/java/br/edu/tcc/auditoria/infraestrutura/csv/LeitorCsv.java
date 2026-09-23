@@ -8,44 +8,18 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Leitor dos CSVs que entram no sistema.
- *
- * <p>Convenções do formato, todas escolhidas por conveniência de operação e
- * nenhuma delas com significado normativo:</p>
- *
- * <ul>
- *   <li>separador de campo {@code ;}, para não disputar com a vírgula decimal;</li>
- *   <li>codificação UTF-8, definida por quem abre o {@link Reader};</li>
- *   <li>linhas iniciadas por {@code #} são comentário e linhas em branco são
- *       ignoradas — é o que permite ao arquivo declarar no topo que seu
- *       conteúdo é fictício;</li>
- *   <li>a primeira linha que não for comentário nem branco é o cabeçalho;</li>
- *   <li>campo entre aspas duplas pode conter o separador, e {@code ""} representa
- *       uma aspa literal. Aspas não podem envolver quebra de linha: a numeração
- *       de linha precisa continuar valendo para as mensagens de erro.</li>
- * </ul>
- *
- * <p>Nasceu na Etapa 2, dentro de {@code infraestrutura.catalogo}, e mudou para
- * cá na Etapa 7, quando o gabarito de acurácia passou a precisar do mesmo
- * formato — ver D008. O leitor não sabe de que assunto é o arquivo: quem o chama
- * informa, por {@link RecusaDeCsv}, como uma recusa deve ser nomeada.</p>
- */
+// Classe que lê os CSV que entram no sistema: separador ;, UTF-8, linha com # é comentário, linha em branco é ignorada, e a primeira linha que sobra é o cabeçalho. Campo entre aspas pode ter ;, e "" vale uma aspa. Quem chama diz, por RecusaDeCsv, como nomear o erro.
 public final class LeitorCsv {
 
     private static final char SEPARADOR = ';';
     private static final char ASPAS = '"';
     private static final String MARCA_DE_COMENTARIO = "#";
 
+    // Construtor privado: ninguém cria objeto desta classe, só usa os métodos estáticos.
     private LeitorCsv() {
     }
 
-    /**
-     * Lê o CSV inteiro.
-     *
-     * @param origem de onde ler; a codificação é de quem abriu o {@link Reader}
-     * @param recusa como nomear a falha quando o arquivo estiver malformado
-     */
+    // Método estático que lê o CSV inteiro e devolve as linhas de dados; recusa arquivo sem cabeçalho.
     public static List<LinhaCsv> ler(Reader origem, RecusaDeCsv recusa) throws IOException {
         if (recusa == null) {
             throw new IllegalArgumentException(
@@ -82,11 +56,13 @@ public final class LeitorCsv {
         return List.copyOf(linhas);
     }
 
+    // Método auxiliar que diz se a linha está em branco ou é comentário.
     private static boolean ehIgnoravel(String conteudo) {
         String semEspacos = conteudo.strip();
         return semEspacos.isEmpty() || semEspacos.startsWith(MARCA_DE_COMENTARIO);
     }
 
+    // Método auxiliar que confere o cabeçalho; recusa coluna sem nome ou repetida.
     private static List<String> validarCabecalho(
             List<String> campos, int numeroDaLinha, RecusaDeCsv recusa) {
 
@@ -103,6 +79,7 @@ public final class LeitorCsv {
         return colunas;
     }
 
+    // Método auxiliar que monta a linha de dados; recusa se o número de campos não bater com o cabeçalho.
     private static LinhaCsv montarLinha(
             List<String> cabecalho, List<String> campos, int numeroDaLinha, RecusaDeCsv recusa) {
 
@@ -118,6 +95,7 @@ public final class LeitorCsv {
         return new LinhaCsv(numeroDaLinha, valores, recusa);
     }
 
+    // Método auxiliar que separa os campos da linha pelo ;, respeitando as aspas.
     private static List<String> dividir(String conteudo) {
         List<String> campos = new ArrayList<>();
         StringBuilder campoAtual = new StringBuilder();

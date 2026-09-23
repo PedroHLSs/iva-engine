@@ -7,28 +7,7 @@ import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-/**
- * O acervo que depende do sal, apagável por comando explícito.
- *
- * <h2>A ordem do apagamento não é arbitrária</h2>
- *
- * <p>Apagar {@code documento} primeiro leva junto, por cascata do próprio banco,
- * {@code item_documento}, {@code achado}, {@code achado_evidencia} e
- * {@code achado_da_execucao}. Só depois disso as linhas de
- * {@code execucao_auditoria} ficam sem quem as referencie e podem sair — o
- * apontamento aponta para a execução que o gerou, e essa chave estrangeira não
- * tem cascata de propósito.</p>
- *
- * <p>O apagamento é feito em SQL, e não linha a linha pelo JPA, para que a
- * cascata seja a do banco. Carregar dezenas de milhares de documentos em memória
- * só para apagá-los seria lento e daria o mesmo resultado.</p>
- *
- * <h2>Tratativa fica</h2>
- *
- * <p>Nenhuma instrução aqui toca {@code tratativa}, e a tabela não tem chave
- * estrangeira para {@code documento} — a ausência de cascata é estrutural, não
- * um descuido a corrigir. Ver {@link AcervoSalgado}.</p>
- */
+// Classe que conta e apaga o acervo que depende do sal. Apaga primeiro os documentos, que levam junto por cascata itens e apontamentos, e depois as execuções; nada aqui toca as tratativas.
 @Component
 public class AcervoSalgadoNoBanco implements AcervoSalgado {
 
@@ -36,6 +15,7 @@ public class AcervoSalgadoNoBanco implements AcervoSalgado {
     private final DocumentoJpa documentos;
     private final TratativaJpa tratativas;
 
+    // Construtor que recebe o EntityManager e os repositórios de documentos e tratativas.
     AcervoSalgadoNoBanco(
             EntityManager entityManager, DocumentoJpa documentos, TratativaJpa tratativas) {
         this.entityManager = entityManager;
@@ -43,12 +23,14 @@ public class AcervoSalgadoNoBanco implements AcervoSalgado {
         this.tratativas = tratativas;
     }
 
+    // Retorna quantos documentos estão gravados.
     @Override
     @Transactional(readOnly = true)
     public long quantidadeDeDocumentos() {
         return documentos.count();
     }
 
+    // Apaga documentos e execuções direto em SQL, para valer a cascata do banco, e conta as tratativas preservadas.
     @Override
     @Transactional
     public Apagamento apagar() {

@@ -13,24 +13,19 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.Arrays;
 import java.util.UUID;
 
-/**
- * Os apontamentos de uma execução, paginados e filtráveis.
- *
- * <p>Filtrar não é esconder: o total antes do recorte vai na resposta, em
- * {@link PaginaExposta}, justamente para que uma listagem curta não pareça um
- * acervo limpo. E o filtro aplicado volta escrito, para que ninguém confunda
- * "nada atende" com "ninguém procurou".</p>
- */
+// Controlador que responde GET /api/execucoes/{id}/achados: os apontamentos de uma execução, em páginas e com filtros. O total antes do filtro e o filtro aplicado voltam na resposta, para lista curta não parecer acervo limpo.
 @RestController
 @RequestMapping("/api/execucoes/{id}/achados")
 class ControladorDeAchados {
 
     private final MontadorDeRespostas respostas;
 
+    // Construtor que recebe o montador de respostas.
     ControladorDeAchados(MontadorDeRespostas respostas) {
         this.respostas = respostas;
     }
 
+    // Lista uma página dos achados, podendo filtrar por regra, gravidade e situação da tratativa.
     @GetMapping
     RespostaDeAchados listar(
             @PathVariable UUID id,
@@ -49,6 +44,7 @@ class ControladorDeAchados {
                 Parametros.tamanho(tamanho));
     }
 
+    // Método auxiliar que converte o texto em gravidade, sem ligar para maiúscula ou minúscula; recusa valor desconhecido.
     private static Severidade severidade(String informada) {
         return Arrays.stream(Severidade.values())
                 .filter(severidade -> severidade.name().equalsIgnoreCase(informada))
@@ -58,6 +54,7 @@ class ControladorDeAchados {
                                 informada, nomesDe(Severidade.values()))));
     }
 
+    // Método auxiliar que converte o texto em status de tratativa, sem ligar para maiúscula ou minúscula; recusa valor desconhecido.
     private static StatusDeTratativa status(String informado) {
         return Arrays.stream(StatusDeTratativa.values())
                 .filter(status -> status.name().equalsIgnoreCase(informado))
@@ -67,6 +64,7 @@ class ControladorDeAchados {
                                 informado, nomesDe(StatusDeTratativa.values()))));
     }
 
+    // Método auxiliar que junta os nomes aceitos, para a mensagem de erro.
     private static String nomesDe(Enum<?>[] valores) {
         return String.join(", ", Arrays.stream(valores).map(Enum::name).toList());
     }

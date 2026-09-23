@@ -1,8 +1,8 @@
 package br.edu.tcc.auditoria.dominio.excecao;
 
-/** Sinaliza sigla que não corresponde a nenhuma unidade federativa conhecida. */
 public class UfInvalida extends ExcecaoDeDominio {
 
+    // Construtor que recebe a mensagem de erro e chama RuntimeException com essa mensagem.
     public UfInvalida(String mensagem) {
         super(mensagem);
     }

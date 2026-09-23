@@ -3,19 +3,7 @@ package br.edu.tcc.auditoria.infraestrutura.persistencia;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 
-/**
- * Evidência de um apontamento, gravada na tabela filha do apontamento.
- *
- * <p>Os dois valores são anuláveis, com significados distintos e deliberados:
- * {@code valorEncontrado} nulo é "o campo não veio no documento";
- * {@code valorEsperado} nulo é "a regra não tinha valor de referência a opor".
- * Texto vazio nessas colunas é outra coisa — campo que veio em branco no XML —,
- * e por isso não se troca nulo por string vazia em nenhum sentido.</p>
- *
- * <p>A origem é achatada em três colunas porque {@code OrigemEvidencia} é um tipo
- * selado com três variantes de formatos diferentes. {@code origemTipo} diz qual
- * variante é, e a reconstrução em {@code MapeadorDeAchado} volta ao tipo certo.</p>
- */
+// Representa uma evidência do apontamento, gravada na tabela filha. valorEncontrado null quer dizer que o campo não veio na nota, e valorEsperado null que a regra não tinha referência; texto vazio é outra coisa. A origem fica em três colunas, e o MapeadorDeAchado volta ao tipo certo.
 @Embeddable
 class EvidenciaEmbutida {
 
@@ -37,10 +25,11 @@ class EvidenciaEmbutida {
     @Column(name = "origem_segundo_termo")
     private String origemSegundoTermo;
 
+    // Construtor vazio exigido pelo JPA.
     protected EvidenciaEmbutida() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe todos os campos da evidência.
     EvidenciaEmbutida(
             String campoAnalisado,
             String valorEncontrado,

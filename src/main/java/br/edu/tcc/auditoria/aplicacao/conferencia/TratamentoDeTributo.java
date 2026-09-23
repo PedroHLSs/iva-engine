@@ -2,30 +2,14 @@ package br.edu.tcc.auditoria.aplicacao.conferencia;
 
 import br.edu.tcc.auditoria.dominio.catalogo.Tributo;
 
-/**
- * O que a carga diz sobre <strong>um</strong> tributo, na data do documento.
- *
- * <p>Um por {@link Tributo}, sempre, inclusive os que a carga não alcança — que
- * aparecem com o motivo em vez de sumirem da tela. Tributo que some é lido como
- * tributo que não incide.</p>
- *
- * <h2>Os rótulos são nomes de eixo, não texto normativo</h2>
- *
- * <p>{@code rotulo} e {@code familia} são as mesmas palavras que o enum do
- * domínio já usa no próprio Javadoc para dizer o que cada constante é. Nenhuma
- * delas afirma percentual, incidência, base ou hierarquia entre tributos: isso
- * está na carga, e é o que os campos de alíquota trazem.</p>
- *
- * <p>O {@code switch} é exaustivo e sem {@code default}, de propósito. Um tributo
- * novo no domínio quebra a compilação aqui, e quebrar é o certo: ele precisa
- * ganhar rótulo e bloco antes de aparecer numa tela.</p>
- */
+// Representa o que a carga diz sobre um tributo na data do documento; os três tributos aparecem sempre, inclusive os sem alíquota.
 public record TratamentoDeTributo(
         Tributo tributo,
         String rotulo,
         String familia,
         LeituraDoCatalogo<AliquotaDoCatalogo> aliquotas) {
 
+    // Valida que o tratamento tenha tributo, rótulo, bloco e leitura do catálogo.
     public TratamentoDeTributo {
         if (tributo == null) {
             throw new ConferenciaInvalida("O tratamento precisa dizer de que tributo ele é.");
@@ -41,6 +25,7 @@ public record TratamentoDeTributo(
         }
     }
 
+    // Método estático que cria o tratamento do tributo com o rótulo e o bloco correspondentes.
     public static TratamentoDeTributo de(
             Tributo tributo, LeituraDoCatalogo<AliquotaDoCatalogo> aliquotas) {
 
@@ -50,6 +35,7 @@ public record TratamentoDeTributo(
         return new TratamentoDeTributo(tributo, rotuloDe(tributo), familiaDe(tributo), aliquotas);
     }
 
+    // Método auxiliar que retorna o nome do tributo exibido na tela.
     private static String rotuloDe(Tributo tributo) {
         return switch (tributo) {
             case IBS_UF -> "IBS - parcela estadual";
@@ -58,6 +44,7 @@ public record TratamentoDeTributo(
         };
     }
 
+    // Método auxiliar que retorna o bloco, IBS ou CBS, a que o tributo pertence.
     private static String familiaDe(Tributo tributo) {
         return switch (tributo) {
             case IBS_UF, IBS_MUN -> "IBS";

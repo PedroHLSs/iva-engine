@@ -2,55 +2,22 @@ package br.edu.tcc.auditoria.dominio;
 
 import br.edu.tcc.auditoria.dominio.excecao.SeveridadeInvalida;
 
-/**
- * Gravidade atribuída a um {@link Achado}, para ordenar o relatório.
- *
- * <p>O critério de separação é o efeito da incoerência sobre o documento, não a
- * consequência jurídica dela: o sistema aponta, não aconselha. As constantes
- * estão declaradas da mais grave para a menos grave.</p>
- */
+// Enum com a gravidade de um apontamento, da mais grave para a menos grave. Mede o efeito na nota, não a consequência jurídica.
 public enum Severidade {
 
-    /**
-     * O grupo de IBS/CBS do item ficou ininterpretável: campo estruturalmente
-     * necessário ausente, ou código que não existe em nenhuma tabela
-     * importada. Não há como afirmar sequer qual tratamento foi pretendido.
-     */
+    // O grupo de IBS/CBS do item não dá para interpretar: falta campo necessário ou o código não existe nas tabelas.
     CRITICA,
 
-    /**
-     * Incoerência que afeta valor declarado — base, alíquota ou valor de
-     * tributo que não fecham entre si ou não fecham com a tabela de
-     * referência.
-     */
+    // Problema que mexe com valor: base, alíquota ou valor do tributo que não batem.
     GRAVE,
 
-    /**
-     * Incoerência entre campos sem efeito sobre valor declarado, como
-     * combinação de códigos que a tabela de referência não admite mas que não
-     * altera montante.
-     */
+    // Problema entre campos que não muda valor, como combinação de códigos que a tabela não aceita.
     MODERADA,
 
-    /**
-     * Observação registrada sem afirmação de erro: dado incomum, campo
-     * preenchido de forma redundante, situação que merece leitura humana.
-     */
+    // Observação sem afirmar erro: situação que merece o olhar de uma pessoa.
     INFORMATIVA;
 
-    /**
-     * Indica se esta severidade é mais grave que a outra.
-     *
-     * <p>Apoia-se na ordem de declaração das constantes, da mais grave para a
-     * menos grave.</p>
-     *
-     * <p>Ainda não é consumido por nenhuma regra nem pela montagem do papel de
-     * trabalho, que hoje ordena por outros critérios. Existe para que a
-     * ordenação por gravidade não seja reescrita à mão em cada ponto que
-     * precisar dela.</p>
-     *
-     * @throws SeveridadeInvalida se {@code outra} for nula
-     */
+    // Indica se esta gravidade é maior que a outra, pela ordem em que estão declaradas. Ainda não é usado em produção.
     public boolean maisGraveQue(Severidade outra) {
         if (outra == null) {
             throw new SeveridadeInvalida(

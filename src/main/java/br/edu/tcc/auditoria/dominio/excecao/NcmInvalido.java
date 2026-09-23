@@ -1,8 +1,8 @@
 package br.edu.tcc.auditoria.dominio.excecao;
 
-/** Sinaliza tentativa de construir um NCM fora do formato exigido. */
 public class NcmInvalido extends ExcecaoDeDominio {
 
+    // Construtor que recebe a mensagem de erro e chama RuntimeException com essa mensagem.
     public NcmInvalido(String mensagem) {
         super(mensagem);
     }

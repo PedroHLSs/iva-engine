@@ -11,27 +11,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
-/**
- * O que o catálogo diz sobre um código de classificação tributária numa dada
- * vigência.
- *
- * <p>Nenhum código, CST, dispositivo ou percentual está escrito aqui: todos
- * chegam por importação. Este tipo apenas dá forma ao que foi importado, para
- * que as regras consigam consultá-lo.</p>
- *
- * <p>{@code cstsCompativeis} pode vir vazio, e o construtor aceita. Afirmar que
- * toda classificação tem ao menos um CST compatível seria afirmação sobre a
- * norma, e o código não a faz — cabe às regras decidirem o que fazer com um
- * conjunto vazio.</p>
- *
- * @param codigo                          o {@code cClassTrib} a que este registro se refere
- * @param cstsCompativeis                 CSTs que o catálogo admite junto deste código
- * @param dispositivoLegal                dispositivo citado pela fonte para este código
- * @param indicadorDeBeneficio            se o catálogo marca este código como benefício
- * @param percentualReducao               redução declarada, quando o catálogo traz uma
- * @param camposObrigatoriosCondicionados nomes dos campos que passam a ser exigidos neste código
- * @param procedencia                     vigência e fonte
- */
+// Representa o que o catálogo diz sobre um cClassTrib numa vigência; todo o conteúdo chega por importação, e a lista de CSTs compatíveis pode vir vazia.
 public record ClassificacaoTributaria(
         CodigoClassificacaoTributaria codigo,
         Set<CodigoCst> cstsCompativeis,
@@ -41,6 +21,7 @@ public record ClassificacaoTributaria(
         List<String> camposObrigatoriosCondicionados,
         ProcedenciaNormativa procedencia) implements RegistroNormativo {
 
+    // Valida a classificação: exige código, procedência e dispositivo, e recusa redução nula, que é diferente de redução zero.
     public ClassificacaoTributaria {
         if (codigo == null) {
             throw new RegistroNormativoInvalido("A classificação tributária precisa de código.");
@@ -88,12 +69,13 @@ public record ClassificacaoTributaria(
         camposObrigatoriosCondicionados = List.copyOf(camposObrigatoriosCondicionados);
     }
 
+    // Retorna a chave da série de vigência: o próprio código.
     @Override
     public String chaveDeVigencia() {
         return codigo.valor();
     }
 
-    /** Indica se o catálogo admite este CST junto deste código, na vigência deste registro. */
+    // Indica se o catálogo admite este CST junto deste código, na vigência deste registro.
     public boolean admiteCst(CodigoCst cst) {
         return cstsCompativeis.contains(cst);
     }

@@ -4,28 +4,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 
-/**
- * A execução completa: identificação da rodada, os três desfechos, e o que cada
- * regra produziu.
- *
- * <h2>Os três desfechos, sem colapso e sem subtração do consumidor</h2>
- *
- * <p>É a propriedade central desta etapa. {@code ACHADO} e {@code NAO_AVALIADO}
- * são campos próprios, escritos sempre — inclusive em zero —, e o
- * {@code NAO_AVALIADO} vem acompanhado dos motivos agrupados, porque a contagem
- * sozinha não diz se faltou campo no documento, tabela no catálogo ou cobertura na
- * carga (D004). {@code CONFORME} é derivado, e diz que é: ver
- * {@link ContagemDerivada}.</p>
- *
- * <p>Nenhum dos três se deduz dos outros dois. Quem lê não precisa saber que "o
- * que não é achado nem não avaliado está conforme" — que é exatamente a
- * equivalência falsa que o sistema inteiro existe para não fazer.</p>
- *
- * @param itensComAvaliacaoNaoConcluida quantos itens distintos tiveram ao menos
- *                                      uma regra que não concluiu; é menor que a
- *                                      soma de {@code naoAvaliado} sempre que
- *                                      mais de uma regra desistiu do mesmo item
- */
+// Representa uma execução completa: identificação, os três resultados e o que cada regra produziu. ACHADO e NAO_AVALIADO vêm sempre, até em zero, e CONFORME é calculado, com a conta ao lado, para ninguém ter de deduzir um resultado dos outros dois.
 public record RespostaDaExecucao(
         String id,
         Instant dataHora,
@@ -39,6 +18,7 @@ public record RespostaDaExecucao(
         List<PorRegra> porRegra,
         int itensComAvaliacaoNaoConcluida) {
 
+    // Valida a execução: exige identificador, data e hora, resultados, uma linha por regra e contagem por gravidade, e confere que a soma das regras bate com o total.
     public RespostaDaExecucao {
         if (id == null || dataHora == null) {
             throw new RespostaInvalida("A execução precisa de identificador e data e hora.");
@@ -77,14 +57,7 @@ public record RespostaDaExecucao(
         porRegra = List.copyOf(porRegra);
     }
 
-    /**
-     * Os três desfechos da rodada inteira.
-     *
-     * @param avaliacoesProduzidas quantas avaliações o motor produziu
-     * @param comoFoiObtido        como {@code avaliacoesProduzidas} foi calculado,
-     *                             porque o número não está gravado em coluna
-     *                             nenhuma e um total sem procedência não se confere
-     */
+    // Representa os três resultados da execução inteira, com o total de avaliações e como ele foi calculado.
     public record Desfechos(
             long avaliacoesProduzidas,
             String comoFoiObtido,
@@ -92,6 +65,7 @@ public record RespostaDaExecucao(
             int naoAvaliado,
             ContagemDerivada conforme) {
 
+        // Valida que haja a explicação do total e o conforme, e que nenhuma contagem seja negativa.
         public Desfechos {
             if (comoFoiObtido == null || comoFoiObtido.isBlank()) {
                 throw new RespostaInvalida(
@@ -110,17 +84,7 @@ public record RespostaDaExecucao(
         }
     }
 
-    /**
-     * O que uma regra produziu nesta execução.
-     *
-     * <p>Toda regra aplicada tem linha, inclusive a que não apontou nada e a que
-     * concluiu tudo — com {@code achado} e {@code naoAvaliado} em zero e
-     * {@code motivosDoNaoAvaliado} vazio, escritos.</p>
-     *
-     * <p>{@code regraNome} e {@code motivoDoNomeDaRegraAusente} foram acrescentados
-     * depois da Etapa 11, para a interface não escrever só o código: ver
-     * {@link NomeDaRegra}.</p>
-     */
+    // Representa o que uma regra produziu na execução. Toda regra aplicada tem linha, até a que não apontou nada.
     public record PorRegra(
             String regraId,
             String regraNome,
@@ -130,6 +94,7 @@ public record RespostaDaExecucao(
             ContagemDerivada conforme,
             List<MotivoDoNaoAvaliado> motivosDoNaoAvaliado) {
 
+        // Valida a linha: exige regra, nome ou motivo, conforme e lista de motivos, e confere que os motivos somam o total de não avaliadas.
         public PorRegra {
             if (regraId == null || regraId.isBlank()) {
                 throw new RespostaInvalida("A linha por regra precisa do identificador da regra.");
@@ -162,15 +127,10 @@ public record RespostaDaExecucao(
         }
     }
 
-    /**
-     * Um motivo de não conclusão, com quantas vezes apareceu.
-     *
-     * <p>O texto é o que a própria regra escreveu. O agrupamento vem do montador
-     * do papel de trabalho, e não de uma segunda implementação aqui: a API e a
-     * planilha da mesma execução contam a mesma coisa por construção.</p>
-     */
+    // Representa um motivo de não avaliação e quantas vezes apareceu. O agrupamento é o mesmo do papel de trabalho, para a API e a planilha contarem igual.
     public record MotivoDoNaoAvaliado(String motivo, int quantidade) {
 
+        // Valida que haja o texto do motivo e quantidade de pelo menos 1.
         public MotivoDoNaoAvaliado {
             if (motivo == null || motivo.isBlank()) {
                 throw new RespostaInvalida("O motivo agrupado precisa do texto do motivo.");

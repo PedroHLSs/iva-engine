@@ -49,51 +49,23 @@ import org.springframework.core.env.Environment;
 import java.math.BigDecimal;
 import java.time.Clock;
 
-/**
- * Montagem dos objetos das camadas de aplicação e domínio.
- *
- * <p>Nenhuma classe de {@code aplicacao} ou {@code dominio} tem anotação de
- * Spring, e nenhuma vai ter (D001). A ligação entre elas é feita aqui, à mão. O
- * arquivo é a fotografia de quem depende de quem — que é justamente o que a
- * injeção por anotação deixa implícito.</p>
- */
+// Classe de configuração do Spring que monta à mão os objetos de aplicacao e dominio, que não têm anotação nenhuma. O arquivo mostra quem depende de quem.
 @Configuration
 public class ConfiguracaoDaAuditoria {
 
-    /**
-     * Nome da propriedade que carrega o sal de pseudonimização.
-     *
-     * <p>Repetido aqui porque a constante equivalente é interna ao pacote
-     * {@code infraestrutura.xml}. Serve para que o valor também possa vir de
-     * {@code application.properties} ou de argumento de linha de comando, além
-     * da propriedade de sistema e da variável de ambiente que
-     * {@link SalDeInstalacao} já lê sozinho.</p>
-     */
+    // Nome da propriedade do sal; repetido aqui para o sal também poder vir do application.properties ou da linha de comando.
     static final String PROPRIEDADE_DO_SAL = "auditoria.pseudonimizacao.sal";
 
-    /** Nome da propriedade que carrega a tolerância de valor da regra R05. */
+    // Nome da propriedade da tolerância de valor da regra R05.
     static final String PROPRIEDADE_DA_TOLERANCIA = "auditoria.tolerancia-de-valor";
 
+    // Relógio em UTC usado para registrar data e hora.
     @Bean
     Clock relogio() {
         return Clock.systemUTC();
     }
 
-    /**
-     * Sal de pseudonimização, resolvido em cascata.
-     *
-     * <p><strong>Continua sem sal fixo em código, e não pode ter.</strong> Sal
-     * conhecido torna o pseudônimo reversível por força bruta — são poucos bilhões
-     * de CNPJ possíveis. O que a Etapa 10 acrescentou não é um padrão em código:
-     * é um sal sorteado de 256 bits na primeira subida, gravado fora do
-     * repositório, tão secreto quanto um escolhido à mão. Ver
-     * {@link ResolvedorDeSal}.</p>
-     *
-     * <p>A precedência entre a propriedade e a variável de ambiente é a mesma que
-     * a Etapa 4 já usava, de propósito: quem instalou antes continua com o mesmo
-     * sal, e ninguém é surpreendido por uma troca que o guarda de subida
-     * recusaria.</p>
-     */
+    // Resolve o sal em cascata: propriedade, variável de ambiente, arquivo local e, por último, um sal sorteado e gravado fora do repositório. Nunca há sal fixo no código, porque sal conhecido deixaria descobrir o CNPJ.
     @Bean
     SalResolvido salResolvido(Environment ambiente) {
         return new ResolvedorDeSal(ArquivoDeSalLocal.doSistemaOperacional())
@@ -102,28 +74,13 @@ public class ConfiguracaoDaAuditoria {
                         System.getenv(ResolvedorDeSal.VARIAVEL_DE_AMBIENTE));
     }
 
-    /**
-     * O sal em si, para quem só precisa dele.
-     *
-     * <p>{@code Pseudonimizador} e {@code PseudonimizadorDeChaveComSal} não têm
-     * por que saber de onde o sal veio. A procedência interessa ao guarda de
-     * subida e ao diagnóstico, que recebem {@link SalResolvido}.</p>
-     */
+    // Entrega só o sal, para quem não precisa saber de onde ele veio.
     @Bean
     SalDeInstalacao salDeInstalacao(SalResolvido resolvido) {
         return resolvido.sal();
     }
 
-    /**
-     * Tolerância usada pela regra que confere valor de tributo contra base e
-     * alíquota.
-     *
-     * <p><strong>Também sem valor padrão.</strong> Tolerância não é conteúdo
-     * normativo — é uma escolha de quem audita sobre quanta diferença de
-     * arredondamento não merece apontamento. Escolher por conta própria seria
-     * decidir, em nome do usuário, quantos centavos de divergência ficam
-     * invisíveis no relatório. Para exigir igualdade exata, configure zero.</p>
-     */
+    // Lê a tolerância de valor da regra R05. Não tem valor padrão: quanta diferença vira apontamento é escolha de quem audita, e zero exige igualdade exata.
     @Bean
     ToleranciaDeValor toleranciaDeValor(Environment ambiente) {
         String configurada = ambiente.getProperty(PROPRIEDADE_DA_TOLERANCIA);
@@ -145,43 +102,48 @@ public class ConfiguracaoDaAuditoria {
         }
     }
 
+    // Cria o pseudonimizador com o sal da instalação.
     @Bean
     Pseudonimizador pseudonimizador(SalDeInstalacao sal) {
         return new Pseudonimizador(sal);
     }
 
+    // Cria o leitor de XML de documento fiscal.
     @Bean
     LeitorDocumentoFiscal leitorDocumentoFiscal() {
         return new LeitorDocumentoFiscal();
     }
 
+    // Cria o normalizador, que transforma o XML lido em Documento com os participantes pseudonimizados.
     @Bean
     NormalizadorDocumento normalizadorDocumento(Pseudonimizador pseudonimizador) {
         return new NormalizadorDocumento(pseudonimizador);
     }
 
+    // Cria o registro, em memória, dos arquivos que não puderam ser lidos.
     @Bean
     FalhasDeLeituraEmMemoria falhasDeLeitura() {
         return new FalhasDeLeituraEmMemoria();
     }
 
+    // Cria o leitor de lote usado pela linha de comando.
     @Bean
     LeitorLote leitorLote(
             LeitorDocumentoFiscal leitor,
             NormalizadorDocumento normalizador,
             FalhasDeLeituraEmMemoria falhas) {
-        // A CLI nao grava item_da_execucao, entao nao ha linha onde a descricao
-        // caberia. Guarda-la em memoria aqui seria acumular pelo tempo do
-        // processo um texto que ninguem le. Ver RegistroDeDescricoesDeProduto.
+        // A linha de comando não grava a descrição do produto, então ela é descartada em vez de ficar acumulada na memória.
         return new LeitorLote(
                 leitor, normalizador, falhas, RegistroDeDescricoesDeProduto.DESCARTA);
     }
 
+    // Cria o motor que aplica as regras.
     @Bean
     MotorAuditoria motorAuditoria() {
         return new MotorAuditoria();
     }
 
+    // Cria o serviço de auditoria usado pelo comando auditar.
     @Bean
     ServicoDeAuditoria servicoDeAuditoria(
             FonteDeLoteDeDocumentos fonte,
@@ -193,20 +155,7 @@ public class ConfiguracaoDaAuditoria {
         return new ServicoDeAuditoria(fonte, provedorDeCatalogo, repositorio, motor, tolerancia, relogio);
     }
 
-    /**
-     * Analisar é auditar mais duas coisas.
-     *
-     * <p><strong>Emenda da Etapa 11 a este arquivo, que é da Etapa 5.</strong> O
-     * {@code @Bean} acima continua idêntico e continua servindo o comando
-     * {@code auditar}: nada da CLI mudou. Este aqui é outro ponto de entrada,
-     * para a análise enviada pela web, e reusa o mesmo pipeline — ele não
-     * constrói leitor, normalizador, motor nem repositório próprios.</p>
-     *
-     * <p>Repare que ele <em>não</em> recebe {@code FonteDeLoteDeDocumentos}, e
-     * sim uma fábrica: cada análise precisa da própria, para que os arquivos
-     * ilegíveis de um lote não apareçam no resultado do seguinte. Ver
-     * {@code LeituraDeLote}.</p>
-     */
+    // Cria o serviço de análise da web, que usa o mesmo caminho do auditar e recebe uma fábrica de leitura, para os ilegíveis de uma análise não aparecerem na próxima. Acrescentado na Etapa 11, sem mudar o bean do auditar.
     @Bean
     ServicoDeAnalise servicoDeAnalise(
             FabricaDeLeituraDeLote leituras,
@@ -220,13 +169,7 @@ public class ConfiguracaoDaAuditoria {
                 leituras, provedorDeCatalogo, repositorio, motor, tolerancia, relogio, acervo);
     }
 
-    /**
-     * Reconstrói os quatro estados a partir do que foi gravado.
-     *
-     * <p>Acrescentado na Etapa 11. Não roda o motor de novo: lê apontamento,
-     * pendência e a lista de regras aplicadas, e deriva o conforme por
-     * subtração sobre conjuntos integralmente gravados.</p>
-     */
+    // Cria o montador da conferência, que refaz os quatro estados a partir do que foi gravado, sem rodar o motor de novo. Acrescentado na Etapa 11.
     @Bean
     MontadorDaConferencia montadorDaConferencia(
             ConsultaDeExecucoes execucoes,
@@ -240,30 +183,28 @@ public class ConfiguracaoDaAuditoria {
                 execucoes, itens, achados, naoAvaliadas, acervo, documentos, catalogos);
     }
 
-    /**
-     * A consulta da base tributária carregada, resolvida numa data explícita.
-     *
-     * <p>Acrescentado na Etapa 11. É o caso de uso separado que a D003 admitiu:
-     * a data vem de quem pergunta, e nunca de dentro.</p>
-     */
+    // Cria a consulta da base tributária, sempre numa data informada por quem pergunta. Acrescentado na Etapa 11.
     @Bean
     ConsultaDaBaseTributaria consultaDaBaseTributaria(
             RepositorioDeCargaDeCatalogo cargas, ProvedorDeCatalogoPorVersao catalogos) {
         return new ConsultaDaBaseTributaria(cargas, catalogos);
     }
 
+    // Cria o serviço de importação de catálogo.
     @Bean
     ServicoDeImportacaoDeCatalogo servicoDeImportacaoDeCatalogo(
             RepositorioDeCargaDeCatalogo repositorio) {
         return new ServicoDeImportacaoDeCatalogo(repositorio);
     }
 
+    // Cria o serviço de tratativa de achados.
     @Bean
     ServicoDeTratativa servicoDeTratativa(
             ConsultaDeAchados consulta, RepositorioTratativa repositorio, Clock relogio) {
         return new ServicoDeTratativa(consulta, repositorio, relogio);
     }
 
+    // Cria o montador do papel de trabalho.
     @Bean
     MontadorDePapelDeTrabalho montadorDePapelDeTrabalho(
             ConsultaDeAchadosDaExecucao achados,
@@ -273,6 +214,7 @@ public class ConfiguracaoDaAuditoria {
         return new MontadorDePapelDeTrabalho(achados, naoAvaliadas, documentos, pseudonimizador);
     }
 
+    // Cria o serviço de exportação da planilha.
     @Bean
     ServicoDeExportacao servicoDeExportacao(
             ConsultaDeExecucoes execucoes,
@@ -281,18 +223,13 @@ public class ConfiguracaoDaAuditoria {
         return new ServicoDeExportacao(execucoes, montador, exportador);
     }
 
+    // Cria o comparador entre o gabarito e as avaliações do motor.
     @Bean
     ComparadorDeGabarito comparadorDeGabarito() {
         return new ComparadorDeGabarito();
     }
 
-    /**
-     * Harness de avaliação de acurácia.
-     *
-     * <p>Recebe os mesmos insumos de {@link #servicoDeAuditoria} menos o
-     * repositório, e é essa ausência que o define: a medição roda o motor e não
-     * grava nada. Ver D008.</p>
-     */
+    // Cria o serviço de avaliação de acurácia. Recebe o mesmo que o serviço de auditoria, menos o repositório: a medição roda o motor e não grava nada.
     @Bean
     ServicoDeAvaliacaoDeAcuracia servicoDeAvaliacaoDeAcuracia(
             FonteDeLoteDeDocumentos fonte,

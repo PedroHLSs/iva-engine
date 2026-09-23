@@ -10,16 +10,18 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-/** Lê as avaliações que não concluíram numa execução. */
+// Classe que lê do banco as avaliações que não concluíram numa execução.
 @Component
 class ConsultaDeNaoAvaliadasNoBanco implements ConsultaDeNaoAvaliadas {
 
     private final AvaliacaoNaoConcluidaJpa naoConcluidas;
 
+    // Construtor que recebe o repositório das avaliações não concluídas.
     ConsultaDeNaoAvaliadasNoBanco(AvaliacaoNaoConcluidaJpa naoConcluidas) {
         this.naoConcluidas = naoConcluidas;
     }
 
+    // Busca as não concluídas da execução, ordenadas por chave, item e regra.
     @Override
     @Transactional(readOnly = true)
     public List<NaoAvaliadaRegistrada> daExecucao(UUID execucaoId) {
@@ -32,6 +34,7 @@ class ConsultaDeNaoAvaliadasNoBanco implements ConsultaDeNaoAvaliadas {
                 .toList();
     }
 
+    // Método auxiliar que converte a linha gravada no modelo da aplicação.
     private static NaoAvaliadaRegistrada paraDominio(AvaliacaoNaoConcluidaEntidade entidade) {
         return new NaoAvaliadaRegistrada(
                 new ChaveAcesso(entidade.chaveAcesso()),

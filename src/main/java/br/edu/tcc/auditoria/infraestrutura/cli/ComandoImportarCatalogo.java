@@ -15,14 +15,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-/**
- * Comando {@code importar-catalogo}: carrega as tabelas normativas de arquivos
- * CSV fornecidos pelo usuário.
- *
- * <p>É o único caminho pelo qual conteúdo normativo entra no sistema. Nenhuma
- * migration insere alíquota, código ou vigência; o repositório não guarda nada
- * disso em código.</p>
- */
+// Classe do comando importar-catalogo, que carrega as tabelas normativas dos CSV fornecidos pelo usuário. É o único caminho pelo qual conteúdo normativo entra no sistema.
 @Component
 class ComandoImportarCatalogo implements Comando {
 
@@ -37,6 +30,7 @@ class ComandoImportarCatalogo implements Comando {
     private final Saida saida;
     private final Clock relogio;
 
+    // Construtor que recebe o serviço de importação, a saída e o relógio.
     ComandoImportarCatalogo(ServicoDeImportacaoDeCatalogo servico, Saida saida, Clock relogio) {
         this.servico = servico;
         this.saida = saida;
@@ -66,6 +60,7 @@ class ComandoImportarCatalogo implements Comando {
                 """.formatted(NOME, LeitorDeCatalogoEmCsv.arquivosEsperados());
     }
 
+    // Lê os CSV da pasta, grava a carga e mostra quantos registros entraram.
     @Override
     public void executar(Argumentos argumentos) {
         argumentos.exigirSomente(List.of(OPCAO_DIRETORIO, OPCAO_VERSAO));
@@ -91,6 +86,7 @@ class ComandoImportarCatalogo implements Comando {
         saida.linha("  total: %d registros", resumo.total());
     }
 
+    // Método auxiliar que cria o nome da versão pela data e hora, quando --versao não é informado.
     private String versaoAutomatica() {
         return "carga-" + FORMATO_DA_VERSAO_AUTOMATICA.format(relogio.instant());
     }

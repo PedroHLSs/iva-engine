@@ -2,19 +2,10 @@ package br.edu.tcc.auditoria.aplicacao.conferencia;
 
 import br.edu.tcc.auditoria.dominio.catalogo.RegistroNcm;
 
-/**
- * A descrição que o catálogo dá ao NCM declarado, na data do documento.
- *
- * <p>Existe para ficar ao lado da descrição do produto na nota, e a comparação
- * entre as duas é o motivo de a tela mostrar as duas. Quando o que o emitente
- * escreveu e o que a tabela descreve não se parecem, o sinal é de classificação
- * errada — informação que nenhuma das duas sozinha dá, e que não é apontamento de
- * regra nenhuma: é leitura de quem responde pelo fiscal.</p>
- *
- * <p>O texto é o da carga, repetido sem edição.</p>
- */
+// Representa a descrição que o catálogo dá ao NCM declarado, para ficar ao lado da descrição do produto na nota.
 public record DescricaoDeNcm(String ncm, String descricao, ReferenciaNormativa referencia) {
 
+    // Valida que a descrição tenha NCM, texto e referência normativa.
     public DescricaoDeNcm {
         if (ncm == null || ncm.isBlank()) {
             throw new ConferenciaInvalida("A descrição precisa dizer de qual NCM ela é.");
@@ -29,6 +20,7 @@ public record DescricaoDeNcm(String ncm, String descricao, ReferenciaNormativa r
         }
     }
 
+    // Método estático que cria a descrição de exibição a partir do registro de NCM do catálogo.
     public static DescricaoDeNcm de(RegistroNcm registro) {
         if (registro == null) {
             throw new ConferenciaInvalida("Não há registro de NCM a apresentar.");

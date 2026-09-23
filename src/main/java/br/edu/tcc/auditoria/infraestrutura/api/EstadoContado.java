@@ -6,19 +6,10 @@ import br.edu.tcc.auditoria.aplicacao.conferencia.EstadoDeConferencia;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Um dos quatro estados e quantos há dele.
- *
- * <p>Vai como lista, e não como mapa de código para número, por dois motivos. O
- * primeiro é a ordem: a lista sai na precedência declarada e não depende de o
- * cliente reordenar chaves. O segundo é que <strong>o rótulo e a explicação
- * viajam junto do número</strong> — um código como
- * {@code NAO_FOI_POSSIVEL_CONCLUIR} solto numa resposta convida quem consome a
- * inventar a frase que vai na tela, e a frase é conteúdo desta etapa, não
- * enfeite.</p>
- */
+// Representa um dos quatro estados com a quantidade dele. O rótulo e a explicação vão junto do número, para a tela não ter de inventar a frase.
 public record EstadoContado(String estado, String rotulo, String explicacao, int quantidade) {
 
+    // Valida que o estado tenha código, rótulo e explicação, e que a quantidade não seja negativa.
     public EstadoContado {
         if (estado == null || estado.isBlank()) {
             throw new RespostaInvalida("A contagem precisa dizer de que estado ela é.");
@@ -33,7 +24,7 @@ public record EstadoContado(String estado, String rotulo, String explicacao, int
         }
     }
 
-    /** Os quatro, sempre os quatro, na ordem de precedência e inclusive os zeros. */
+    // Método estático que devolve os quatro estados, sempre os quatro, na ordem de precedência e com os zeros.
     static List<EstadoContado> de(ContagemDeEstados contagem) {
         List<EstadoContado> contados = new ArrayList<>();
         for (EstadoDeConferencia estado : EstadoDeConferencia.values()) {

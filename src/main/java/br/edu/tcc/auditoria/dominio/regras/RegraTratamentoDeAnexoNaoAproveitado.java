@@ -16,39 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * R04 — quando o catálogo vincula o NCM do item a um anexo de tratamento
- * diferenciado, o item foi mesmo assim emitido com {@code cClassTrib} de
- * tributação integral?
- *
- * <p>É o espelho de {@link RegraBeneficioExigeNcmEmAnexo}: aquela cuida do
- * benefício invocado sem respaldo, esta do respaldo existente e não invocado —
- * direito possivelmente não aproveitado.</p>
- *
- * <p>A severidade é informativa, e isso é deliberado. O sistema aponta, não
- * aconselha: pode haver razão legítima para o contribuinte não ter aplicado o
- * tratamento, e afirmar erro aqui seria ultrapassar o que a ferramenta se propõe
- * a fazer. O apontamento diz que a situação merece leitura humana e nomeia os
- * anexos envolvidos, com o rótulo de tratamento que a fonte importada lhes deu.</p>
- *
- * <h2>O que conta como tributação integral</h2>
- *
- * <p>Um {@code cClassTrib} que o catálogo não marca como benefício e para o qual
- * não declara percentual de redução. Os dois dados vêm da linha importada; a
- * regra não decide por conta própria que código é integral e que código não é.
- * Código com redução declarada, ainda que não marcado como benefício, não é
- * integral — algum tratamento diferenciado está sendo aplicado, e não há direito
- * ocioso a relatar.</p>
- *
- * <h2>O que conta como anexo de tratamento diferenciado</h2>
- *
- * <p>Todo vínculo presente na tabela de itens de anexo. O rótulo
- * {@code tipoDeTratamento} é texto livre da fonte importada, e o domínio não
- * sabe quais rótulos significam redução, isenção ou qualquer outra coisa —
- * decidir isso em código seria afirmar sobre a norma. A tabela de anexos é, por
- * construção, a relação dos tratamentos diferenciados que o operador carregou; o
- * rótulo vai para a evidência, onde uma pessoa o lê.</p>
- */
+// Regra R04: o NCM está em algum anexo, mas a nota foi emitida com cClassTrib de tributação integral (sem benefício)? Gravidade: informativa, porque o sistema só aponta e não aconselha; uma pessoa precisa olhar.
 public final class RegraTratamentoDeAnexoNaoAproveitado extends RegraDeItem {
 
     public static final String ID = "R04";
@@ -56,6 +24,7 @@ public final class RegraTratamentoDeAnexoNaoAproveitado extends RegraDeItem {
 
     private final ProcedenciaNormativa cobertura;
 
+    // Construtor que recebe o período coberto pela tabela de anexos.
     public RegraTratamentoDeAnexoNaoAproveitado(ProcedenciaNormativa coberturaDaTabelaDeAnexos) {
         this.cobertura = exigirCobertura(coberturaDaTabelaDeAnexos, "itens de anexo");
     }
@@ -75,6 +44,7 @@ public final class RegraTratamentoDeAnexoNaoAproveitado extends RegraDeItem {
         return Severidade.INFORMATIVA;
     }
 
+    // Aplica a regra: se o NCM está em anexo e o cClassTrib é de tributação integral, aponta os anexos encontrados, com o tipo de tratamento que o catálogo informa.
     @Override
     protected Avaliacao avaliarItem(ItemDocumento item, Documento documento, ContextoNormativo contexto) {
         Optional<Ncm> ncm = item.ncm();
@@ -94,8 +64,7 @@ public final class RegraTratamentoDeAnexoNaoAproveitado extends RegraDeItem {
 
         List<ItemAnexo> anexos = AnexosDoItem.ordenados(contexto, ncm.get());
         if (anexos.isEmpty()) {
-            // O catálogo, dentro da cobertura declarada, não vincula este NCM a
-            // anexo nenhum: não há tratamento a aproveitar, e nada a relatar.
+            // O NCM não está em nenhum anexo: não havia benefício a usar, então o item passa na regra.
             return conforme(item, documento);
         }
 
@@ -143,10 +112,7 @@ public final class RegraTratamentoDeAnexoNaoAproveitado extends RegraDeItem {
                                 + "confere, e o catálogo traz apenas o vínculo e o rótulo."));
     }
 
-    /**
-     * Tributação integral segundo o que o catálogo declarou sobre o código: sem
-     * marca de benefício e sem percentual de redução.
-     */
+    // Método auxiliar que diz se o código é de tributação integral: o catálogo não marca como benefício e não informa redução.
     private static boolean ehTributacaoIntegral(ClassificacaoTributaria classificacao) {
         return !classificacao.indicadorDeBeneficio() && classificacao.percentualReducao().isEmpty();
     }

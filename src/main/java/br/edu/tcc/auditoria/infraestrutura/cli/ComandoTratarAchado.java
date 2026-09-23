@@ -10,19 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Comando {@code tratar-achado}: registra a decisão de uma pessoa sobre um
- * apontamento.
- *
- * <p>A justificativa é obrigatória. O comando não tem opção para omiti-la, e o
- * domínio recusaria texto em branco de qualquer forma: apontamento tratado sem
- * razão registrada é apontamento apagado, e o relatório deixaria de dizer por
- * que a incoerência não é mais incoerência.</p>
- *
- * <p>Quem trata informa o identificador que a listagem mostra. A chave da
- * tratativa — resumo do item, regra e versão da regra — é derivada do
- * apontamento, e não digitada.</p>
- */
+// Classe do comando tratar-achado, que registra a decisão de uma pessoa sobre um apontamento, com justificativa obrigatória. A pessoa informa o identificador da listagem; a chave da tratativa sai do próprio apontamento.
 @Component
 class ComandoTratarAchado implements Comando {
 
@@ -35,6 +23,7 @@ class ComandoTratarAchado implements Comando {
     private final ServicoDeTratativa servico;
     private final Saida saida;
 
+    // Construtor que recebe o serviço de tratativa e a saída.
     ComandoTratarAchado(ServicoDeTratativa servico, Saida saida) {
         this.servico = servico;
         this.saida = saida;
@@ -72,6 +61,7 @@ class ComandoTratarAchado implements Comando {
                         DecisaoDeTratativa.REFUTADO);
     }
 
+    // Registra a decisão e a justificativa para o apontamento informado e mostra para que versão da regra ela vale.
     @Override
     public void executar(Argumentos argumentos) {
         argumentos.exigirSomente(List.of(OPCAO_ACHADO, OPCAO_DECISAO, OPCAO_JUSTIFICATIVA));
@@ -88,6 +78,7 @@ class ComandoTratarAchado implements Comando {
                 tratativa.regraId(), tratativa.regraVersao());
     }
 
+    // Método auxiliar que converte o texto na decisão; recusa valor desconhecido.
     private static DecisaoDeTratativa decisao(String informada) {
         return Arrays.stream(DecisaoDeTratativa.values())
                 .filter(decisao -> decisao.name().equalsIgnoreCase(informada))

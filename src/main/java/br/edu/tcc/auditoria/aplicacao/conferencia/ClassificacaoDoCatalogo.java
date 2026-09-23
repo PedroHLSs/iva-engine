@@ -8,21 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * O que a carga diz sobre o {@code cClassTrib} declarado, na data do documento.
- *
- * <p>É a fundamentação da tela de detalhe: dispositivo citado pela fonte, CSTs
- * que aquele código admite, se a carga o marca como benefício, a redução quando
- * há, e os campos que passam a ser exigidos. Todos são conteúdo importado.</p>
- *
- * <h2>Redução ausente não é redução zero</h2>
- *
- * <p>{@code percentualReducao} continua {@link Optional} até a tela, pelo mesmo
- * motivo pelo qual o é no catálogo: uma carga que não declara redução e uma que
- * declara redução de zero afirmam coisas diferentes, e transformar a primeira na
- * segunda aqui seria inventar um percentual — proibido neste projeto mesmo
- * quando o número inventado é zero.</p>
- */
+// Representa o que a carga diz sobre o cClassTrib declarado; redução não declarada fica Optional vazio, nunca zero.
 public record ClassificacaoDoCatalogo(
         String codigo,
         List<String> cstsAdmitidos,
@@ -32,6 +18,7 @@ public record ClassificacaoDoCatalogo(
         List<String> camposObrigatoriosCondicionados,
         ReferenciaNormativa referencia) {
 
+    // Valida a classificação: exige código, dispositivo e referência, e recusa redução nula.
     public ClassificacaoDoCatalogo {
         if (codigo == null || codigo.isBlank()) {
             throw new ConferenciaInvalida("A classificação precisa do código a que se refere.");
@@ -58,14 +45,14 @@ public record ClassificacaoDoCatalogo(
         camposObrigatoriosCondicionados = List.copyOf(camposObrigatoriosCondicionados);
     }
 
+    // Método estático que cria a classificação de exibição a partir do registro do catálogo.
     public static ClassificacaoDoCatalogo de(ClassificacaoTributaria registro) {
         if (registro == null) {
             throw new ConferenciaInvalida("Não há classificação tributária a apresentar.");
         }
         return new ClassificacaoDoCatalogo(
                 registro.codigo().valor(),
-                // O conjunto do catálogo não tem ordem; a tela precisa de uma
-                // estável, ou duas aberturas da mesma nota listariam diferente.
+                // Ordena os CSTs para que duas aberturas da mesma nota listem na mesma ordem.
                 registro.cstsCompativeis().stream()
                         .map(CodigoCst::valor)
                         .sorted(Comparator.naturalOrder())
@@ -77,7 +64,7 @@ public record ClassificacaoDoCatalogo(
                 ReferenciaNormativa.de(registro.procedencia()));
     }
 
-    /** Se a carga admite este CST junto deste código, na vigência apresentada. */
+    // Indica se a carga admite este CST junto deste código, na vigência apresentada.
     public boolean admite(String cst) {
         return cst != null && cstsAdmitidos.contains(cst);
     }

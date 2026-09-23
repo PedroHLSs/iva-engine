@@ -8,20 +8,17 @@ import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Optional;
 
-/**
- * Adaptador em memória do repositório de classificações tributárias.
- *
- * <p>Rejeita na carga duas versões do mesmo código com vigências sobrepostas —
- * a recusa vem de {@code SerieNormativa}, no domínio.</p>
- */
+// Repositório em memória utilizado para buscar as classificações tributárias válidas numa data. Duas versões do mesmo código com datas sobrepostas são recusadas na carga, pelo SerieNormativa do domínio.
 public final class RepositorioClassificacaoTributariaEmMemoria implements RepositorioClassificacaoTributaria {
 
     private final CatalogoEmMemoria<ClassificacaoTributaria> catalogo;
 
+    // Construtor que recebe as classificações e monta o catálogo.
     public RepositorioClassificacaoTributariaEmMemoria(Collection<ClassificacaoTributaria> registros) {
         this.catalogo = new CatalogoEmMemoria<>(registros);
     }
 
+    // Busca a classificação do código válida na data; código nulo devolve vazio.
     @Override
     public Optional<ClassificacaoTributaria> buscarVigenteEm(CodigoClassificacaoTributaria codigo, LocalDate data) {
         if (codigo == null) {
@@ -30,7 +27,7 @@ public final class RepositorioClassificacaoTributariaEmMemoria implements Reposi
         return catalogo.vigenteEm(codigo.valor(), data);
     }
 
-    /** Quantidade de códigos distintos carregados, independentemente de vigência. */
+    // Retorna quantos códigos diferentes foram carregados, sem olhar a data.
     public int quantidadeDeCodigos() {
         return catalogo.quantidadeDeSeries();
     }

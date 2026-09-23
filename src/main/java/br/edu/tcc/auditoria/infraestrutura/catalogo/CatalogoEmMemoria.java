@@ -13,23 +13,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Armazenamento em memória de um tipo de registro do catálogo, agrupado em
- * séries por chave de vigência.
- *
- * <p>A validação de sobreposição não está aqui: ela acontece dentro de
- * {@link SerieNormativa}, no domínio. Esta classe só agrupa e delega — quando o
- * armazenamento virar banco, a invariante continua onde está.</p>
- *
- * <p>A carga é feita inteira no construtor, e falha inteira se qualquer série
- * for contraditória. Catálogo meio carregado responderia vazio para o que
- * faltou, e vazio significa "o catálogo nada diz" — o relatório sairia com
- * "não avaliado" onde na verdade houve erro de carga.</p>
- */
+// Classe que guarda na memória um tipo de registro do catálogo, agrupado em séries pela chave de vigência. A checagem de datas sobrepostas fica no SerieNormativa do domínio, e a carga falha inteira se alguma série for contraditória.
 final class CatalogoEmMemoria<T extends RegistroNormativo> {
 
     private final Map<String, SerieNormativa<T>> seriesPorChave;
 
+    // Construtor que recebe os registros, recusa coleção ou registro nulo e monta uma série por chave.
     CatalogoEmMemoria(Collection<T> registros) {
         if (registros == null) {
             throw new CatalogoInvalido("A carga do catálogo não pode receber coleção nula.");
@@ -48,7 +37,7 @@ final class CatalogoEmMemoria<T extends RegistroNormativo> {
         this.seriesPorChave = Map.copyOf(series);
     }
 
-    /** O registro da chave que valia na data, se algum valia. */
+    // Devolve o registro da chave que valia na data, se algum valia.
     Optional<T> vigenteEm(String chave, LocalDate data) {
         if (chave == null || data == null) {
             return Optional.empty();
@@ -60,7 +49,7 @@ final class CatalogoEmMemoria<T extends RegistroNormativo> {
         return serie.vigenteEm(data);
     }
 
-    /** Todos os registros, de todas as chaves, que valiam na data. */
+    // Devolve todos os registros, de todas as chaves, que valiam na data.
     List<T> vigentesEm(LocalDate data) {
         if (data == null) {
             return List.of();
@@ -71,7 +60,7 @@ final class CatalogoEmMemoria<T extends RegistroNormativo> {
                 .toList();
     }
 
-    /** Quantidade de séries carregadas. */
+    // Retorna quantas séries foram carregadas.
     int quantidadeDeSeries() {
         return seriesPorChave.size();
     }

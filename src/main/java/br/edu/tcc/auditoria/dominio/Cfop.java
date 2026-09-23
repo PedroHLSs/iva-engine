@@ -2,17 +2,12 @@ package br.edu.tcc.auditoria.dominio;
 
 import br.edu.tcc.auditoria.dominio.excecao.CfopInvalido;
 
-/**
- * Código Fiscal de Operações e Prestações declarado para um item: 4 dígitos.
- *
- * <p>Valida somente a forma. O domínio não conhece a lista de CFOP existentes
- * nem o que cada um significa; essa tabela é conteúdo normativo e chega por
- * importação.</p>
- */
+// Representa o CFOP do item: 4 dígitos. Só confere o formato; quais CFOP existem não fica no código.
 public record Cfop(String valor) {
 
     private static final int QUANTIDADE_DE_DIGITOS = 4;
 
+    // Valida que o CFOP tenha exatamente 4 dígitos.
     public Cfop {
         if (valor == null) {
             throw new CfopInvalido("O CFOP não pode ser nulo.");

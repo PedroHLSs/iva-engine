@@ -4,35 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-/**
- * Um apontamento como a API o mostra.
- *
- * <h2>{@code resultado} é escrito, não inferido</h2>
- *
- * <p>Toda linha carrega {@code "resultado": "ACHADO"}, e toda linha de
- * {@link NaoAvaliadaExposta} carrega {@code "NAO_AVALIADO"}. A distinção entre os
- * três desfechos fica textual em cada linha, e não posicional: quem consome não
- * precisa saber em qual array olhou para saber o que está lendo, e um recorte
- * copiado de uma resposta continua dizendo o que é.</p>
- *
- * <h2>{@code valorEmRisco} é texto, não número</h2>
- *
- * <p>Porque a escala declarada tem significado: para a auditoria, {@code 0} e
- * {@code 0,00} são registros diferentes do mesmo número (D002), e essa distinção
- * é preservada desde a leitura do XML. Um número JSON sobrevive ao servidor e
- * morre no cliente — {@code JSON.parse} de {@code 0.00} devolve {@code 0} —,
- * então o valor sai como texto, na notação simples, exatamente com as casas que o
- * documento declarou.</p>
- *
- * @param id           identificador da linha gravada, o mesmo que {@code tratar-achado} aceita
- * @param regraNome    a regra por extenso, ou {@code null} com o motivo ao lado; acrescentado
- *                     depois da Etapa 11, para a interface não escrever só o código (ver
- *                     {@link NomeDaRegra})
- * @param resultado    sempre {@code ACHADO}, escrito por extenso
- * @param valorEmRisco a quantia como texto, ou {@code null} com o motivo ao lado
- * @param detectadoEm  quando o apontamento apareceu pela primeira vez
- * @param vistoEm      quando o apontamento foi gerado pela última vez
- */
+// Representa um apontamento como a API mostra. O resultado ACHADO vai escrito em toda linha, e o valor em risco vai como texto, para as casas decimais da nota não se perderem no JSON; sem valor, vem null com o motivo.
 public record AchadoExposto(
         String id,
         DocumentoExposto documento,
@@ -53,6 +25,7 @@ public record AchadoExposto(
         String statusDeTratativa,
         TratativaExposta tratativa) {
 
+    // Valida o apontamento: exige documento, vigência, campos de texto, item, pelo menos uma evidência e o valor em risco ou o motivo de faltar.
     public AchadoExposto {
         if (documento == null || vigenciaAplicada == null) {
             throw new RespostaInvalida(
@@ -88,20 +61,14 @@ public record AchadoExposto(
         evidencias = List.copyOf(evidencias);
     }
 
-    /**
-     * Uma evidência do apontamento.
-     *
-     * <p>{@code valorEncontrado} nulo é campo que o contribuinte não declarou;
-     * {@code valorEsperado} nulo é regra sem valor de referência a opor. São
-     * ausências de natureza diferente, e o que as distingue é a {@code origem},
-     * que diz de onde a evidência veio.</p>
-     */
+    // Representa uma evidência do apontamento. Valor encontrado null é campo que a nota não trouxe; valor esperado null é regra sem valor de referência.
     public record EvidenciaExposta(
             String campoAnalisado,
             String valorEncontrado,
             String valorEsperado,
             OrigemExposta origem) {
 
+        // Valida que a evidência tenha o campo analisado e a origem.
         public EvidenciaExposta {
             if (campoAnalisado == null || campoAnalisado.isBlank()) {
                 throw new RespostaInvalida("A evidência precisa dizer qual campo foi analisado.");
@@ -113,15 +80,7 @@ public record AchadoExposto(
         }
     }
 
-    /**
-     * De onde a evidência veio.
-     *
-     * <p>{@code OrigemEvidencia} é tipo selado com três variantes que carregam
-     * campos diferentes. Aqui elas viram um registro plano com {@code tipo} e os
-     * campos de todas as variantes, os da variante que não se aplica em
-     * {@code null}. É deliberado: preserva a estrutura em vez de achatá-la num
-     * texto único, e mantém a regra de que campo ausente aparece.</p>
-     */
+    // Representa de onde a evidência veio, com o tipo e os campos de todas as origens possíveis; os que não se aplicam vêm null.
     public record OrigemExposta(
             String tipo,
             String localizacao,
@@ -129,6 +88,7 @@ public record AchadoExposto(
             String versaoTabela,
             String descricao) {
 
+        // Valida que a origem tenha o tipo.
         public OrigemExposta {
             if (tipo == null || tipo.isBlank()) {
                 throw new RespostaInvalida("A origem da evidência precisa do tipo.");
@@ -136,18 +96,14 @@ public record AchadoExposto(
         }
     }
 
-    /**
-     * A vigência que sustentou o apontamento.
-     *
-     * <p>{@code fim} nulo é vigência aberta, não vigência desconhecida — e o
-     * motivo ao lado diz isso. É o mesmo tratamento que a planilha dá com
-     * {@code (sem fim declarado)} (D007).</p>
-     */
+    // Representa o período que valia para o apontamento. Fim null quer dizer período ainda aberto, e o motivo ao lado diz isso.
     public record VigenciaExposta(LocalDate inicio, LocalDate fim, String motivoDoFimAusente) {
 
+        // Motivo escrito quando o catálogo não declarou data de fim.
         static final String SEM_FIM_DECLARADO =
                 "vigência aberta: o catálogo não declarou data de fim para este registro";
 
+        // Valida que haja início e que o fim venha ou com data ou com o motivo, nunca os dois.
         public VigenciaExposta {
             if (inicio == null) {
                 throw new RespostaInvalida("A vigência aplicada precisa da data de início.");
@@ -163,34 +119,25 @@ public record AchadoExposto(
             }
         }
 
+        // Método estático que cria um período aberto, sem fim.
         public static VigenciaExposta aberta(LocalDate inicio) {
             return new VigenciaExposta(inicio, null, SEM_FIM_DECLARADO);
         }
 
+        // Método estático que cria um período com início e fim.
         public static VigenciaExposta fechada(LocalDate inicio, LocalDate fim) {
             return new VigenciaExposta(inicio, fim, null);
         }
     }
 
-    /**
-     * A decisão humana sobre o apontamento, quando há.
-     *
-     * <p>{@code justificativa} vem {@code null} por padrão, com o motivo ao lado.
-     * É texto livre digitado por pessoa, sem sanitização, e pode conter CNPJ ou
-     * razão social — o mesmo motivo pelo qual a página de figuras se recusa a ler
-     * a coluna equivalente da planilha. Liga-se em
-     * {@code auditoria.api.expor-justificativa} (D009).</p>
-     *
-     * <p>Apontamento sem tratativa não traz este objeto vazio: traz
-     * {@code "tratativa": null}, e o {@code statusDeTratativa} do achado já diz
-     * {@code ABERTO}.</p>
-     */
+    // Representa a decisão de uma pessoa sobre o apontamento. A justificativa vem null com o motivo, porque é texto livre e pode ter CNPJ ou razão social; só aparece se a instalação ligar auditoria.api.expor-justificativa.
     public record TratativaExposta(
             String decisao,
             Instant registradoEm,
             String justificativa,
             String motivoDaJustificativaOmitida) {
 
+        // Valida que haja decisão e data de registro, e a justificativa ou o motivo de estar omitida, nunca os dois.
         public TratativaExposta {
             if (decisao == null || decisao.isBlank() || registradoEm == null) {
                 throw new RespostaInvalida(
@@ -210,6 +157,7 @@ public record AchadoExposto(
         }
     }
 
+    // Método auxiliar para verificar se um campo de texto obrigatório está vazio e lançar uma exceção.
     private static void exigirTexto(String valor, String nomeDoCampo) {
         if (valor == null || valor.isBlank()) {
             throw new RespostaInvalida(

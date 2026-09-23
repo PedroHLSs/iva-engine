@@ -15,22 +15,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.OptionalInt;
 
-/**
- * Base das regras que julgam um item de cada vez.
- *
- * <p>Não contém regra nenhuma: só remove das implementações a repetição de
- * montar {@link Avaliacao} e {@link Achado} com a mesma identificação. O ganho
- * não é digitação, é uniformidade — a identificação do achado passa a vir sempre
- * de {@link #id()}, {@link #versao()} e {@link #severidade()} da própria regra, e
- * não há como uma implementação declarar uma severidade e emitir achado com
- * outra.</p>
- *
- * <p>{@link #avaliar} é final e faz apenas a checagem de argumentos, delegando a
- * {@link #avaliarItem}. Argumento nulo é defeito de quem chamou, e por isso é
- * exceção — diferente de dado que faltou, que é {@code NAO_AVALIADO}.</p>
- */
+// Classe base das regras que avaliam um item por vez. Ela monta os resultados com o código, a versão e a gravidade da própria regra, para não haver diferença entre o que a regra diz e o que ela registra.
 public abstract class RegraDeItem implements RegraAuditoria {
 
+    // Confere se nada veio nulo e chama avaliarItem. Argumento nulo é erro de quem chamou, diferente de dado que faltou na nota.
     @Override
     public final Avaliacao avaliar(ItemDocumento item, Documento documento, ContextoNormativo contexto) {
         exigirArgumento(item, "item");
@@ -39,22 +27,22 @@ public abstract class RegraDeItem implements RegraAuditoria {
         return avaliarItem(item, documento, contexto);
     }
 
-    /** A pergunta que esta regra faz. Ver o contrato em {@link RegraAuditoria}. */
+    // Cada regra escreve aqui a sua verificação.
     protected abstract Avaliacao avaliarItem(
             ItemDocumento item, Documento documento, ContextoNormativo contexto);
 
-    /** A regra foi aplicada por inteiro e nada encontrou. */
+    // Cria o resultado de quando a regra rodou inteira e não achou problema.
     protected final Avaliacao conforme(ItemDocumento item, Documento documento) {
         return Avaliacao.conforme(id(), versao(), documento.chaveAcesso(), OptionalInt.of(item.numeroItem()));
     }
 
-    /** A regra não teve como julgar. O motivo é obrigatório e vai para o relatório. */
+    // Cria o resultado de quando a regra não conseguiu avaliar; o motivo é obrigatório.
     protected final Avaliacao naoAvaliada(ItemDocumento item, Documento documento, String motivo) {
         return Avaliacao.naoAvaliada(
                 id(), versao(), documento.chaveAcesso(), OptionalInt.of(item.numeroItem()), motivo);
     }
 
-    /** A regra encontrou incoerência. */
+    // Cria o resultado de quando a regra achou problema, com o código, a versão e a gravidade da própria regra.
     protected final Avaliacao comAchado(
             ItemDocumento item,
             Documento documento,
@@ -75,7 +63,7 @@ public abstract class RegraDeItem implements RegraAuditoria {
                 valorEmRisco));
     }
 
-    /** Evidência de um campo lido do próprio documento. */
+    // Cria uma evidência com um valor lido da própria nota.
     protected static Evidencia doDocumento(String campo, ItemDocumento item, String valorEncontrado) {
         return new Evidencia(
                 campo,
@@ -84,12 +72,7 @@ public abstract class RegraDeItem implements RegraAuditoria {
                 new OrigemEvidencia.DoDocumento("item %d".formatted(item.numeroItem())));
     }
 
-    /**
-     * Evidência que opõe o declarado ao que o catálogo trazia.
-     *
-     * @param valorEncontrado o que o documento declarou; vazio quando o campo não veio
-     * @param valorEsperado   o que a tabela indicava; vazio quando não há referência a opor
-     */
+    // Cria uma evidência que mostra, lado a lado, o que a nota trouxe e o que a tabela do catálogo indicava.
     protected static Evidencia daTabela(
             String campo,
             String nomeDaTabela,
@@ -104,12 +87,7 @@ public abstract class RegraDeItem implements RegraAuditoria {
                 new OrigemEvidencia.DeTabelaNormativa(nomeDaTabela, fonteNormativa));
     }
 
-    /**
-     * Cobertura declarada de uma tabela do catálogo, exigida na construção da
-     * regra que precisa dela.
-     *
-     * <p>Ver {@link CoberturaDoCatalogo} para o motivo de a cobertura existir.</p>
-     */
+    // Dá erro na criação da regra se o período coberto pela tabela não for informado.
     protected static ProcedenciaNormativa exigirCobertura(ProcedenciaNormativa cobertura, String tabela) {
         if (cobertura == null) {
             throw new RegraInvalida(
@@ -120,6 +98,7 @@ public abstract class RegraDeItem implements RegraAuditoria {
         return cobertura;
     }
 
+    // Método auxiliar que dá erro se algum argumento vier nulo.
     private void exigirArgumento(Object valor, String nomeDoArgumento) {
         if (valor == null) {
             throw new RegraInvalida(

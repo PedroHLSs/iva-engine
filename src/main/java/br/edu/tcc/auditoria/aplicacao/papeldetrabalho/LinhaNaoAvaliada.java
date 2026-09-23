@@ -1,12 +1,6 @@
 package br.edu.tcc.auditoria.aplicacao.papeldetrabalho;
 
-/**
- * Uma linha da aba de não avaliados: o item que a regra não conseguiu julgar, e
- * por quê.
- *
- * <p>Vale a mesma regra de identificação da aba de achados — pseudônimo da
- * chave, mais a numeração do emitente para localizar a nota.</p>
- */
+// Representa uma linha da aba de não avaliados: o item que a regra não conseguiu julgar e o motivo, com o pseudônimo da chave.
 public record LinhaNaoAvaliada(
         String documentoPseudonimizado,
         String modelo,
@@ -17,6 +11,7 @@ public record LinhaNaoAvaliada(
         String regraVersao,
         String motivo) {
 
+    // Valida que a linha tenha documento, número do item, regra, versão e motivo.
     public LinhaNaoAvaliada {
         if (documentoPseudonimizado == null || documentoPseudonimizado.isBlank()) {
             throw new PapelDeTrabalhoInvalido("A linha de não avaliado precisa do documento.");

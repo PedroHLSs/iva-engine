@@ -16,23 +16,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Comando {@code avaliar-acuracia}: mede o motor contra um gabarito rotulado.
- *
- * <p>É o comando que produz o resultado empírico do trabalho. Roda o motor sobre
- * a origem indicada, confronta cada avaliação com o gabarito e imprime precisão,
- * recall e F1 por regra e consolidados.</p>
- *
- * <h2>A tabela impressa separa o que é medição do que não é</h2>
- *
- * <p>As colunas {@code NaoAval} e {@code SemAval} ficam à direita de um separador, e o
- * rodapé diz por que elas estão fora das métricas. Não é enfeite: quem lê uma
- * linha com precisão 1,0000 precisa ver, na mesma linha, sobre quantos itens
- * aquele 1,0000 foi obtido.</p>
- *
- * <p>Nada é gravado no banco. Medir não é auditar, e uma medição não deve
- * aparecer no histórico de execuções nem virar papel de trabalho.</p>
- */
+// Classe do comando avaliar-acuracia, que roda o motor sobre a origem, compara com o gabarito e mostra precisão, recall e F1 por regra e no total. As colunas NaoAval e SemAval ficam separadas, fora das métricas, e nada é gravado no banco: medir não é auditar.
 @Component
 class ComandoAvaliarAcuracia implements Comando {
 
@@ -50,6 +34,7 @@ class ComandoAvaliarAcuracia implements Comando {
     private final ServicoDeAvaliacaoDeAcuracia servico;
     private final Saida saida;
 
+    // Construtor que recebe o serviço de avaliação de acurácia e a saída.
     ComandoAvaliarAcuracia(ServicoDeAvaliacaoDeAcuracia servico, Saida saida) {
         this.servico = servico;
         this.saida = saida;
@@ -89,6 +74,7 @@ class ComandoAvaliarAcuracia implements Comando {
                 """.formatted(NOME, servico.extensao(), LeitorDeGabaritoCsv.colunasEsperadas());
     }
 
+    // Mede a acurácia com a origem e o gabarito informados e, se houver --relatorio, grava o resultado em arquivo.
     @Override
     public void executar(Argumentos argumentos) {
         argumentos.exigirSomente(List.of(OPCAO_ORIGEM, OPCAO_GABARITO, OPCAO_RELATORIO));
@@ -104,13 +90,12 @@ class ComandoAvaliarAcuracia implements Comando {
             imprimir(medido, relatorio);
 
         } catch (GabaritoInvalido | AvaliacaoDeAcuraciaInvalida recusa) {
-            // Gabarito malformado é erro de quem chamou, não falha do sistema. Vira
-            // erro de uso para que o texto saia acompanhado do formato esperado, que
-            // é justamente o que falta a quem escreveu o arquivo errado.
+            // Gabarito malformado é erro de quem chamou; vira erro de uso para a mensagem sair junto com o formato esperado.
             throw new UsoInvalido(recusa.getMessage());
         }
     }
 
+    // Método auxiliar que mostra a identificação da rodada, a tabela e as notas.
     private void imprimir(RelatorioDeAcuracia relatorio, Optional<Path> destino) {
         saida.linha("Avaliação de acurácia");
         saida.linha("  catálogo ........... %s", relatorio.versaoDoCatalogo());
@@ -127,6 +112,7 @@ class ComandoAvaliarAcuracia implements Comando {
                 saida.linha("Relatório gravado em %s", caminho.toAbsolutePath()));
     }
 
+    // Método auxiliar que mostra a tabela de contagens e métricas, uma linha por regra e o consolidado.
     private void imprimirTabela(RelatorioDeAcuracia relatorio) {
         saida.linha(FORMATO_DE_LINHA,
                 "Regra", "VP", "FP", "FN", "VN", "Avaliados", "NaoAval", "SemAval", "Total",
@@ -143,6 +129,7 @@ class ComandoAvaliarAcuracia implements Comando {
         imprimirCobertura(relatorio);
     }
 
+    // Método auxiliar que mostra a linha de uma regra, ou do consolidado.
     private void imprimirContagem(String rotulo, ContagemDeAcuracia contagem) {
         saida.linha(FORMATO_DE_LINHA,
                 rotulo,
@@ -159,14 +146,7 @@ class ComandoAvaliarAcuracia implements Comando {
                 TextoDeMetrica.de(contagem.f1()));
     }
 
-    /**
-     * Imprime a cobertura em bloco próprio, e não como mais uma coluna.
-     *
-     * <p>Cobertura responde a outra pergunta que precisão e recall: não "quanto
-     * o sistema acerta", mas "sobre quanto ele se pronunciou". Misturá-la na
-     * mesma fileira de números convidaria a lê-la como mais uma nota de
-     * desempenho.</p>
-     */
+    // Método auxiliar que mostra a cobertura num bloco próprio, porque ela diz sobre quanto o motor se pronunciou, e não quanto ele acerta.
     private void imprimirCobertura(RelatorioDeAcuracia relatorio) {
         saida.linha("Cobertura (avaliados / total do gabarito)");
         for (MetricasDaRegra metricas : relatorio.porRegra()) {
@@ -176,11 +156,13 @@ class ComandoAvaliarAcuracia implements Comando {
         saida.linhaEmBranco();
     }
 
+    // Método auxiliar que mostra a cobertura de uma regra, ou do consolidado.
     private void imprimirCoberturaDe(String rotulo, ContagemDeAcuracia contagem) {
         saida.linha("  %-12s %-12s  (%d de %d)",
                 rotulo, TextoDeMetrica.de(contagem.cobertura()), contagem.avaliados(), contagem.total());
     }
 
+    // Método auxiliar que explica o que não entra nas métricas e quantas avaliações ficaram fora da medição.
     private void imprimirNotas(RelatorioDeAcuracia relatorio) {
         ContagemDeAcuracia consolidado = relatorio.consolidado();
 
@@ -198,6 +180,7 @@ class ComandoAvaliarAcuracia implements Comando {
         imprimirEnderecosSemAvaliacao(relatorio.gabaritoSemAvaliacao());
     }
 
+    // Método auxiliar que mostra até dez linhas do gabarito que o motor não avaliou.
     private void imprimirEnderecosSemAvaliacao(List<EnderecoDaAvaliacao> enderecos) {
         if (enderecos.isEmpty()) {
             return;

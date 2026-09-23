@@ -12,41 +12,19 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.util.Optional;
 
-/**
- * A base normativa carregada, somente leitura, numa data explícita.
- *
- * <h2>A data é obrigatória, e essa é a decisão</h2>
- *
- * <p>Não há valor padrão e não há {@code LocalDate.now()} em lugar nenhum deste
- * caminho. A D003 proibiu que uma regra escolhesse a data da consulta, e previu
- * que "o que vale hoje" seria um caso de uso próprio <em>com data explícita</em>.
- * Este é ele. Um padrão silencioso de "hoje" traria de volta, pela porta da
- * frente, exatamente o problema que a D003 fechou: a resposta mudaria sozinha de
- * um dia para o outro, e ninguém saberia a que dia a tela impressa se
- * referia.</p>
- *
- * <h2>Consulta, não despejo</h2>
- *
- * <p>{@code ncm} e {@code cClassTrib} são opcionais e consultam pontualmente. Não
- * existe listagem das tabelas inteiras, e o motivo está em
- * {@code BaseNormativa}: os repositórios do domínio expõem busca por chave, e
- * alargá-los sairia da restrição desta etapa. A resposta diz isso em
- * {@code comoConsultar}, para que a ausência de listagem se leia como decisão.</p>
- *
- * <p>NCM e {@code cClassTrib} malformados são recusados pelos objetos de valor do
- * domínio, que já sabem o formato de cada um. A fronteira não repete essa
- * validação.</p>
- */
+// Controlador que responde GET /api/base-tributaria: consulta a base normativa carregada numa data que precisa ser informada. Não existe "hoje" como padrão, para a resposta não mudar sozinha de um dia para o outro, e a consulta é por NCM e cClassTrib, sem listar as tabelas inteiras.
 @RestController
 @RequestMapping("/api/base-tributaria")
 class ControladorDaBaseTributaria {
 
     private final ConsultaDaBaseTributaria base;
 
+    // Construtor que recebe a consulta da base tributária.
     ControladorDaBaseTributaria(ConsultaDaBaseTributaria base) {
         this.base = base;
     }
 
+    // Consulta a base na data pedida; NCM e cClassTrib são opcionais, e o formato deles é conferido pelo domínio.
     @GetMapping
     RespostaDaBaseTributaria consultar(
             @RequestParam(required = false) String data,

@@ -6,50 +6,20 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 
-/**
- * Configuração própria da API.
- *
- * <p>Arquivo separado de {@code ConfiguracaoDaAuditoria}, da Etapa 5, de
- * propósito: a Etapa 8 não altera nada do que já estava entregue, e a API não
- * precisa que ninguém mexa naquele arquivo para existir. Os objetos das camadas
- * de dentro que ela usa já são beans lá.</p>
- */
+// Classe de configuração do Spring só da API, separada de ConfiguracaoDaAuditoria para a API existir sem mexer naquele arquivo.
 @Configuration
 class ConfiguracaoDaApi {
 
+    // Nomes das propriedades que ligam a chave de acesso e a justificativa da tratativa nas respostas.
     static final String PROPRIEDADE_EXPOR_CHAVE = "auditoria.api.expor-chave-de-acesso";
 
     static final String PROPRIEDADE_EXPOR_JUSTIFICATIVA = "auditoria.api.expor-justificativa";
 
-    /*
-     * Acrescentada na etapa de conferência.
-     *
-     * A descrição do produto é o segundo campo de texto livre do sistema, e o
-     * primeiro que vem da fonte em escala e sem revisão. Mesmo regime dos
-     * outros dois: desligada por padrão, com o motivo escrito no lugar.
-     */
+    // Propriedade que liga a descrição do produto, texto livre vindo do emitente; também vem desligada por padrão.
     static final String PROPRIEDADE_EXPOR_DESCRICAO =
             "auditoria.api.expor-descricao-do-produto";
 
-    /**
-     * A política de exposição, desligada em tudo por padrão.
-     *
-     * <p>O padrão é restritivo <em>na ausência da propriedade</em>, e não só
-     * quando ela diz {@code false}. É o inverso do que a Etapa 5 fez com a
-     * tolerância de valor e o sal, que não têm padrão nenhum e param o sistema:
-     * ali a falta de escolha é ambígua, aqui não é. Não configurar quer dizer "não
-     * exponha", que é a leitura segura — e a única em que esquecer de configurar
-     * não vaza nada.</p>
-     */
-    /**
-     * Limites do que a API aceita receber.
-     *
-     * <p>Acrescentado nesta etapa, quando a API deixou de ser só de leitura.
-     * Ao contrário do sal e da tolerância, <strong>têm padrão</strong>: um teto
-     * de tamanho de arquivo não afirma nada sobre documento nenhum, e parar o
-     * sistema na subida por falta dele seria zelo mal colocado. Ver
-     * {@link LimitesDeUpload}.</p>
-     */
+    // Cria os limites do que a API aceita receber no envio de arquivos. Aqui há valor padrão, porque um limite de tamanho não afirma nada sobre documento nenhum.
     @Bean
     LimitesDeUpload limitesDeUpload(Environment ambiente) {
         LimitesDeUpload padrao = LimitesDeUpload.padrao();
@@ -67,10 +37,12 @@ class ConfiguracaoDaApi {
                         padrao.pisoParaConferirRazao()));
     }
 
+    // Método auxiliar que lê uma propriedade numérica, ou usa o padrão quando ela não foi configurada.
     private static long bytes(Environment ambiente, String propriedade, long padrao) {
         return ambiente.getProperty(propriedade, Long.class, padrao);
     }
 
+    // Cria a política de exposição, com tudo desligado quando a propriedade não foi configurada: esquecer de configurar não vaza nada.
     @Bean
     PoliticaDeExposicao politicaDeExposicao(Environment ambiente) {
         return new PoliticaDeExposicao(

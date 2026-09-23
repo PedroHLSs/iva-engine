@@ -16,24 +16,20 @@ import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * As duas tabelas da V7, do lado de quem grava e do lado de quem lê.
- *
- * <p>Uma classe só porque é um assunto só — o que a análise leu —, e porque as
- * duas tabelas nascem juntas na mesma gravação. As portas continuam separadas,
- * escrita de um lado e leitura do outro, como no resto do projeto.</p>
- */
+// Repositório que grava e lê as duas tabelas da V7: os itens que a análise leu e os arquivos que ela não conseguiu ler. É uma classe só porque as duas nascem juntas, mas a escrita e a leitura continuam em portas separadas.
 @Repository
 class AcervoDaAnaliseNoBanco implements RegistroDoAcervoDaAnalise, ConsultaDoAcervoDaAnalise {
 
     private final ItemDaExecucaoJpa itens;
     private final FalhaDeLeituraDaExecucaoJpa falhas;
 
+    // Construtor que recebe os repositórios de itens e de falhas da execução.
     AcervoDaAnaliseNoBanco(ItemDaExecucaoJpa itens, FalhaDeLeituraDaExecucaoJpa falhas) {
         this.itens = itens;
         this.falhas = falhas;
     }
 
+    // Grava os itens lidos e os arquivos ilegíveis, na ordem em que falharam.
     @Override
     @Transactional
     public void registrar(
@@ -71,6 +67,7 @@ class AcervoDaAnaliseNoBanco implements RegistroDoAcervoDaAnalise, ConsultaDoAce
         falhas.saveAll(linhasDeFalha);
     }
 
+    // Busca os itens que a execução leu.
     @Override
     @Transactional(readOnly = true)
     public List<ItemDaAnalise> itensDaExecucao(UUID execucaoId) {
@@ -84,6 +81,7 @@ class AcervoDaAnaliseNoBanco implements RegistroDoAcervoDaAnalise, ConsultaDoAce
                 .toList();
     }
 
+    // Busca os arquivos que a execução não conseguiu ler, na ordem em que falharam.
     @Override
     @Transactional(readOnly = true)
     public List<ArquivoIlegivel> arquivosIlegiveis(UUID execucaoId) {
@@ -94,12 +92,14 @@ class AcervoDaAnaliseNoBanco implements RegistroDoAcervoDaAnalise, ConsultaDoAce
                 .toList();
     }
 
+    // Método auxiliar que exige o identificador da execução.
     private static void exigirExecucao(UUID execucaoId) {
         if (execucaoId == null) {
             throw new AnaliseInvalida("Não há execução cujo acervo consultar.");
         }
     }
 
+    // Método auxiliar que exige lista não nula e sem elemento nulo.
     private static void exigirSemNulo(List<?> lista, String oQueE) {
         if (lista == null) {
             throw new AnaliseInvalida(

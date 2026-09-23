@@ -6,19 +6,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * O que um CSV de catálogo produziu: os registros e a procedência deles.
- *
- * <p>Os dois juntos, e não a lista sozinha, porque a procedência é fato sobre
- * <em>aquelas</em> linhas. Devolvê-la por outro caminho abriria a possibilidade
- * de alguém ler os registros de um arquivo e a natureza de outro — que é
- * precisamente o erro que a marcação existe para impedir.</p>
- *
- * <p>O construtor casa as duas coisas: lista vazia obriga natureza vazia, e lista
- * com registro obriga natureza declarada.</p>
- */
+// Representa o que um CSV de catálogo produziu: os registros e a procedência deles, juntos, para ninguém ler os registros de um arquivo e a procedência de outro.
 public record TabelaImportada<T>(List<T> registros, Optional<Natureza> natureza) {
 
+    // Valida que a lista exista e não tenha nulo, e que lista vazia venha sem procedência e lista com registro venha com procedência.
     public TabelaImportada {
         if (registros == null) {
             throw new ImportacaoDeCatalogoInvalida(

@@ -12,28 +12,13 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
 
-/**
- * O que o documento declarou para este item, campo a campo.
- *
- * <h2>Uma lista de campos, e não trinta componentes</h2>
- *
- * <p>O item tem catorze campos que podem faltar, e cada um precisaria de um
- * companheiro dizendo por que faltou — vinte e oito componentes, vinte e oito
- * chances de esquecer o par em um deles. Aqui o par é conferido <strong>uma
- * vez</strong>, no construtor de {@link CampoDeclarado}, e vale para todos.</p>
- *
- * <h2>Ausente e zero continuam sendo coisas diferentes até a tela</h2>
- *
- * <p>É a decisão central do modelo desde a Etapa 1, e é aqui que ela costuma
- * morrer: um campo que não veio no XML sai com valor nulo e o motivo ao lado,
- * nunca com {@code "0"} e nunca com traço. Omitir base de cálculo e declarar base
- * zero são fatos fiscais distintos, e é sobre a diferença entre eles que várias
- * das regras apontam.</p>
- */
+// Representa o que a nota declarou para o item, campo a campo. Campo que não veio sai com valor null e o motivo ao lado, nunca como "0": não declarar a base e declarar base zero são coisas diferentes.
 public record DeclaracaoExposta(int numeroItem, List<CampoDeclarado> campos) {
 
+    // Motivo escrito no lugar de um campo que a nota não trouxe.
     static final String NAO_DECLARADO = "o documento não declarou este campo para o item";
 
+    // Valida que o número do item seja pelo menos 1 e que haja campos.
     public DeclaracaoExposta {
         if (numeroItem < 1) {
             throw new RespostaInvalida(
@@ -47,6 +32,7 @@ public record DeclaracaoExposta(int numeroItem, List<CampoDeclarado> campos) {
         campos = List.copyOf(campos);
     }
 
+    // Método estático que monta a declaração com os catorze campos do item, na ordem da tela.
     static DeclaracaoExposta de(ItemDocumento item) {
         List<CampoDeclarado> campos = new ArrayList<>();
         campos.add(opcional("NCM", item.ncm(), Ncm::valor));
@@ -70,6 +56,7 @@ public record DeclaracaoExposta(int numeroItem, List<CampoDeclarado> campos) {
         return new DeclaracaoExposta(item.numeroItem(), campos);
     }
 
+    // Método auxiliar que cria um campo com o valor em texto, ou com o motivo de não ter vindo.
     private static <T> CampoDeclarado opcional(
             String campo, Optional<T> valor, Function<T, String> comoTexto) {
         return new CampoDeclarado(
@@ -78,14 +65,15 @@ public record DeclaracaoExposta(int numeroItem, List<CampoDeclarado> campos) {
                 valor.isPresent() ? null : NAO_DECLARADO);
     }
 
-    /** Número com a escala declarada preservada, como texto — mesma razão da D009. */
+    // Método auxiliar para campo numérico: o número vai como texto, com as casas decimais que vieram na nota.
     private static CampoDeclarado monetario(String campo, Optional<BigDecimal> valor) {
         return opcional(campo, valor, BigDecimal::toPlainString);
     }
 
-    /** Um campo do item: o que veio, ou o motivo de não ter vindo. */
+    // Representa um campo do item: o que veio, ou o motivo de não ter vindo.
     public record CampoDeclarado(String campo, String valor, String motivoDaAusencia) {
 
+        // Valida que o campo tenha nome e exatamente um dos dois: valor ou motivo.
         public CampoDeclarado {
             if (campo == null || campo.isBlank()) {
                 throw new RespostaInvalida("O campo declarado precisa de nome.");

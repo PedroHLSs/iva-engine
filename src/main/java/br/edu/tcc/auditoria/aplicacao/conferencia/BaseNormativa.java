@@ -17,40 +17,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Uma carga de catálogo identificada, pronta para responder numa data.
- *
- * <h2>Carrega uma vez, responde muitas</h2>
- *
- * <p>Um lote de quatrocentas notas tem milhares de produtos e uma única carga.
- * Carregar por produto transformaria a tela de resultado num problema de banco,
- * e por isso a carga entra no construtor e fica. É o mesmo motivo pelo qual
- * {@code ProvedorDeCatalogoNoBanco} traz o catálogo inteiro para a memória de uma
- * vez.</p>
- *
- * <h2>A data nunca é escolhida aqui dentro</h2>
- *
- * <p>Todo método público exige data, e nenhum a tem por padrão. Para reabrir uma
- * análise, a data é a emissão daquele documento, como a D003 exige. Para a tela
- * de base tributária, a data vem de quem perguntou — que é exatamente o caso de
- * uso separado, com data explícita, que a D003 admitiu. Não há
- * {@code LocalDate.now()} em lugar nenhum desta classe.</p>
- *
- * <h2>O que esta classe não sabe fazer, e por quê</h2>
- *
- * <p>Ela consulta por NCM e por {@code cClassTrib}; <strong>não lista as tabelas
- * inteiras</strong>. Os repositórios do domínio expõem busca pontual, e alargá-los
- * exigiria mexer em {@code dominio/catalogo}, o que esta etapa não faz. A tela de
- * base tributária é, por isso, consulta e não despejo — o que também é o formato
- * útil: a tabela de NCM tem milhares de linhas e ninguém a lê rolando.</p>
- *
- * <h2>Carga ausente é resposta, não exceção</h2>
- *
- * <p>Quando a carga pedida não está gravada, esta classe continua respondendo —
- * com o motivo em cada bloco. Lançar exceção derrubaria a tela inteira de uma
- * análise cujo resultado continua válido: os apontamentos foram gravados e não
- * dependem de o catálogo estar lá para serem lidos.</p>
- */
+// Classe que representa uma carga de catálogo carregada uma vez e consultada por data; carga ausente vira motivo em cada bloco, não exceção.
 public final class BaseNormativa {
 
     private static final String SEM_NCM_DECLARADO =
@@ -62,12 +29,13 @@ public final class BaseNormativa {
     private final String versaoDoCatalogo;
     private final Optional<CatalogoParaAuditoria> catalogo;
 
+    // Construtor privado; a base é criada por daVersao ou por nenhumaCargaImportada.
     private BaseNormativa(String versaoDoCatalogo, Optional<CatalogoParaAuditoria> catalogo) {
         this.versaoDoCatalogo = versaoDoCatalogo;
         this.catalogo = catalogo;
     }
 
-    /** A carga daquela versão, ou a ausência dela, igualmente utilizável. */
+    // Método estático que carrega a carga daquela versão, ou registra a ausência dela.
     public static BaseNormativa daVersao(
             ProvedorDeCatalogoPorVersao catalogos, String versaoDoCatalogo) {
 
@@ -81,40 +49,33 @@ public final class BaseNormativa {
         return new BaseNormativa(versaoDoCatalogo, catalogos.daVersao(versaoDoCatalogo));
     }
 
-    /** Nenhum catálogo foi importado ainda, e a tela precisa dizer isso. */
+    // Método estático para quando nenhum catálogo foi importado ainda.
     public static BaseNormativa nenhumaCargaImportada() {
         return new BaseNormativa(SEM_CARGA, Optional.empty());
     }
 
-    /** Rótulo que ocupa o lugar da versão quando não há carga nenhuma gravada. */
+    // Rótulo que ocupa o lugar da versão quando não há carga nenhuma gravada.
     public static final String SEM_CARGA = "(nenhuma carga importada)";
 
     public String versaoDoCatalogo() {
         return versaoDoCatalogo;
     }
 
-    /** Se a carga pedida está gravada. */
     public boolean cargaDisponivel() {
         return catalogo.isPresent();
     }
 
-    /** A cobertura que quem importou declarou, por tabela. */
     public Optional<CoberturaDoCatalogo> cobertura() {
         return catalogo.map(CatalogoParaAuditoria::cobertura);
     }
 
-    /**
-     * A procedência do que esta base vai mostrar.
-     *
-     * <p>Sem carga gravada, {@link NaturezaDaCarga#naoDeclarada()}: não se sabe o
-     * que havia, e não se supõe que fosse normativo.</p>
-     */
+    // Retorna a procedência da carga; sem carga gravada, volta como não declarada.
     public NaturezaDaCarga natureza() {
         return catalogo.map(CatalogoParaAuditoria::natureza)
                 .orElseGet(NaturezaDaCarga::naoDeclarada);
     }
 
-    /** O tratamento indicado para este item, na data de emissão do documento dele. */
+    // Retorna o tratamento indicado para o item na data de emissão do documento, bloco a bloco.
     public TratamentoIdentificado tratamentoDe(LocalDate dataDeReferencia, ItemDocumento item) {
         if (dataDeReferencia == null) {
             throw new ConferenciaInvalida(
@@ -143,7 +104,7 @@ public final class BaseNormativa {
                 aliquotasEm(dataDeReferencia));
     }
 
-    /** O que a carga diz sobre o NCM naquela data. */
+    // Retorna o que a carga diz sobre o NCM naquela data.
     public LeituraDoCatalogo<DescricaoDeNcm> ncmEm(LocalDate data, Ncm ncm) {
         if (catalogo.isEmpty()) {
             return LeituraDoCatalogo.ausente(motivoDaCargaAusente());
@@ -154,7 +115,7 @@ public final class BaseNormativa {
                         .formatted(versaoDoCatalogo, ncm.valor(), data));
     }
 
-    /** A que anexos a carga vincula o NCM naquela data. */
+    // Retorna a que anexos a carga vincula o NCM naquela data.
     public LeituraDoCatalogo<EnquadramentoDoNcm> anexosEm(LocalDate data, Ncm ncm) {
         if (catalogo.isEmpty()) {
             return LeituraDoCatalogo.ausente(motivoDaCargaAusente());
@@ -171,7 +132,7 @@ public final class BaseNormativa {
         return LeituraDoCatalogo.de(encontrados);
     }
 
-    /** O que a carga diz sobre o {@code cClassTrib} naquela data. */
+    // Retorna o que a carga diz sobre o cClassTrib naquela data.
     public LeituraDoCatalogo<ClassificacaoDoCatalogo> classificacaoEm(
             LocalDate data, CodigoClassificacaoTributaria codigo) {
 
@@ -187,11 +148,7 @@ public final class BaseNormativa {
                         .formatted(versaoDoCatalogo, codigo.valor(), data));
     }
 
-    /**
-     * As alíquotas vigentes na data, um bloco por tributo, sempre os três.
-     *
-     * <p>Nunca somadas entre si — ver {@link TratamentoIdentificado}.</p>
-     */
+    // Retorna as alíquotas vigentes na data, um bloco por tributo, sempre os três e nunca somados.
     public List<TratamentoDeTributo> aliquotasEm(LocalDate data) {
         if (data == null) {
             throw new ConferenciaInvalida(
@@ -204,6 +161,7 @@ public final class BaseNormativa {
         return List.copyOf(porTributo);
     }
 
+    // Método auxiliar que busca as alíquotas de um tributo na data, ou o motivo de não haver.
     private LeituraDoCatalogo<AliquotaDoCatalogo> aliquotasDe(Tributo tributo, LocalDate data) {
         if (catalogo.isEmpty()) {
             return LeituraDoCatalogo.ausente(motivoDaCargaAusente());
@@ -220,6 +178,7 @@ public final class BaseNormativa {
         return LeituraDoCatalogo.de(aliquotas);
     }
 
+    // Método auxiliar que monta o contexto normativo da carga resolvido na data indicada.
     private ContextoNormativo contextoEm(LocalDate data) {
         if (data == null) {
             throw new ConferenciaInvalida("Não há data em que resolver o catálogo.");
@@ -233,6 +192,7 @@ public final class BaseNormativa {
                 carga.aliquotas());
     }
 
+    // Método auxiliar para verificar se o NCM é nulo e lançar uma exceção.
     private static Ncm exigirNcm(Ncm ncm) {
         if (ncm == null) {
             throw new ConferenciaInvalida("Não há NCM a consultar.");
@@ -240,6 +200,7 @@ public final class BaseNormativa {
         return ncm;
     }
 
+    // Método auxiliar que escreve o motivo de não haver carga: nenhuma importada, ou a da análise não está mais gravada.
     private String motivoDaCargaAusente() {
         if (SEM_CARGA.equals(versaoDoCatalogo)) {
             return "nenhum catálogo foi importado ainda. Enquanto não houver carga, o sistema não tem "

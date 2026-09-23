@@ -6,11 +6,6 @@ import java.util.UUID;
 // Interface responsável por registrar os itens lidos e os arquivos ilegíveis de uma execução de análise.
 public interface RegistroDoAcervoDaAnalise {
 
-    /**
-     * @param execucaoId a execução que a auditoria acabou de gravar
-     * @param itens      todos os itens lidos, inclusive os sem apontamento
-     * @param ilegiveis  os arquivos que falharam, na ordem em que falharam;
-     *                   vazia quando todos foram lidos
-     */
+    // Registra, para a execução que acabou de ser gravada, todos os itens lidos, inclusive os sem apontamento, e os arquivos que falharam, na ordem em que falharam.
     void registrar(UUID execucaoId, List<ItemDaAnalise> itens, List<ArquivoIlegivel> ilegiveis);
 }

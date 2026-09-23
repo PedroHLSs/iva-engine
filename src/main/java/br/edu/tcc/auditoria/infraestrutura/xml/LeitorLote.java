@@ -16,38 +16,7 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-/**
- * Lê um lote de documentos fiscais — um diretório ou um arquivo ZIP — e devolve
- * os documentos já normalizados.
- *
- * <h2>Um arquivo de cada vez</h2>
- *
- * <p>O fluxo devolvido é preguiçoso: nenhum arquivo é aberto antes de ser
- * pedido, e cada um é fechado antes do seguinte ser aberto. Um acervo de dezenas
- * de milhares de notas passa por aqui sem que o conjunto inteiro exista em
- * memória em momento algum. Só a lista de nomes de arquivo é materializada, para
- * que a ordem de processamento seja a mesma em toda execução — listagem de
- * diretório não promete ordem, e relatório de auditoria precisa ser
- * comparável.</p>
- *
- * <p><strong>O fluxo precisa ser fechado.</strong> Ele segura o percurso do
- * diretório ou o arquivo ZIP aberto, e só os libera no fechamento:</p>
- *
- * <pre>{@code
- * try (Stream<DocumentoComItens> documentos = leitorLote.ler(caminho)) {
- *     documentos.forEach(...);
- * }
- * }</pre>
- *
- * <h2>Arquivo ruim não derruba o lote</h2>
- *
- * <p>Arquivo malformado, arquivo que não é NF-e, documento cuja chave ou cujo
- * NCM não têm a forma que o domínio exige: cada um vira uma
- * {@link FalhaDeLeitura} no {@link RegistroDeFalhasDeLeitura} e o lote continua.
- * A única exceção é a falta do sal de pseudonimização, que é erro de
- * configuração da instalação e vale para todos os arquivos — essa interrompe,
- * porque registrá-la mil vezes não ajudaria ninguém.</p>
- */
+// Classe que lê um lote de documentos, de uma pasta ou de um .zip, e devolve os documentos já normalizados, um arquivo de cada vez e sempre na mesma ordem. O fluxo devolvido precisa ser fechado; arquivo ruim vira FalhaDeLeitura e o lote continua, e só a falta de sal para tudo.
 public final class LeitorLote {
 
     private static final String EXTENSAO_DE_DOCUMENTO = ".xml";
@@ -58,18 +27,7 @@ public final class LeitorLote {
     private final RegistroDeFalhasDeLeitura registroDeFalhas;
     private final RegistroDeDescricoesDeProduto registroDeDescricoes;
 
-    /*
-     * Emenda da etapa de conferência, sobre a Etapa 4.
-     *
-     * O construtor ganhou o registro de descrições, que é a segunda saída lateral
-     * desta leitura — a primeira são as falhas. Os dois têm escopo de lote, e não
-     * de processo: quem os cria é quem começa uma análise.
-     *
-     * Não há construtor sem ele. Um valor padrão faria um caminho de leitura
-     * deixar de registrar descrição sem que ninguém tivesse decidido isso; quem
-     * não quer registrar passa RegistroDeDescricoesDeProduto.DESCARTA, que é uma
-     * decisão escrita e localizável por busca.
-     */
+    // Construtor que recebe o leitor de XML, o normalizador e os registros de falhas e de descrições. Mudou na Etapa 11: ganhou o registro de descrições, sem valor padrão; quem não quer registrar passa RegistroDeDescricoesDeProduto.DESCARTA.
     public LeitorLote(LeitorDocumentoFiscal leitor,
                       NormalizadorDocumento normalizador,
                       RegistroDeFalhasDeLeitura registroDeFalhas,
@@ -86,17 +44,7 @@ public final class LeitorLote {
         this.registroDeDescricoes = registroDeDescricoes;
     }
 
-    /**
-     * Lê o lote na origem informada, que pode ser um diretório ou um ZIP.
-     *
-     * <p>Em diretório, a busca é recursiva e considera todo arquivo com extensão
-     * {@code .xml}. Em ZIP, todo arquivo com extensão {@code .xml} dentro do
-     * pacote, inclusive em subpastas. ZIP dentro de diretório não é aberto — o
-     * lote é um ou outro.</p>
-     *
-     * @throws IOException              se a própria origem não puder ser aberta
-     * @throws IllegalArgumentException se a origem não for diretório nem ZIP
-     */
+    // Lê o lote de uma pasta, procurando .xml também nas subpastas, ou de um .zip; recusa outra coisa.
     public Stream<DocumentoComItens> ler(Path origem) throws IOException {
         if (origem == null) {
             throw new IllegalArgumentException("Não há origem de lote a ler.");
@@ -112,6 +60,7 @@ public final class LeitorLote {
                         + "dois.").formatted(EXTENSAO_DE_PACOTE, origem));
     }
 
+    // Método auxiliar que lê os .xml da pasta, em ordem.
     private Stream<DocumentoComItens> lerDiretorio(Path diretorio) throws IOException {
         Stream<Path> percurso = Files.walk(diretorio);
         try {
@@ -128,6 +77,7 @@ public final class LeitorLote {
         }
     }
 
+    // Método auxiliar que lê os .xml do .zip, em ordem, e fecha o pacote junto com o fluxo.
     private Stream<DocumentoComItens> lerPacote(Path pacote) throws IOException {
         ZipFile arquivoCompactado = new ZipFile(pacote.toFile(), StandardCharsets.UTF_8);
         try {
@@ -144,6 +94,7 @@ public final class LeitorLote {
         }
     }
 
+    // Método auxiliar que lê um arquivo da pasta; se falhar, registra a falha, menos quando falta o sal.
     private Optional<DocumentoComItens> documentoDoArquivo(Path caminho) {
         try (InputStream conteudo = new BufferedInputStream(Files.newInputStream(caminho))) {
             return Optional.of(normalizador.normalizar(leitor.ler(conteudo), registroDeDescricoes));
@@ -156,6 +107,7 @@ public final class LeitorLote {
         }
     }
 
+    // Método auxiliar que lê uma entrada do .zip; se falhar, registra a falha, menos quando falta o sal.
     private Optional<DocumentoComItens> documentoDaEntrada(ZipFile arquivoCompactado, ZipEntry entrada) {
         String origem = "%s!%s".formatted(arquivoCompactado.getName(), entrada.getName());
         try (InputStream conteudo = new BufferedInputStream(arquivoCompactado.getInputStream(entrada))) {
@@ -169,20 +121,24 @@ public final class LeitorLote {
         }
     }
 
+    // Método auxiliar que registra a falha e devolve vazio.
     private Optional<DocumentoComItens> registrar(String origem, Throwable erro) {
         registroDeFalhas.registrar(FalhaDeLeitura.de(origem, erro));
         return Optional.empty();
     }
 
+    // Método auxiliar que diz se o nome termina em .xml.
     private static boolean ehDocumento(String nome) {
         return nome.toLowerCase(Locale.ROOT).endsWith(EXTENSAO_DE_DOCUMENTO);
     }
 
+    // Método auxiliar que diz se a origem é um .zip.
     private static boolean ehPacote(Path origem) {
         return origem.getFileName() != null
                 && origem.getFileName().toString().toLowerCase(Locale.ROOT).endsWith(EXTENSAO_DE_PACOTE);
     }
 
+    // Método auxiliar que fecha o .zip.
     private static void fechar(ZipFile arquivoCompactado) {
         try {
             arquivoCompactado.close();

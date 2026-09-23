@@ -7,39 +7,16 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * A coluna que todo CSV de catálogo passou a ter obrigatoriamente.
- *
- * <h2>Obrigatória, e por isso impossível de esquecer</h2>
- *
- * <p>Fica ao lado de {@code ProcedenciaEmCsv} pelo mesmo motivo: num lugar só,
- * para que nenhum importador possa deixar de exigi-la. Linha sem natureza recusa
- * o arquivo inteiro — e é essa recusa que faz a marcação valer alguma coisa. Uma
- * coluna opcional teria o mesmo buraco do cabeçalho de comentário: o arquivo
- * fictício de onde alguém tirou a declaração chegaria indistinguível do real.</p>
- *
- * <h2>Um arquivo, uma procedência</h2>
- *
- * <p>Todas as linhas de um mesmo CSV precisam declarar a mesma natureza. Mistura
- * dentro de um arquivo é quase sempre concatenação acidental de dois arquivos, e
- * aceitá-la obrigaria a inventar o que fazer com o conjunto — enquanto a mistura
- * que <em>interessa</em>, a de tabelas diferentes, continua representável e é
- * exatamente o caso "parcialmente fictício".</p>
- */
+// Classe que lê a coluna natureza, obrigatória em todo CSV de dados do catálogo, com FICTICIO ou NORMATIVO. Linha sem natureza recusa o arquivo, e todas as linhas de um arquivo precisam declarar a mesma.
 final class NaturezaEmCsv {
 
     static final String COLUNA_NATUREZA = "natureza";
 
+    // Construtor privado: ninguém cria objeto desta classe, só usa os métodos estáticos.
     private NaturezaEmCsv() {
     }
 
-    /**
-     * A natureza do arquivo, ou vazio se ele não tem linha nenhuma.
-     *
-     * <p>Arquivo só com cabeçalho é como esta carga declara "não trago registro
-     * aqui". Não há linha em que declarar procedência, e inventar uma seria
-     * afirmar sobre um conteúdo que não existe.</p>
-     */
+    // Método estático que devolve a natureza do arquivo, ou vazio se ele só tem cabeçalho; recusa se duas linhas declararem naturezas diferentes.
     static Optional<Natureza> uniforme(List<LinhaCsv> linhas) {
         Natureza daPrimeira = null;
         int numeroDaPrimeira = 0;
@@ -61,6 +38,7 @@ final class NaturezaEmCsv {
         return Optional.ofNullable(daPrimeira);
     }
 
+    // Método auxiliar que lê a natureza de uma linha; recusa valor desconhecido.
     private static Natureza ler(LinhaCsv linha) {
         String declarada = linha.textoObrigatorio(COLUNA_NATUREZA);
         return Arrays.stream(Natureza.values())

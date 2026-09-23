@@ -1,17 +1,17 @@
 package br.edu.tcc.auditoria.infraestrutura.cli;
 
-/** Um comando da linha de comando. */
+// Interface que todo comando da linha de comando implementa.
 interface Comando {
 
-    /** Nome pelo qual o comando é chamado. */
+    // Retorna o nome pelo qual o comando é chamado.
     String nome();
 
-    /** Uma linha explicando o que o comando faz. */
+    // Retorna uma linha explicando o que o comando faz.
     String descricao();
 
-    /** Modo de usar, com as opções aceitas. */
+    // Retorna o modo de usar, com as opções aceitas.
     String modoDeUsar();
 
-    /** Executa o comando. */
+    // Executa o comando.
     void executar(Argumentos argumentos);
 }

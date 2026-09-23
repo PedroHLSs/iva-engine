@@ -13,25 +13,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-/**
- * Importa registros de NCM de um CSV.
- *
- * <p>Colunas esperadas: {@code ncm}, {@code descricao}, mais
- * {@code vigenciaInicio}, {@code vigenciaFim} {@code fonteNormativa} e
- * {@code natureza}.</p>
- */
+// Classe que importa os registros de NCM de um CSV, com as colunas ncm e descricao, mais vigenciaInicio, vigenciaFim, fonteNormativa e natureza.
 public final class ImportadorRegistroNcmCsv {
 
     public static final String COLUNA_NCM = "ncm";
     public static final String COLUNA_DESCRICAO = "descricao";
 
-    /*
-     * Emenda da etapa de conferência, sobre a Etapa 2.
-     *
-     * O retorno passou de List para TabelaImportada porque a procedência das
-     * linhas é fato sobre elas, e precisa sair pelo mesmo caminho. Devolvê-la
-     * à parte permitiria ler os registros de um arquivo e a natureza de outro.
-     */
+    // Lê o CSV e devolve os registros junto com a procedência. Mudou na Etapa 11: antes devolvia só a lista.
     public TabelaImportada<RegistroNcm> importar(Reader origem) throws IOException {
         List<LinhaCsv> linhas = LeitorCsv.ler(origem, ImportacaoDeCatalogoInvalida::new);
         return new TabelaImportada<>(
@@ -39,12 +27,14 @@ public final class ImportadorRegistroNcmCsv {
                 NaturezaEmCsv.uniforme(linhas));
     }
 
+    // Abre o arquivo em UTF-8 e importa.
     public TabelaImportada<RegistroNcm> importar(Path arquivo) throws IOException {
         try (Reader origem = Files.newBufferedReader(arquivo, StandardCharsets.UTF_8)) {
             return importar(origem);
         }
     }
 
+    // Método auxiliar que transforma uma linha do CSV num registro de NCM.
     private RegistroNcm converter(LinhaCsv linha) {
         ProcedenciaNormativa procedencia = ProcedenciaEmCsv.ler(linha);
 

@@ -1,18 +1,12 @@
 package br.edu.tcc.auditoria.infraestrutura.api;
 
-/**
- * O recorte que a resposta traz do conjunto inteiro.
- *
- * <p>Vai na resposta mesmo quando tudo cabe numa página. Quem consome precisa
- * saber que viu tudo, e "vi vinte linhas" não responde isso sem o total ao
- * lado — um relatório de auditoria truncado em silêncio é pior que um relatório
- * grande.</p>
- */
+// Representa a página que a resposta traz, com o total de linhas e de páginas. Vai mesmo quando tudo cabe numa página, para quem lê saber que viu tudo.
 public record PaginaExposta(int numero, int tamanho, long totalDeElementos, int totalDePaginas) {
 
-    /** Tamanho máximo aceito, para que um pedido não carregue o acervo inteiro. */
+    // Tamanho máximo de página, para um pedido não carregar o acervo inteiro.
     public static final int TAMANHO_MAXIMO = 500;
 
+    // Valida que o número da página não seja negativo, que o tamanho seja pelo menos 1 e que os totais não sejam negativos.
     public PaginaExposta {
         if (numero < 0) {
             throw new RespostaInvalida("O número da página não pode ser negativo, mas veio %d."
@@ -27,6 +21,7 @@ public record PaginaExposta(int numero, int tamanho, long totalDeElementos, int 
         }
     }
 
+    // Método estático que cria a página e calcula quantas páginas existem.
     public static PaginaExposta de(int numero, int tamanho, long totalDeElementos) {
         int totalDePaginas = (int) ((totalDeElementos + tamanho - 1) / tamanho);
         return new PaginaExposta(numero, tamanho, totalDeElementos, totalDePaginas);

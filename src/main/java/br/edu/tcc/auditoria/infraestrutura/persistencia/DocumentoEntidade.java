@@ -12,18 +12,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 import java.time.LocalDate;
 
-/**
- * Documento fiscal auditado.
- *
- * <p>Chaveado pela chave de acesso, e não por um identificador gerado: o mesmo
- * documento reprocessado é o mesmo documento, e reprocessar um lote não pode
- * criar linha nova.</p>
- *
- * <p><strong>Nenhum dado pessoal em texto claro.</strong> Não há coluna de CNPJ,
- * CPF, razão social ou endereço; emitente e destinatário entram apenas como
- * resumo criptográfico calculado com o sal de instalação. O banco ainda recusa,
- * por restrição de formato, qualquer coisa que não seja o resumo.</p>
- */
+// Representa um documento auditado, com a chave de acesso como identificador, para reprocessar o lote não criar linha nova. Não tem CNPJ, CPF, razão social nem endereço: os participantes entram só como pseudônimo, e o banco recusa outra coisa.
 @Entity
 @Table(name = "documento")
 class DocumentoEntidade {
@@ -48,7 +37,7 @@ class DocumentoEntidade {
     @Column(name = "uf_emitente", nullable = false)
     private Uf ufEmitente;
 
-    /** Nulo quando o documento não declarou destinatário com UF — destino no exterior, por exemplo. */
+    // Null quando a nota não declarou destinatário com UF, como destino no exterior.
     @Enumerated(EnumType.STRING)
     @Column(name = "uf_destinatario")
     private Uf ufDestinatario;
@@ -62,21 +51,23 @@ class DocumentoEntidade {
     @Column(name = "emitente_pseudonimizado", nullable = false)
     private String emitentePseudonimizado;
 
-    /** Nulo quando não há destinatário identificado — consumidor não identificado em NFC-e. */
+    // Null quando não há destinatário identificado, como consumidor não identificado em NFC-e.
     @Column(name = "destinatario_pseudonimizado")
     private String destinatarioPseudonimizado;
 
     @Column(name = "registrado_em", nullable = false)
     private Instant registradoEm;
 
+    // Construtor vazio exigido pelo JPA.
     protected DocumentoEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe a chave de acesso.
     DocumentoEntidade(String chaveAcesso) {
         this.chaveAcesso = chaveAcesso;
     }
 
+    // Atualiza os campos com o estado atual do documento.
     void atualizar(
             String modelo,
             String serie,
@@ -111,10 +102,7 @@ class DocumentoEntidade {
         return dataEmissao;
     }
 
-    // Leitura acrescentada na Etapa 6: o papel de trabalho identifica o documento
-    // por modelo, série, número, data e UF, e não pela chave de acesso, cujos
-    // dígitos carregam o CNPJ do emitente. Não há acessor para as colunas de
-    // pseudônimo de participante, de propósito: a exportação não precisa delas.
+    // Acessores acrescentados na Etapa 6, para a planilha identificar a nota sem a chave de acesso; de propósito, não há acessor para os pseudônimos dos participantes.
 
     String modelo() {
         return modelo;

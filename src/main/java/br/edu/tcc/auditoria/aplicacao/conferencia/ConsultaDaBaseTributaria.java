@@ -8,31 +8,13 @@ import br.edu.tcc.auditoria.dominio.Ncm;
 import java.time.LocalDate;
 import java.util.Optional;
 
-/**
- * A tela da base tributária: o que a carga atual diz, na data que se perguntar.
- *
- * <h2>É o caso de uso que a D003 deixou em aberto</h2>
- *
- * <p>A D003 proibiu que uma regra escolhesse a data da consulta, e disse que "o
- * que vale hoje" seria um caso de uso próprio da aplicação, com data explícita.
- * Esta classe é esse caso de uso. A data é parâmetro obrigatório, não tem valor
- * padrão, e nem esta classe nem {@link BaseNormativa} chamam
- * {@code LocalDate.now()} — quem sabe que dia é hoje é quem está olhando a
- * tela.</p>
- *
- * <h2>A carga é a mais recente, e a resposta diz qual é</h2>
- *
- * <p>Diferente da tela de resultado, que resolve contra a carga registrada
- * naquela análise, aqui a pergunta é sobre a base carregada agora. São perguntas
- * diferentes e por isso duas entradas diferentes; o que não pode acontecer é uma
- * responder no lugar da outra em silêncio, e é por isso que a versão volta escrita
- * nos dois casos.</p>
- */
+// Serviço que consulta a base tributária mais recente na data informada, sem data padrão.
 public final class ConsultaDaBaseTributaria {
 
     private final RepositorioDeCargaDeCatalogo cargas;
     private final ProvedorDeCatalogoPorVersao catalogos;
 
+    // Construtor da consulta, que recebe o repositório de cargas e o provedor de catálogo por versão.
     public ConsultaDaBaseTributaria(
             RepositorioDeCargaDeCatalogo cargas, ProvedorDeCatalogoPorVersao catalogos) {
 
@@ -45,13 +27,7 @@ public final class ConsultaDaBaseTributaria {
         this.catalogos = catalogos;
     }
 
-    /**
-     * A base na data indicada, com as consultas pontuais que tiverem sido pedidas.
-     *
-     * @param data   dia a que a consulta se refere, obrigatório
-     * @param ncm    NCM a consultar, vazio se não se perguntou por nenhum
-     * @param codigo {@code cClassTrib} a consultar, vazio se não se perguntou
-     */
+    // Retorna a base na data indicada, com as consultas por NCM e por cClassTrib que tiverem sido pedidas.
     public BaseTributariaEm em(
             LocalDate data, Optional<Ncm> ncm, Optional<CodigoClassificacaoTributaria> codigo) {
 

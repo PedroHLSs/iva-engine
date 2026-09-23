@@ -15,15 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Comando {@code listar-achados}: mostra os apontamentos gravados, já com a
- * tratativa que houver.
- *
- * <p>Apontamento tratado continua aparecendo, marcado com a decisão e a
- * justificativa. Quem quiser só o que falta decidir usa
- * {@code --apenas-abertos}; o padrão mostra tudo, porque um relatório de
- * auditoria que esconde o que foi levantado deixa de ser conferível.</p>
- */
+// Classe do comando listar-achados, que mostra os apontamentos gravados, já com a tratativa. Apontamento tratado continua aparecendo; quem quiser só os que faltam decidir usa --apenas-abertos.
 @Component
 class ComandoListarAchados implements Comando {
 
@@ -38,6 +30,7 @@ class ComandoListarAchados implements Comando {
     private final ConsultaDeAchados consulta;
     private final Saida saida;
 
+    // Construtor que recebe a consulta de achados e a saída.
     ComandoListarAchados(ConsultaDeAchados consulta, Saida saida) {
         this.consulta = consulta;
         this.saida = saida;
@@ -70,6 +63,7 @@ class ComandoListarAchados implements Comando {
                         FiltroDeAchados.LIMITE_PADRAO);
     }
 
+    // Lista os apontamentos que atendem aos filtros e mostra quantos há no total.
     @Override
     public void executar(Argumentos argumentos) {
         argumentos.exigirSomente(List.of(
@@ -97,6 +91,7 @@ class ComandoListarAchados implements Comando {
         saida.linha("Mostrando %d de %d apontamento(s).", encontrados.size(), total);
     }
 
+    // Método auxiliar que mostra um apontamento, com evidências e tratativa.
     private void imprimir(AchadoRegistrado registrado) {
         Achado achado = registrado.achado();
 
@@ -126,16 +121,18 @@ class ComandoListarAchados implements Comando {
                 () -> saida.linha("  tratativa: em aberto"));
     }
 
+    // Método auxiliar que mostra a decisão e a justificativa da tratativa.
     private void imprimirTratativa(Tratativa tratativa) {
         saida.linha("  tratativa: %s em %s", tratativa.decisao(), tratativa.registradoEm());
         saida.linha("    justificativa: %s", tratativa.justificativa());
     }
 
-    /** Ausência é dita, e não confundida com valor vazio ou com zero. */
+    // Método auxiliar que escreve (não informado) quando o valor falta, para não confundir com vazio ou zero.
     private static String ausenteOu(Optional<String> valor) {
         return valor.orElse("(não informado)");
     }
 
+    // Método auxiliar que converte o texto em gravidade; recusa valor desconhecido.
     private static Severidade severidade(String informada) {
         return Arrays.stream(Severidade.values())
                 .filter(severidade -> severidade.name().equalsIgnoreCase(informada))

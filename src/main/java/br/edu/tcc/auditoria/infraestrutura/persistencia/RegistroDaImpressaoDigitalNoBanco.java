@@ -10,18 +10,20 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.util.Optional;
 
-/** A impressão digital do sal, gravada em banco. */
+// Classe que grava e lê do banco a impressão digital do sal.
 @Component
 public class RegistroDaImpressaoDigitalNoBanco implements RegistroDaImpressaoDigital {
 
     private final ImpressaoDigitalDoSalJpa impressoes;
     private final Clock relogio;
 
+    // Construtor que recebe o repositório da impressão digital e o relógio.
     RegistroDaImpressaoDigitalNoBanco(ImpressaoDigitalDoSalJpa impressoes, Clock relogio) {
         this.impressoes = impressoes;
         this.relogio = relogio;
     }
 
+    // Busca a impressão digital gravada, se houver.
     @Override
     @Transactional(readOnly = true)
     public Optional<Registro> registrada() {
@@ -32,6 +34,7 @@ public class RegistroDaImpressaoDigitalNoBanco implements RegistroDaImpressaoDig
                         entidade.adotadaDeAcervoExistente()));
     }
 
+    // Grava a impressão digital, substituindo a anterior, porque a tabela tem uma linha só.
     @Override
     @Transactional
     public void registrar(
@@ -41,14 +44,7 @@ public class RegistroDaImpressaoDigitalNoBanco implements RegistroDaImpressaoDig
                 impressao.valor(), relogio.instant(), origem.name(), sobreAcervoExistente));
     }
 
-    /**
-     * Traduz o nome gravado de volta para a origem.
-     *
-     * <p>Nome desconhecido não derruba a leitura: a origem é informativa, não
-     * participa da comparação de impressão digital, e recusar a subida porque uma
-     * versão anterior gravou um nome que esta não conhece seria travar por um
-     * campo que não decide nada. O diagnóstico dirá o que está gravado.</p>
-     */
+    // Método auxiliar que converte o nome gravado na origem do sal; nome desconhecido vira PROPRIEDADE_DE_CONFIGURACAO, em vez de travar a leitura, porque a origem só informa e não decide nada.
     private static OrigemDoSal origemDe(String gravada) {
         for (OrigemDoSal origem : OrigemDoSal.values()) {
             if (origem.name().equals(gravada)) {

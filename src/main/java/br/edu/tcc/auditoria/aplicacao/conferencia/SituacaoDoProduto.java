@@ -6,37 +6,10 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-/**
- * As verificações feitas sobre um produto, e a situação que resulta delas.
- *
- * <p>Um produto é avaliado por todas as regras do conjunto, uma avaliação por
- * par (item, regra). Esta é a peça que transforma esse punhado de desfechos na
- * única palavra que cabe numa coluna de tabela — sem que as outras desapareçam
- * no caminho.</p>
- *
- * <h2>A precedência, e o que ela não pode fazer</h2>
- *
- * <p>A situação é a mais forte entre as verificações, pela ordem em que
- * {@link EstadoDeConferencia} declara suas constantes. Uma divergência
- * encontrada prevalece sobre uma verificação que não concluiu, porque a
- * divergência é fato — é a mesma escolha que o R05 já faz entre os três pares
- * que confere.</p>
- *
- * <p>Isso tem um preço, e ele é pago aqui e não escondido: a situação sozinha
- * <strong>não</strong> diz quantas verificações ficaram sem conclusão. Por isso
- * {@link #contagens()} acompanha a situação em todo lugar onde ela aparece, e
- * por isso existe {@link #temVerificacaoNaoConcluida()} — o resumo da nota conta
- * os produtos por ele, não pela situação.</p>
- *
- * <h2>A invariante que importa</h2>
- *
- * <p>{@link EstadoDeConferencia#SEM_DIVERGENCIA_IDENTIFICADA} é o último da
- * ordem, então um produto só chega nele quando <em>todas</em> as suas
- * verificações chegaram. Não há ramo de código que decida isso: é consequência
- * da ordem das constantes, e há teste que sabota a ordem para provar.</p>
- */
+// Representa as verificações feitas sobre um produto e a situação que resulta delas, pela verificação mais forte.
 public record SituacaoDoProduto(List<VerificacaoDoProduto> verificacoes) {
 
+    // Valida que haja ao menos uma verificação, sem regra repetida, e ordena por identificador de regra.
     public SituacaoDoProduto {
         if (verificacoes == null) {
             throw new ConferenciaInvalida(
@@ -61,21 +34,13 @@ public record SituacaoDoProduto(List<VerificacaoDoProduto> verificacoes) {
                                 .formatted(verificacao.regraId()));
             }
         }
-        // Ordem por identificador de regra, para que duas execuções sobre o mesmo
-        // produto desenhem a tela na mesma sequência, qualquer que seja a ordem
-        // em que quem chama montou a lista.
+        // Ordena por identificador de regra para que a tela saia sempre na mesma sequência.
         verificacoes = verificacoes.stream()
                 .sorted(Comparator.comparing(VerificacaoDoProduto::regraId))
                 .toList();
     }
 
-    /**
-     * A situação do produto: a mais forte entre as verificações.
-     *
-     * <p>"Mais forte" é a menor posição em {@link EstadoDeConferencia}, e não uma
-     * cadeia de condições — trocar a ordem lá muda a precedência aqui, que é
-     * justamente a propriedade que o teste de sabotagem exercita.</p>
-     */
+    // Retorna a situação do produto: a verificação mais forte, pela ordem declarada em EstadoDeConferencia.
     public EstadoDeConferencia situacao() {
         return verificacoes.stream()
                 .map(VerificacaoDoProduto::estado)
@@ -84,30 +49,17 @@ public record SituacaoDoProduto(List<VerificacaoDoProduto> verificacoes) {
                         "Produto sem verificação chegou ao cálculo da situação."));
     }
 
-    /** Os quatro estados deste produto, sempre os quatro, inclusive os zeros. */
+    // Retorna a contagem dos quatro estados deste produto, inclusive os zeros.
     public ContagemDeEstados contagens() {
         return ContagemDeEstados.de(verificacoes.stream().map(VerificacaoDoProduto::estado).toList());
     }
 
-    /**
-     * Se alguma verificação deste produto não concluiu.
-     *
-     * <p>Independe da situação: um produto com divergência <em>e</em> verificação
-     * pendente responde {@code true} aqui e aparece como divergência ali. É a
-     * pergunta que impede a precedência de esconder o não concluído na contagem
-     * da nota.</p>
-     */
+    // Indica se alguma verificação não concluiu, independente da situação do produto.
     public boolean temVerificacaoNaoConcluida() {
         return contagens().quantidadeDe(EstadoDeConferencia.NAO_FOI_POSSIVEL_CONCLUIR) > 0;
     }
 
-    /**
-     * A conta que produziu a situação, escrita por extenso.
-     *
-     * <p>Vai junto da situação na resposta e na tela. Número sem procedência numa
-     * auditoria é número que ninguém confere, e uma palavra só numa coluna é a
-     * versão extrema disso.</p>
-     */
+    // Retorna por extenso a conta que produziu a situação.
     public String comoFoiObtida() {
         StringBuilder detalhe = new StringBuilder();
         ContagemDeEstados contagens = contagens();

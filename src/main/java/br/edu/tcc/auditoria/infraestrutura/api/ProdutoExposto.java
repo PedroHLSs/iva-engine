@@ -2,21 +2,7 @@ package br.edu.tcc.auditoria.infraestrutura.api;
 
 import java.util.List;
 
-/**
- * Um produto de uma nota, como ele aparece na lista da tela de resultado.
- *
- * <h2>Ausência é null com o campo irmão dizendo por quê</h2>
- *
- * <p>Vale para NCM e {@code cClassTrib}, que são {@code Optional} no item porque
- * o documento pode não os ter declarado. O par é garantido no construtor, e não
- * na disciplina de quem monta — é a mesma técnica da Etapa 8.</p>
- *
- * <h2>A situação nunca vem sozinha</h2>
- *
- * <p>Junto dela vão o rótulo por extenso, a explicação, a conta que a produziu e
- * as quatro contagens deste produto. Uma palavra só numa coluna, ao lado de uma
- * cor, é a forma extrema de cor ser a única codificação.</p>
- */
+// Representa um produto da nota como aparece na lista da tela de resultado. NCM e cClassTrib que faltaram vêm null com o motivo, e a situação vem sempre com rótulo, explicação, a conta que a produziu e as quatro contagens.
 public record ProdutoExposto(
         String endereco,
         DocumentoExposto documento,
@@ -35,6 +21,7 @@ public record ProdutoExposto(
         boolean reprocessadoDepoisDestaAnalise,
         String avisoDeReprocessamento) {
 
+    // Motivos para NCM e cClassTrib não declarados, e o aviso de quando o item foi reprocessado depois da análise.
     static final String NCM_NAO_DECLARADO =
             "o documento não declarou NCM para este item";
     static final String CLASSTRIB_NAO_DECLARADO =
@@ -44,6 +31,7 @@ public record ProdutoExposto(
                     + "gravado hoje, e não os que esta análise leu. O sistema guarda o item, não "
                     + "versões dele.";
 
+    // Valida o produto: endereço, documento, item, NCM e cClassTrib com valor ou motivo, valor, situação escrita, verificações, os quatro estados e o aviso de reprocessamento batendo com o sinalizador.
     public ProdutoExposto {
         if (endereco == null || endereco.isBlank()) {
             throw new RespostaInvalida(
@@ -86,13 +74,7 @@ public record ProdutoExposto(
         verificacoesPorEstado = List.copyOf(verificacoesPorEstado);
     }
 
-    /**
-     * Uma regra, a versão dela quando gravada, e o que ela concluiu.
-     *
-     * <p>{@code regraNome} e {@code motivoDoNomeDaRegraAusente} foram acrescentados
-     * depois da Etapa 11, para a resposta não trazer só o código: ver
-     * {@link NomeDaRegra}.</p>
-     */
+    // Representa uma verificação do produto: a regra, a versão dela quando foi gravada e o estado a que ela chegou.
     public record VerificacaoExposta(
             String regraId,
             String regraNome,
@@ -102,6 +84,7 @@ public record ProdutoExposto(
             String estado,
             String rotuloDoEstado) {
 
+        // Valida que haja regra, nome ou motivo, versão ou motivo, estado e rótulo.
         public VerificacaoExposta {
             if (regraId == null || regraId.isBlank()) {
                 throw new RespostaInvalida("A verificação precisa do identificador da regra.");
@@ -117,6 +100,7 @@ public record ProdutoExposto(
         }
     }
 
+    // Método auxiliar que exige valor ou motivo, nunca os dois e nunca nenhum.
     private static void exigirParDeAusencia(String valor, String motivo, String nomeDoCampo) {
         if (valor == null && (motivo == null || motivo.isBlank())) {
             throw new RespostaInvalida(
@@ -130,6 +114,7 @@ public record ProdutoExposto(
         }
     }
 
+    // Método auxiliar para verificar se um campo de texto obrigatório está vazio e lançar uma exceção.
     private static void exigirTexto(String valor, String nomeDoCampo) {
         if (valor == null || valor.isBlank()) {
             throw new RespostaInvalida(

@@ -16,33 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-/**
- * Grava o relatório de acurácia em CSV.
- *
- * <p>Uma linha por regra, na ordem em que o conjunto as aplica, e uma linha
- * {@code CONSOLIDADO} ao final. O separador é {@code ;} e a codificação é UTF-8,
- * as mesmas convenções dos demais CSVs do sistema — de modo que o arquivo
- * produzido aqui pode ser relido pelo leitor deste próprio sistema.</p>
- *
- * <h2>O cabeçalho de comentário carrega a identificação da rodada</h2>
- *
- * <p>Versão do catálogo, versão do conjunto de regras, documentos, itens e as
- * contagens de alinhamento entre gabarito e acervo vão em linhas iniciadas por
- * {@code #}, que o leitor de CSV do sistema ignora e que qualquer pessoa lê. Não
- * viram colunas porque não variam por regra, e repeti-las em cada linha
- * convidaria a somá-las.</p>
- *
- * <p>Sem esse bloco, o arquivo diria "precisão 0,8571" sem dizer contra qual
- * catálogo — e um número de acurácia sem procedência não sustenta afirmação
- * nenhuma.</p>
- *
- * <h2>As três contagens que não são acerto nem erro</h2>
- *
- * <p>{@code nao_avaliados}, {@code sem_avaliacao} e {@code avaliados} são
- * colunas próprias, e {@code total} é a soma das três. Quem recontar as métricas
- * a partir deste arquivo chega aos mesmos números, e vê imediatamente que
- * nenhuma das duas primeiras entra em precisão ou recall.</p>
- */
+// Classe que grava o relatório de acurácia em CSV: uma linha por regra e uma linha CONSOLIDADO no fim. As linhas com # no começo dizem contra qual catálogo e quais regras a medição foi feita, e os não avaliados ficam em coluna própria, fora da precisão e do recall.
 @Component
 public class EscritorDeRelatorioDeAcuraciaCsv implements EscritorDeRelatorioDeAcuracia {
 
@@ -65,6 +39,7 @@ public class EscritorDeRelatorioDeAcuraciaCsv implements EscritorDeRelatorioDeAc
             "f1",
             "cobertura");
 
+    // Grava o relatório no arquivo de destino, criando a pasta se ela não existir.
     @Override
     public void escrever(RelatorioDeAcuracia relatorio, Path destino) {
         if (relatorio == null) {
@@ -94,11 +69,13 @@ public class EscritorDeRelatorioDeAcuraciaCsv implements EscritorDeRelatorioDeAc
         }
     }
 
+    // Retorna a extensão do arquivo gravado.
     @Override
     public String extensao() {
         return EXTENSAO;
     }
 
+    // Método auxiliar que escreve, em linhas com #, as versões usadas e as contagens da rodada.
     private static void escreverIdentificacao(BufferedWriter saida, RelatorioDeAcuracia relatorio)
             throws IOException {
 
@@ -119,13 +96,7 @@ public class EscritorDeRelatorioDeAcuraciaCsv implements EscritorDeRelatorioDeAc
         escreverEnderecosSemAvaliacao(saida, relatorio.gabaritoSemAvaliacao());
     }
 
-    /**
-     * Lista, em comentário, as linhas do gabarito que o motor não respondeu.
-     *
-     * <p>Não viram linhas de dados porque não são medição: são o desalinhamento
-     * entre o gabarito e o acervo, e quem for corrigi-lo precisa dos endereços,
-     * não de uma contagem.</p>
-     */
+    // Método auxiliar que lista, em linhas com #, as linhas do gabarito que o motor não avaliou. Ficam como comentário porque não são medição, e quem for corrigir o gabarito precisa saber quais são.
     private static void escreverEnderecosSemAvaliacao(
             BufferedWriter saida, List<EnderecoDaAvaliacao> enderecos) throws IOException {
 
@@ -139,6 +110,7 @@ public class EscritorDeRelatorioDeAcuraciaCsv implements EscritorDeRelatorioDeAc
         }
     }
 
+    // Método auxiliar que escreve a linha de uma regra, ou do consolidado, com as contagens e as métricas.
     private static void escreverLinha(BufferedWriter saida, String rotulo, ContagemDeAcuracia contagem)
             throws IOException {
 
@@ -159,6 +131,7 @@ public class EscritorDeRelatorioDeAcuraciaCsv implements EscritorDeRelatorioDeAc
         saida.newLine();
     }
 
+    // Método auxiliar que escreve uma linha começando com #.
     private static void comentario(BufferedWriter saida, String formato, Object... valores)
             throws IOException {
 

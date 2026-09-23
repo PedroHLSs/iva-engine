@@ -23,44 +23,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Monta uma carga de catálogo a partir de um diretório de arquivos CSV.
- *
- * <h2>Cinco arquivos, todos obrigatórios</h2>
- *
- * <p>Os quatro de dados e o de cobertura. Arquivo ausente não é interpretado
- * como tabela vazia: seria impossível distinguir "esta carga não traz alíquota
- * nenhuma" de "esqueci de gerar o arquivo de alíquotas", e a diferença muda o
- * relatório inteiro. Para declarar tabela sem registros, forneça o arquivo só
- * com o cabeçalho — aí a ausência foi dita, e não suposta.</p>
- *
- * <h2>A coluna {@code natureza}, em todos os quatro arquivos de dados</h2>
- *
- * <p>Cada linha declara {@code FICTICIO} ou {@code NORMATIVO}. É o que permite à
- * tela avisar que está exibindo dado de demonstração sem depender de ninguém
- * lembrar de ligar uma propriedade. Linha sem a coluna recusa o arquivo inteiro,
- * e linhas com naturezas diferentes no mesmo arquivo também — ver
- * {@code NaturezaEmCsv}.</p>
- *
- * <p>{@code cobertura.csv} não a tem: ele declara período e fonte, não conteúdo,
- * e tem três linhas contra as milhares dos outros. A natureza sai dos arquivos
- * de dados, onde o conteúdo está — inclusive a de alíquota, que não tem linha de
- * cobertura nenhuma e ficaria de fora se a marcação morasse lá.</p>
- *
- * <h2>O arquivo de cobertura</h2>
- *
- * <p>{@code cobertura.csv} declara, por tabela, o período e a fonte normativa
- * que a carga cobre. Tem uma linha para cada uma das tabelas de
- * {@link TabelaNormativa}, com as colunas {@code tabela}, {@code vigenciaInicio},
- * {@code vigenciaFim} e {@code fonteNormativa} — as três últimas iguais às dos
- * demais arquivos.</p>
- *
- * <p>Sem essa declaração, o sistema não teria como separar "o catálogo foi
- * carregado para esta data e não traz este registro", que é apontamento, de
- * "esta tabela não foi carregada para esta data", que é não avaliado. Ele não
- * deduz a cobertura a partir das linhas importadas: uma carga incompleta
- * pareceria completa e produziria apontamento inventado.</p>
- */
+// Classe que monta uma carga de catálogo a partir de uma pasta com cinco CSV obrigatórios: os quatro de dados, cada um com a coluna natureza, e o cobertura.csv, que diz o período e a fonte que a carga cobre em cada tabela. Arquivo que falta é recusado, e não vira tabela vazia.
 public final class LeitorDeCatalogoEmCsv {
 
     static final String ARQUIVO_CLASSIFICACAO_TRIBUTARIA = "classificacao-tributaria.csv";
@@ -71,10 +34,11 @@ public final class LeitorDeCatalogoEmCsv {
 
     static final String COLUNA_TABELA = "tabela";
 
+    // Construtor privado: ninguém cria objeto desta classe, só usa os métodos estáticos.
     private LeitorDeCatalogoEmCsv() {
     }
 
-    /** Os nomes de arquivo esperados, para a mensagem de modo de usar. */
+    // Método estático que devolve os nomes dos arquivos esperados, para a mensagem de ajuda do comando.
     public static String arquivosEsperados() {
         return String.join(", ",
                 ARQUIVO_CLASSIFICACAO_TRIBUTARIA,
@@ -84,7 +48,7 @@ public final class LeitorDeCatalogoEmCsv {
                 ARQUIVO_COBERTURA);
     }
 
-    /** Lê os cinco arquivos do diretório e monta a carga com a versão indicada. */
+    // Método estático que lê os cinco arquivos da pasta e monta a carga com a versão informada.
     public static CargaDeCatalogo ler(Path diretorio, String versao) throws IOException {
         if (diretorio == null) {
             throw new ImportacaoDeCatalogoInvalida("Não foi informado o diretório do catálogo.");
@@ -118,6 +82,7 @@ public final class LeitorDeCatalogoEmCsv {
                 aliquotas.registros());
     }
 
+    // Método auxiliar que lê o cobertura.csv; recusa tabela desconhecida, tabela repetida e tabela sem cobertura declarada.
     private static CoberturaDoCatalogo lerCobertura(Path arquivo) throws IOException {
         Map<String, ProcedenciaNormativa> porTabela = new LinkedHashMap<>();
         try (Reader origem = Files.newBufferedReader(arquivo, StandardCharsets.UTF_8)) {
@@ -157,11 +122,13 @@ public final class LeitorDeCatalogoEmCsv {
                 porTabela.get(TabelaNormativa.ITEM_ANEXO.name()));
     }
 
+    // Método auxiliar que confere se o nome é de uma das tabelas conhecidas.
     private static boolean ehTabelaConhecida(String tabela) {
         return Arrays.stream(TabelaNormativa.values())
                 .anyMatch(conhecida -> conhecida.name().equals(tabela));
     }
 
+    // Método auxiliar que devolve o caminho do arquivo; recusa se ele não existir, porque arquivo que falta não é tabela vazia.
     private static Path exigir(Path diretorio, String nomeDoArquivo) {
         Path arquivo = diretorio.resolve(nomeDoArquivo);
         if (!Files.isRegularFile(arquivo)) {

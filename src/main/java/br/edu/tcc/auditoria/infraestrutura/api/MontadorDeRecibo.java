@@ -11,12 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.UUID;
 
-/**
- * Monta o comprovante de uma análise, recém-feita ou reaberta do histórico.
- *
- * <p>Os dois caminhos produzem o mesmo tipo, e devem: um comprovante que mudasse
- * de forma ao ser relido seria um comprovante inútil meses depois.</p>
- */
+// Classe que monta o comprovante de uma análise, feita agora ou aberta do histórico. Os dois caminhos devolvem o mesmo tipo, para o comprovante não mudar quando for lido de novo.
 @Component
 class MontadorDeRecibo {
 
@@ -25,25 +20,27 @@ class MontadorDeRecibo {
     private final ConsultaDeExecucoes execucoes;
     private final ConsultaDoAcervoDaAnalise acervo;
 
+    // Construtor que recebe a consulta de execuções e a do acervo da análise.
     MontadorDeRecibo(ConsultaDeExecucoes execucoes, ConsultaDoAcervoDaAnalise acervo) {
         this.execucoes = execucoes;
         this.acervo = acervo;
     }
 
-    /** O comprovante da análise que acabou de rodar, com o que está em memória. */
+    // Monta o comprovante da análise que acabou de rodar, com o que está em memória.
     ReciboDaAnalise de(ResultadoDaAnalise resultado) {
         return montar(
                 resultado.auditoria().execucao(),
                 resultado.arquivosIlegiveis());
     }
 
-    /** O comprovante de uma análise gravada. */
+    // Monta o comprovante de uma análise gravada; recusa se ela não existir.
     ReciboDaAnalise porId(UUID id) {
         ExecucaoAuditoria execucao = execucoes.porId(id)
                 .orElseThrow(() -> new ExecucaoNaoEncontrada(id));
         return montar(execucao, acervo.arquivosIlegiveis(id));
     }
 
+    // Método auxiliar que monta o recibo com os dados da execução e os arquivos ilegíveis.
     private static ReciboDaAnalise montar(
             ExecucaoAuditoria execucao, List<ArquivoIlegivel> ilegiveis) {
 
@@ -60,13 +57,7 @@ class MontadorDeRecibo {
                 comoFoiALeitura(execucao, ilegiveis.size()));
     }
 
-    /**
-     * A leitura contada por extenso, nos quatro casos possíveis.
-     *
-     * <p>Escrita sempre, inclusive quando não houve nenhuma falha: "nenhum
-     * arquivo deixou de ser lido" é uma afirmação, e um campo em branco no lugar
-     * dela seria indistinguível de campo que ninguém preencheu.</p>
-     */
+    // Método auxiliar que escreve como foi a leitura, nos quatro casos possíveis. Escreve sempre, até quando nada falhou, para o campo nunca ficar em branco.
     private static String comoFoiALeitura(ExecucaoAuditoria execucao, int ilegiveis) {
         int documentos = execucao.quantidadeDocumentos();
 

@@ -1,8 +1,8 @@
 package br.edu.tcc.auditoria.dominio.excecao;
 
-/** Conjunto de regras sem versão, vazio, ou com identificadores repetidos. */
 public class ConjuntoRegrasInvalido extends ExcecaoDeDominio {
 
+    // Construtor que recebe a mensagem de erro e chama RuntimeException com essa mensagem.
     public ConjuntoRegrasInvalido(String mensagem) {
         super(mensagem);
     }

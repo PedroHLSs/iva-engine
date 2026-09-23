@@ -2,22 +2,11 @@ package br.edu.tcc.auditoria.aplicacao.conferencia;
 
 import br.edu.tcc.auditoria.dominio.catalogo.ItemAnexo;
 
-/**
- * Um vínculo entre o NCM declarado e um anexo, vigente na data do documento.
- *
- * <p>É a parte da tela que responde à pergunta que dá nome à ferramenta: que
- * tratamento se aplica a este produto. O anexo e o tipo de tratamento são
- * rótulos da carga — o sistema não sabe o que cada anexo contém nem o que cada
- * tratamento implica, e por isso não escreve frase nenhuma em cima deles.</p>
- *
- * <p>Um NCM pode aparecer em mais de um anexo na mesma data, e o catálogo admite
- * isso de propósito ({@code ItemAnexo} tem chave de vigência por par NCM e
- * anexo). A tela mostra todos, sem escolher: escolher seria julgamento fiscal,
- * e é justamente ele que cabe a quem confere.</p>
- */
+// Representa um vínculo entre o NCM declarado e um anexo, vigente na data do documento; a tela mostra todos, sem escolher.
 public record EnquadramentoDoNcm(
         String ncm, String anexo, String tipoDeTratamento, ReferenciaNormativa referencia) {
 
+    // Valida que o enquadramento tenha NCM, anexo, tipo de tratamento e referência normativa.
     public EnquadramentoDoNcm {
         if (ncm == null || ncm.isBlank()) {
             throw new ConferenciaInvalida("O enquadramento precisa dizer de qual NCM ele é.");
@@ -33,6 +22,7 @@ public record EnquadramentoDoNcm(
         }
     }
 
+    // Método estático que cria o enquadramento de exibição a partir do item de anexo do catálogo.
     public static EnquadramentoDoNcm de(ItemAnexo item) {
         if (item == null) {
             throw new ConferenciaInvalida("Não há item de anexo a apresentar.");

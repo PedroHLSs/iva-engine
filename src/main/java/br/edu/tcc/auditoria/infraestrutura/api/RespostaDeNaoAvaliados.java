@@ -2,20 +2,14 @@ package br.edu.tcc.auditoria.infraestrutura.api;
 
 import java.util.List;
 
-/**
- * As avaliações que uma execução não conseguiu concluir.
- *
- * <p>Endpoint próprio, e não um campo dentro da resposta de achados, porque a
- * quantidade é de outra ordem de grandeza: um lote com catálogo incompleto produz
- * muito mais não avaliadas do que apontamentos, e a tabela que as guarda não é
- * deduplicada (D007). Recorte e filtro por regra existem por isso.</p>
- */
+// Representa uma página das avaliações que a execução não conseguiu concluir. Fica num endereço próprio, e não dentro dos achados, porque costuma ter muito mais linhas.
 public record RespostaDeNaoAvaliados(
         String execucaoId,
         PaginaExposta pagina,
         FiltroExposto filtro,
         List<NaoAvaliadaExposta> naoAvaliados) {
 
+    // Valida que a resposta tenha execução, página, filtro e a lista, vazia quando tudo foi avaliado.
     public RespostaDeNaoAvaliados {
         if (execucaoId == null || pagina == null || filtro == null) {
             throw new RespostaInvalida(

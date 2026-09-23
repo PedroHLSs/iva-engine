@@ -4,20 +4,14 @@ import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.Optional;
 
-/**
- * Leitura dos parâmetros de consulta, com as recusas num lugar só.
- *
- * <p>Texto em branco não vira filtro vazio: vira recusa. {@code ?regra=} é mais
- * provavelmente um cliente montando URL errado do que alguém pedindo "todas as
- * regras", e tratar os dois como a mesma coisa faria um filtro quebrado passar por
- * consulta sem filtro. É a mesma razão pela qual {@code FiltroDeAchados} recusa
- * regra em branco em vez de normalizá-la para {@code Optional.empty()} (D002).</p>
- */
+// Classe que lê os parâmetros da URL e junta as recusas num lugar só. Parâmetro em branco é recusado, e não vira "sem filtro", porque quase sempre é URL montada errado.
 final class Parametros {
 
+    // Construtor privado: ninguém cria objeto desta classe, só usa os métodos estáticos.
     private Parametros() {
     }
 
+    // Método estático que lê um texto opcional: ausente vira vazio, e em branco é recusado.
     static Optional<String> textoOpcional(String valor, String nome) {
         if (valor == null) {
             return Optional.empty();
@@ -30,14 +24,7 @@ final class Parametros {
         return Optional.of(valor.strip());
     }
 
-    /*
-     * Acrescentado na Etapa 11, sobre a Etapa 8.
-     *
-     * A data é obrigatória na consulta à base tributária, e é obrigatória por
-     * decisão: a D003 admitiu um caso de uso com data explícita, e "sem data" não
-     * pode cair silenciosamente em hoje. Por isso a ausência é recusa, e não
-     * valor padrão.
-     */
+    // Método estático que lê a data obrigatória no formato aaaa-mm-dd. Sem data é recusado, e não vira "hoje", porque a base normativa muda com o tempo.
     static LocalDate dataObrigatoria(String valor, String nome) {
         if (valor == null || valor.isBlank()) {
             throw new PedidoInvalido(
@@ -53,12 +40,7 @@ final class Parametros {
         }
     }
 
-    /*
-     * Acrescentado na Etapa 11, sobre a Etapa 8.
-     *
-     * O nome da constante vem na URL e a recusa lista as que existem: quem
-     * montou o pedido errado descobre o certo sem ter de abrir documentação.
-     */
+    // Método estático que converte o texto numa constante do enum, sem ligar para maiúscula ou minúscula; ausente ou em branco usa o padrão, e valor desconhecido é recusado com a lista dos aceitos.
     static <E extends Enum<E>> E constante(String valor, Class<E> tipo, String nome, E padrao) {
         if (valor == null || valor.isBlank()) {
             return padrao;
@@ -73,6 +55,7 @@ final class Parametros {
                         .formatted(nome, valor, java.util.Arrays.toString(tipo.getEnumConstants())));
     }
 
+    // Método estático que confere o número da página; a primeira é 0, e número negativo é recusado.
     static int pagina(int pagina) {
         if (pagina < 0) {
             throw new PedidoInvalido(
@@ -81,6 +64,7 @@ final class Parametros {
         return pagina;
     }
 
+    // Método estático que confere o tamanho da página, que vai de 1 até o máximo.
     static int tamanho(int tamanho) {
         if (tamanho < 1) {
             throw new PedidoInvalido(

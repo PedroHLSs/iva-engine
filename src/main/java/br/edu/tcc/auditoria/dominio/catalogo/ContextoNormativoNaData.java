@@ -8,18 +8,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Implementação do {@link ContextoNormativo} presa a uma data.
- *
- * <p>Recebe a data de referência — a data de emissão do documento auditado — e
- * os repositórios no construtor, e a partir daí só sabe responder naquela data.
- * A data fica em campo privado, sem acessor: nem as regras nem esta própria
- * classe têm como trocá-la depois.</p>
- *
- * <p>Não há construtor sem data, e não há chamada a {@code LocalDate.now()} em
- * lugar nenhum do domínio. Quem constrói o contexto é a camada de aplicação, a
- * partir do documento que está auditando.</p>
- */
+// Classe que implementa o ContextoNormativo preso a uma data, a emissão do documento, guardada sem acessor para que ninguém a troque depois.
 public final class ContextoNormativoNaData implements ContextoNormativo {
 
     private final LocalDate dataDeReferencia;
@@ -28,6 +17,7 @@ public final class ContextoNormativoNaData implements ContextoNormativo {
     private final RepositorioItemAnexo itensDeAnexo;
     private final RepositorioAliquota aliquotas;
 
+    // Construtor que recebe a data de referência e os quatro repositórios do catálogo.
     public ContextoNormativoNaData(
             LocalDate dataDeReferencia,
             RepositorioClassificacaoTributaria classificacoes,
@@ -43,6 +33,7 @@ public final class ContextoNormativoNaData implements ContextoNormativo {
         this.aliquotas = exigir(aliquotas, "Repositório de alíquotas não informado.");
     }
 
+    // Busca a classificação tributária vigente na data de referência; código nulo volta vazio.
     @Override
     public Optional<ClassificacaoTributaria> classificacaoTributaria(CodigoClassificacaoTributaria codigo) {
         if (codigo == null) {
@@ -51,6 +42,7 @@ public final class ContextoNormativoNaData implements ContextoNormativo {
         return classificacoes.buscarVigenteEm(codigo, dataDeReferencia);
     }
 
+    // Busca o registro de NCM vigente na data de referência; NCM nulo volta vazio.
     @Override
     public Optional<RegistroNcm> registroNcm(Ncm ncm) {
         if (ncm == null) {
@@ -59,6 +51,7 @@ public final class ContextoNormativoNaData implements ContextoNormativo {
         return ncms.buscarVigenteEm(ncm, dataDeReferencia);
     }
 
+    // Busca os anexos do NCM vigentes na data de referência; NCM nulo volta lista vazia.
     @Override
     public List<ItemAnexo> anexosDoNcm(Ncm ncm) {
         if (ncm == null) {
@@ -67,6 +60,7 @@ public final class ContextoNormativoNaData implements ContextoNormativo {
         return itensDeAnexo.buscarVigentesEm(ncm, dataDeReferencia);
     }
 
+    // Busca a alíquota do par tributo e abrangência vigente na data de referência.
     @Override
     public Optional<AliquotaVigente> aliquota(Tributo tributo, Abrangencia abrangencia) {
         if (tributo == null || abrangencia == null) {
@@ -75,6 +69,7 @@ public final class ContextoNormativoNaData implements ContextoNormativo {
         return aliquotas.buscarVigenteEm(tributo, abrangencia, dataDeReferencia);
     }
 
+    // Busca as alíquotas do tributo vigentes na data de referência, em todas as abrangências.
     @Override
     public List<AliquotaVigente> aliquotas(Tributo tributo) {
         if (tributo == null) {
@@ -83,6 +78,7 @@ public final class ContextoNormativoNaData implements ContextoNormativo {
         return aliquotas.buscarVigentesEm(tributo, dataDeReferencia);
     }
 
+    // Método auxiliar para verificar se um valor é nulo e lançar uma exceção com a mensagem informada.
     private static <T> T exigir(T valor, String mensagem) {
         if (valor == null) {
             throw new CatalogoInvalido(mensagem);

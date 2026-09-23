@@ -10,14 +10,7 @@ import java.io.Serializable;
 import java.util.Objects;
 import java.util.UUID;
 
-/**
- * A procedência que uma carga declarou para uma tabela.
- *
- * <p>É o que permite à tela avisar que está exibindo dado de demonstração sem
- * depender de ninguém ter lembrado de ligar uma propriedade. Ausência de linha
- * não é lida como "normativo": é carga anterior à declaração, ou tabela sem
- * registro — ver a V9 e {@code SituacaoDaNatureza}.</p>
- */
+// Representa a procedência que uma carga declarou para uma tabela, para a tela avisar quando mostra dado de demonstração. Falta de linha não quer dizer normativo: é carga anterior à declaração ou tabela sem registro.
 @Entity
 @Table(name = "natureza_da_carga")
 @IdClass(NaturezaDaCargaEntidade.Chave.class)
@@ -34,10 +27,11 @@ class NaturezaDaCargaEntidade {
     @Column(name = "natureza", nullable = false)
     private String natureza;
 
+    // Construtor vazio exigido pelo JPA.
     protected NaturezaDaCargaEntidade() {
-        // Exigido pelo JPA.
     }
 
+    // Construtor que recebe a carga, a tabela e a natureza.
     NaturezaDaCargaEntidade(UUID cargaId, String tabela, String natureza) {
         this.cargaId = cargaId;
         this.tabela = tabela;
@@ -52,16 +46,17 @@ class NaturezaDaCargaEntidade {
         return natureza;
     }
 
-    /** Chave composta, no mesmo desenho de {@code CoberturaCatalogoEntidade}. */
+    // Representa a chave composta, carga e tabela, no mesmo desenho da CoberturaCatalogoEntidade.
     static class Chave implements Serializable {
 
         private UUID cargaId;
         private String tabela;
 
+        // Construtor vazio exigido pelo JPA.
         protected Chave() {
-            // Exigido pelo JPA.
         }
 
+        // Compara duas chaves pela carga e pela tabela.
         @Override
         public boolean equals(Object outro) {
             if (this == outro) {
@@ -73,6 +68,7 @@ class NaturezaDaCargaEntidade {
             return Objects.equals(cargaId, chave.cargaId) && Objects.equals(tabela, chave.tabela);
         }
 
+        // Calcula o hash pela carga e pela tabela.
         @Override
         public int hashCode() {
             return Objects.hash(cargaId, tabela);

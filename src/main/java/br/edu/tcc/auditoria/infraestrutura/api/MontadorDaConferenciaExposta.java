@@ -28,15 +28,7 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-/**
- * Traduz a conferência montada pela aplicação para o que sai na resposta.
- *
- * <p>Nenhuma decisão de conferência acontece aqui: os quatro estados, a
- * precedência e as contagens vêm prontos de {@code aplicacao.conferencia}. Esta
- * classe escolhe nomes de campo e formata número — e formatar número é onde uma
- * etapa inteira de cuidado morreria, se o valor monetário virasse número JSON.
- * Sai como texto, como na D009.</p>
- */
+// Classe que converte a conferência montada pela aplicação no que sai na resposta. Nenhuma decisão é tomada aqui: os estados e as contagens já vêm prontos, e esta classe só escolhe os nomes dos campos e escreve valor em dinheiro como texto.
 @Component
 class MontadorDaConferenciaExposta {
 
@@ -47,6 +39,7 @@ class MontadorDaConferenciaExposta {
     private final MontadorDeRecibo recibos;
     private final ConsultaDaNaturezaDaCarga naturezas;
 
+    // Construtor que recebe o montador da conferência, as consultas de documentos e de procedência, o pseudonimizador, a política de exposição e o montador de recibo.
     MontadorDaConferenciaExposta(
             MontadorDaConferencia conferencias,
             ConsultaDeDocumentos documentos,
@@ -63,6 +56,7 @@ class MontadorDaConferenciaExposta {
         this.naturezas = naturezas;
     }
 
+    // Devolve o resultado de uma análise: o recibo de leitura e as contagens da conferência.
     RespostaDaConferencia resultado(UUID id) {
         ConferenciaDaAnalise conferencia = exigir(id);
         return new RespostaDaConferencia(
@@ -72,6 +66,7 @@ class MontadorDaConferenciaExposta {
                 AvisoDeUso.TEXTO);
     }
 
+    // Devolve uma página dos produtos da análise, buscando no banco só os documentos daquela página.
     RespostaDeProdutos produtos(UUID id, int pagina, int tamanho) {
         ConferenciaDaAnalise conferencia = exigir(id);
         List<ProdutoConferido> todos = conferencia.produtos();
@@ -89,13 +84,7 @@ class MontadorDaConferenciaExposta {
                 AvisoDeUso.TEXTO);
     }
 
-    /**
-     * O detalhe de um produto.
-     *
-     * <p>O {@code ProdutoExposto} daqui é montado pelo mesmo caminho da lista, e
-     * não por um atalho: é o que garante que a situação escrita na linha e a
-     * escrita no cabeçalho do detalhe sejam a mesma frase.</p>
-     */
+    // Devolve o detalhe de um produto. O produto é montado pelo mesmo caminho da lista, para a situação escrita nas duas telas ser a mesma.
     RespostaDoDetalhe detalhe(UUID id, String endereco) {
         DetalheDoProduto detalhe = conferencias.detalhe(id, endereco)
                 .orElseThrow(() -> new ProdutoNaoEncontrado(id));
@@ -122,14 +111,7 @@ class MontadorDaConferenciaExposta {
                 AvisoDeUso.TEXTO);
     }
 
-    /**
-     * A tela do lote: os grupos por parametrização, mais o resumo do lote.
-     *
-     * <p>Os grupos saem inteiros, sem paginação. Eles são poucos por natureza —
-     * é isso que o agrupamento faz —, e paginá-los quebraria justamente a leitura
-     * que a tela existe para dar: quais parametrizações alcançam mais valor. Quem
-     * pagina é a lista de produtos de dentro de um grupo.</p>
-     */
+    // Devolve a tela do lote: o resumo e os grupos, todos de uma vez. Os grupos são poucos, e quem pagina é a lista de produtos dentro de cada grupo.
     RespostaDeGrupos grupos(UUID id, OrdemDosGrupos ordem) {
         ConferenciaDaAnalise conferencia = exigir(id);
         AgrupamentoDaAnalise agrupamento =
@@ -146,7 +128,7 @@ class MontadorDaConferenciaExposta {
                 AvisoDeUso.TEXTO);
     }
 
-    /** As notas e os itens de um grupo, paginados. */
+    // Devolve uma página das notas e dos itens de um grupo; recusa se o grupo não existir.
     RespostaDeProdutosDoGrupo produtosDoGrupo(
             UUID id, ChaveDoGrupo chave, int pagina, int tamanho) {
 
@@ -170,23 +152,18 @@ class MontadorDaConferenciaExposta {
                 AvisoDeUso.TEXTO);
     }
 
-    /*
-     * A faixa sai da versão de catálogo que a execução registrou, e não da
-     * carga mais recente: a situação exibida foi produzida contra aquela, e é a
-     * procedência dela que interessa a quem lê este resultado.
-     *
-     * A consulta é de quatro linhas, e não carrega o catálogo. Carregá-lo para
-     * desenhar uma faixa seria trazer milhares de registros por requisição.
-     */
+    // Método auxiliar que monta a faixa de procedência pela versão do catálogo que a execução usou, e não pela carga mais nova; a consulta é pequena e não carrega o catálogo.
     private FaixaDeNatureza faixaDe(ConferenciaDaAnalise conferencia) {
         String versao = conferencia.execucao().versaoCatalogo();
         return FaixaDeNatureza.de(naturezas.daVersao(versao), versao);
     }
 
+    // Método auxiliar que busca a conferência da análise; recusa se ela não existir.
     private ConferenciaDaAnalise exigir(UUID id) {
         return conferencias.daExecucao(id).orElseThrow(() -> new ExecucaoNaoEncontrada(id));
     }
 
+    // Método auxiliar que converte as contagens da conferência para a resposta.
     private static ConferenciaExposta expor(ConferenciaDaAnalise conferencia) {
         return new ConferenciaExposta(
                 conferencia.quantidadeDeNotas(),
@@ -197,6 +174,7 @@ class MontadorDaConferenciaExposta {
                 conferencia.resumo().comoFoiObtido());
     }
 
+    // Método auxiliar que converte um produto para a resposta, com o motivo onde falta NCM ou cClassTrib.
     private ProdutoExposto expor(
             ProdutoConferido produto, Map<ChaveAcesso, DadosDoDocumento> dados) {
 
@@ -225,6 +203,7 @@ class MontadorDaConferenciaExposta {
                 reprocessado ? ProdutoExposto.AVISO_DE_REPROCESSAMENTO : null);
     }
 
+    // Método auxiliar que converte uma verificação para a resposta, com a versão da regra ou o motivo de faltar.
     private static ProdutoExposto.VerificacaoExposta expor(VerificacaoDoProduto verificacao) {
         NomeDaRegra nome = NomeDaRegra.de(verificacao.regraId());
         return switch (verificacao.versao()) {
@@ -247,15 +226,7 @@ class MontadorDaConferenciaExposta {
         };
     }
 
-    /*
-     * Duplicado de MontadorDeRespostas, da Etapa 8, e não extraído.
-     *
-     * Compartilhar obrigaria a alargar a visibilidade de um método privado
-     * daquela classe, que é a montagem das respostas de leitura e tem contrato
-     * próprio afirmado em teste. São quinze linhas; a duplicação é mais barata
-     * que o acoplamento, e é o mesmo julgamento que a revisão das Etapas 0 a 4
-     * fez ao duplicar o descarte de comentários entre dois guardas.
-     */
+    // Método auxiliar que monta o documento da resposta. É cópia do que está em MontadorDeRespostas, de propósito: compartilhar obrigaria a abrir um método privado daquela classe.
     private DocumentoExposto documentoDe(
             ChaveAcesso chaveAcesso, Map<ChaveAcesso, DadosDoDocumento> dados) {
 
@@ -277,6 +248,7 @@ class MontadorDaConferenciaExposta {
                 documento.ufEmitente().name());
     }
 
+    // Método auxiliar que corta a lista na página pedida; página além do fim devolve lista vazia.
     private static <T> List<T> recortar(List<T> todos, int pagina, int tamanho) {
         long primeiro = (long) pagina * tamanho;
         if (primeiro >= todos.size()) {

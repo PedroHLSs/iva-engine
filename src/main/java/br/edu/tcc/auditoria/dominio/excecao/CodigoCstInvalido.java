@@ -1,8 +1,8 @@
 package br.edu.tcc.auditoria.dominio.excecao;
 
-/** Sinaliza tentativa de construir um código de CST vazio ou malformado. */
 public class CodigoCstInvalido extends ExcecaoDeDominio {
 
+    // Construtor que recebe a mensagem de erro e chama RuntimeException com essa mensagem.
     public CodigoCstInvalido(String mensagem) {
         super(mensagem);
     }

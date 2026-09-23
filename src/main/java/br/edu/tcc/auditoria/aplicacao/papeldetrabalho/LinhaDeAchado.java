@@ -10,34 +10,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
-/**
- * Uma linha da aba de achados: tudo o que é preciso para conferir um
- * apontamento sem abrir o sistema.
- *
- * <h2>Identificação do documento sem identificar ninguém</h2>
- *
- * <p>{@code documentoPseudonimizado} é o resumo da chave de acesso, e não a
- * chave: os dígitos da chave carregam o CNPJ do emitente, e a exportação não
- * leva identificador em texto claro. O que permite achar a nota no sistema da
- * empresa são {@code modelo}, {@code serie}, {@code numero}, {@code dataEmissao}
- * e {@code ufEmitente} — numeração do próprio emitente e localização da
- * operação, nenhum deles dado de participante.</p>
- *
- * <h2>Um apontamento, várias evidências</h2>
- *
- * <p>Um apontamento pode ter mais de uma evidência, e a linha é uma só. As três
- * listas — campos, valores encontrados e valores esperados — têm o mesmo
- * tamanho e são alinhadas posição a posição: o campo da posição 2 corresponde ao
- * valor encontrado da posição 2. Na planilha isso vira uma célula com várias
- * linhas, e não uma linha por evidência, porque quem confere quer contar
- * apontamentos, não evidências.</p>
- *
- * <p>{@code Optional.empty()} nas duas listas de valores continua significando
- * o que significa no domínio: em {@code valoresEncontrados}, que o campo não
- * veio no documento; em {@code valoresEsperados}, que a regra não tinha valor de
- * referência a opor. Nenhum dos dois é o mesmo que texto vazio, e a planilha
- * escreve uma marca explícita em vez de deixar a célula em branco.</p>
- */
+// Representa uma linha da aba de achados, identificada pelo pseudônimo da chave, com as evidências em três listas alinhadas posição a posição.
 public record LinhaDeAchado(
         String documentoPseudonimizado,
         String modelo,
@@ -61,6 +34,7 @@ public record LinhaDeAchado(
         Optional<String> justificativaDaTratativa,
         Optional<Instant> tratadoEm) {
 
+    // Valida a linha: exige os campos obrigatórios, evidências alinhadas e, sem valor em risco, o motivo da ausência.
     public LinhaDeAchado {
         exigirTexto(documentoPseudonimizado, "documentoPseudonimizado");
         exigirTexto(regraId, "regraId");
@@ -116,11 +90,11 @@ public record LinhaDeAchado(
         valoresEsperados = List.copyOf(valoresEsperados);
     }
 
-    /** Quantidade de evidências desta linha. */
     public int quantidadeDeEvidencias() {
         return campos.size();
     }
 
+    // Método auxiliar para verificar se um campo de texto obrigatório está vazio e lançar uma exceção.
     private static void exigirTexto(String valor, String nomeDoCampo) {
         if (valor == null || valor.isBlank()) {
             throw new PapelDeTrabalhoInvalido(
@@ -128,6 +102,7 @@ public record LinhaDeAchado(
         }
     }
 
+    // Método auxiliar para verificar se um campo opcional é nulo e lançar uma exceção.
     private static void exigirOptional(Optional<?> valor, String nomeDoCampo) {
         if (valor == null) {
             throw new PapelDeTrabalhoInvalido(

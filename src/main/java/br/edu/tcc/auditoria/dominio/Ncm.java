@@ -2,17 +2,12 @@ package br.edu.tcc.auditoria.dominio;
 
 import br.edu.tcc.auditoria.dominio.excecao.NcmInvalido;
 
-/**
- * Código NCM declarado para um item: 8 dígitos.
- *
- * <p>Valida somente a forma. O domínio não sabe quais NCM existem, a que
- * capítulo pertencem nem a que anexo da legislação se vinculam — esse vínculo é
- * conteúdo normativo e chega por importação de tabela em tempo de execução.</p>
- */
+// Representa o NCM do item: 8 dígitos. Só confere o formato; quais NCM existem e em que anexo estão vem do catálogo importado.
 public record Ncm(String valor) {
 
     private static final int QUANTIDADE_DE_DIGITOS = 8;
 
+    // Valida que o NCM tenha exatamente 8 dígitos.
     public Ncm {
         if (valor == null) {
             throw new NcmInvalido("O NCM não pode ser nulo.");

@@ -13,22 +13,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Interface de uso do sistema: uma linha de comando.
- *
- * <p>Não há API REST, e a ausência é deliberada (D006). O sistema é operado por
- * quem audita, em lote, sobre arquivos que já estão na máquina — não há segundo
- * sistema chamando, não há sessão, não há concorrência entre usuários. Uma API
- * traria autenticação, autorização, versionamento de contrato e superfície de
- * exposição de documento fiscal real, tudo isso sem nenhum consumidor.</p>
- *
- * <h2>Erro de uso não vira rastro de pilha</h2>
- *
- * <p>Caminho errado, opção desconhecida ou catálogo malformado imprimem a
- * mensagem e o modo de usar, e devolvem código de saída diferente de zero. Só
- * falha inesperada sobe com a pilha inteira, porque aí a pilha é a informação
- * útil.</p>
- */
+// Classe que roda o comando pedido na linha de comando e define o código de saída. Erro de uso ou recusa com mensagem própria mostra só a mensagem e sai com código 2; só falha inesperada sobe com a pilha inteira.
 @Component
 class LinhaDeComando implements CommandLineRunner, ExitCodeGenerator {
 
@@ -39,6 +24,7 @@ class LinhaDeComando implements CommandLineRunner, ExitCodeGenerator {
     private final Saida saida;
     private int codigoDeSaida = SUCESSO;
 
+    // Construtor que recebe todos os comandos, ordenados pelo nome, e a saída.
     LinhaDeComando(List<Comando> comandos, Saida saida) {
         this.saida = saida;
         comandos.stream()
@@ -46,6 +32,7 @@ class LinhaDeComando implements CommandLineRunner, ExitCodeGenerator {
                 .forEach(comando -> this.comandos.put(comando.nome(), comando));
     }
 
+    // Interpreta os argumentos e executa o comando; sem argumento ou com comando desconhecido, mostra a lista de comandos.
     @Override
     public void run(String... argumentos) {
         if (argumentos.length == 0) {
@@ -75,18 +62,19 @@ class LinhaDeComando implements CommandLineRunner, ExitCodeGenerator {
                  | ImportacaoDeCatalogoInvalida
                  | ConsultaInvalida
                  | ExcecaoDeDominio recusa) {
-            // Recusas com mensagem própria e explicativa: o texto basta, e a pilha
-            // só esconderia a explicação no meio de trinta linhas de framework.
+            // Recusas com mensagem própria: o texto basta, e a pilha só esconderia a explicação.
             saida.linha(recusa.getMessage());
             codigoDeSaida = ERRO_DE_USO;
         }
     }
 
+    // Retorna o código de saída do último comando.
     @Override
     public int getExitCode() {
         return codigoDeSaida;
     }
 
+    // Método auxiliar que mostra a lista de todos os comandos.
     private void imprimirModoDeUsarGeral() {
         saida.linha("Auditoria de coerência de IBS/CBS em documentos fiscais eletrônicos.");
         saida.linhaEmBranco();
@@ -97,6 +85,7 @@ class LinhaDeComando implements CommandLineRunner, ExitCodeGenerator {
         saida.linha("Para o modo de usar de um comando, chame-o sem as opções obrigatórias.");
     }
 
+    // Método auxiliar que mostra o modo de usar de um comando.
     private void imprimirModoDeUsarDe(String nomeDoComando) {
         Comando comando = comandos.get(nomeDoComando);
         if (comando == null) {
