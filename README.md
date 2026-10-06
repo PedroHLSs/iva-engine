@@ -142,15 +142,3 @@ Lista completa, limites de envio e o guarda de troca de sal em [docs/CONFIGURACA
 `mvn test`. Os testes de persistência, exportação e API sobem um PostgreSQL com Testcontainers e **exigem
 Docker**; sem ele, aparecem como pulados e o build passa sem que a persistência e a API tenham sido verificadas.
 Em pasta sincronizada (OneDrive), se `mvn clean` falhar ao apagar `target/`, apague-o à mão.
-
-## Dados fiscais não são versionados
-
-O `.gitignore` bloqueia `dados/`, `*.xml`, `*.zip`, `*.csv`, `*.xlsx`, `*.p12`, `*.pfx` e formatos correlatos.
-Coloque os documentos em `dados/` (ignorado). O repositório não contém alíquota, código nem valor da legislação, e
-não há catálogo de exemplo versionado: monte os CSV a partir da norma. Fixtures fictícias de teste em
-`src/test/resources` entram uma a uma, com `git add -f`.
-
-## Convenções e licença
-
-Código, nomes e comentários em português; `dominio/` não depende de framework. Regras de trabalho em
-[CLAUDE.md](CLAUDE.md). **Licença: ainda não definida** — o repositório não tem arquivo `LICENSE`.
