@@ -1,0 +1,52 @@
+body.na-envio{
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background:#f4f7f9;
+  color:#0f1f33;
+}
+
+.na-envio .tela-de-envio{ max-width:700px; margin:24px auto 0; text-align:center; }
+.na-envio .tela-de-envio h1{ font-size:26px; font-weight:680; color:#0f1f33; margin:0 0 8px; }
+.na-envio .tela-de-envio .sub{ font-size:14.5px; color:#475569; margin:0 auto 28px; max-width:56ch; }
+
+.na-envio .area-de-envio{
+  background:#ffffff; border:2px dashed #94a3b8; border-radius:12px;
+  padding:48px 32px 36px; margin:0 0 16px;
+  box-shadow:0 1px 2px rgba(15,31,51,.04);
+  transition:border-color .18s ease, background-color .18s ease;
+}
+.na-envio .area-de-envio:hover,
+.na-envio .area-de-envio.recebendo{ border-color:#1a365d; background:#f1f6fc; }
+.na-envio .area-titulo{ font-size:19px; font-weight:650; color:#0f1f33; margin:0 0 4px; }
+.na-envio .area-ou{ font-size:13px; color:#5b6778; margin:0 0 16px; }
+
+.na-envio .botao-enviar{
+  display:inline-block; cursor:pointer;
+  padding:12px 24px; border:0; border-radius:8px;
+  background:#1a365d; color:#ffffff;
+  font-family:inherit; font-size:15px; font-weight:600; line-height:1.4;
+  transition:background-color .15s ease, box-shadow .15s ease;
+}
+.na-envio .botao-enviar:hover{ background:#122a4a; box-shadow:0 4px 12px rgba(26,54,93,.25); }
+.na-envio .campo-arquivo:focus-visible + .botao-enviar{ outline:3px solid var(--foco); outline-offset:3px; }
+
+.na-envio .formatos-aceitos{ font-size:13px; color:#5b6778; margin:18px auto 0; max-width:52ch; }
+
+.na-envio .estado-do-envio{ font-size:13.5px; color:#475569; margin:4px 0 0; }
+.na-envio .tela-de-envio .aviso{ text-align:left; margin:12px auto 0; }
+
+.na-envio .atalhos-do-envio{ display:flex; justify-content:center; flex-wrap:wrap; gap:8px; margin:20px 0 0; }
+.na-envio .atalho-fantasma{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:8px 14px; border-radius:8px;
+  font-size:14px; font-weight:500; color:#334155; text-decoration:none;
+  transition:background-color .15s ease, color .15s ease;
+}
+.na-envio .atalho-fantasma:hover{ background:#e2e8f0; color:#0f1f33; }
+.na-envio .atalho-icone{ font-size:15px; line-height:1; }
+
+@media (max-width:480px){
+  .na-envio .area-de-envio{ padding:32px 16px 28px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .na-envio *{ transition:none !important; }
+}

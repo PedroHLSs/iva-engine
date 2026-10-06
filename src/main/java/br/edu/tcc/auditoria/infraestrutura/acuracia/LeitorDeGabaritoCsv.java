@@ -7,6 +7,7 @@ import br.edu.tcc.auditoria.aplicacao.acuracia.Gabarito;
 import br.edu.tcc.auditoria.aplicacao.acuracia.LinhaDeGabarito;
 import br.edu.tcc.auditoria.dominio.ChaveAcesso;
 import br.edu.tcc.auditoria.dominio.acuracia.RotuloEsperado;
+import br.edu.tcc.auditoria.infraestrutura.csv.AberturaEmUtf8;
 import br.edu.tcc.auditoria.infraestrutura.csv.LeitorCsv;
 import br.edu.tcc.auditoria.infraestrutura.csv.LinhaCsv;
 
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -46,7 +46,8 @@ public class LeitorDeGabaritoCsv implements FonteDeGabarito {
                     ("Não há arquivo de gabarito em \"%s\". O gabarito é rotulado à mão e informado por "
                             + "quem mede; o sistema não gera nenhum.").formatted(arquivo));
         }
-        try (Reader origem = Files.newBufferedReader(arquivo, StandardCharsets.UTF_8)) {
+        // Emenda de 04/10/2026 (D024): o gabarito abre pelo mesmo ponto do catálogo, em UTF-8 estrito, e fora de UTF-8 é GabaritoInvalido dizendo a codificação esperada e a linha. Até essa data saía como UncheckedIOException embrulhando uma MalformedInputException.
+        try (Reader origem = AberturaEmUtf8.abrir(arquivo, GabaritoInvalido::new)) {
             return ler(origem);
         } catch (IOException falhaDeLeitura) {
             throw new UncheckedIOException(

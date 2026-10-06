@@ -43,6 +43,12 @@ public final class ConstrutorDeItem {
     private Optional<BigDecimal> valorIbsUf = Optional.empty();
     private Optional<BigDecimal> valorIbsMunicipal = Optional.empty();
     private Optional<BigDecimal> valorCbs = Optional.empty();
+    private Optional<BigDecimal> reducaoAliquotaIbsUf = Optional.empty();
+    private Optional<BigDecimal> aliquotaEfetivaIbsUf = Optional.empty();
+    private Optional<BigDecimal> reducaoAliquotaIbsMunicipal = Optional.empty();
+    private Optional<BigDecimal> aliquotaEfetivaIbsMunicipal = Optional.empty();
+    private Optional<BigDecimal> reducaoAliquotaCbs = Optional.empty();
+    private Optional<BigDecimal> aliquotaEfetivaCbs = Optional.empty();
 
     private ConstrutorDeItem() {
     }
@@ -126,6 +132,36 @@ public final class ConstrutorDeItem {
         return this;
     }
 
+    public ConstrutorDeItem reducaoAliquotaIbsUf(String valor) {
+        this.reducaoAliquotaIbsUf = Optional.of(new BigDecimal(valor));
+        return this;
+    }
+
+    public ConstrutorDeItem aliquotaEfetivaIbsUf(String valor) {
+        this.aliquotaEfetivaIbsUf = Optional.of(new BigDecimal(valor));
+        return this;
+    }
+
+    public ConstrutorDeItem reducaoAliquotaIbsMunicipal(String valor) {
+        this.reducaoAliquotaIbsMunicipal = Optional.of(new BigDecimal(valor));
+        return this;
+    }
+
+    public ConstrutorDeItem aliquotaEfetivaIbsMunicipal(String valor) {
+        this.aliquotaEfetivaIbsMunicipal = Optional.of(new BigDecimal(valor));
+        return this;
+    }
+
+    public ConstrutorDeItem reducaoAliquotaCbs(String valor) {
+        this.reducaoAliquotaCbs = Optional.of(new BigDecimal(valor));
+        return this;
+    }
+
+    public ConstrutorDeItem aliquotaEfetivaCbs(String valor) {
+        this.aliquotaEfetivaCbs = Optional.of(new BigDecimal(valor));
+        return this;
+    }
+
     public ItemDocumento construir() {
         return new ItemDocumento(
                 numeroItem,
@@ -142,6 +178,12 @@ public final class ConstrutorDeItem {
                 aliquotaCbs,
                 valorIbsUf,
                 valorIbsMunicipal,
-                valorCbs);
+                valorCbs,
+                reducaoAliquotaIbsUf,
+                aliquotaEfetivaIbsUf,
+                reducaoAliquotaIbsMunicipal,
+                aliquotaEfetivaIbsMunicipal,
+                reducaoAliquotaCbs,
+                aliquotaEfetivaCbs);
     }
 }

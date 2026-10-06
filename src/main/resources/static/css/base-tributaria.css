@@ -1,0 +1,151 @@
+body:has(.tela-base){ background:#f4f7f9; }
+
+.tela-base{
+  --bt-fundo:#f4f7f9;
+  --bt-cartao:#ffffff;
+  --bt-borda:#e2e8f0;
+  --bt-azul:#2563eb;
+  --bt-azul-escuro:#1d4ed8;
+  --bt-texto:#0f1f33;
+  --bt-texto2:#475569;
+  --bt-discreto:#64748b;
+  --bt-rodape:#5b6778;
+  --bt-cabecalho:#f8fafc;
+
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color:var(--bt-texto);
+  max-width:1180px;
+}
+
+.tela-base .base-cabecalho{ margin:0 0 18px; }
+.tela-base .base-titulo{ display:flex; align-items:center; gap:10px; }
+.tela-base .base-titulo h1{ font-size:26px; font-weight:680; margin:0; }
+.tela-base .base-sub{ font-size:13px; color:var(--bt-discreto); margin:4px 0 0; }
+
+.tela-base .botao-info{
+  width:20px; height:20px; padding:0; border-radius:50%; flex:none;
+  border:1px solid #cbd5e1; background:#ffffff; cursor:pointer;
+  font:italic 700 11.5px/1 Georgia, "Times New Roman", serif; color:var(--bt-texto2);
+}
+.tela-base .botao-info:hover,
+.tela-base .botao-info[aria-expanded="true"]{ border-color:var(--bt-azul); color:var(--bt-azul); }
+.tela-base .botao-info:focus-visible{ outline:2px solid var(--bt-azul); outline-offset:2px; }
+.tela-base .balao-info{
+  margin:10px 0 0; padding:10px 12px; border-radius:8px; max-width:640px;
+  background:#ffffff; border:1px solid var(--bt-borda);
+  box-shadow:0 4px 12px rgba(15,31,51,.08);
+  font-size:13px; line-height:1.5; color:var(--bt-texto2);
+}
+.tela-base .balao-info[hidden]{ display:none; }
+.tela-base .balao-info p{ margin:0; }
+.tela-base .balao-info p + p{ margin-top:6px; }
+
+.tela-base .base-filtros{
+  display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px 18px;
+  background:var(--bt-cartao); border:1px solid var(--bt-borda); border-radius:12px;
+  box-shadow:0 1px 2px rgba(15,31,51,.04);
+  padding:16px 18px; margin:0 0 20px;
+}
+.tela-base .base-campo{ display:flex; flex-direction:column; gap:6px; min-width:150px; flex:1 1 170px; }
+.tela-base .base-campo label{
+  font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--bt-discreto);
+}
+.tela-base .base-campo-data{ display:flex; gap:8px; align-items:center; }
+.tela-base .base-campo-data input{ flex:1; min-width:0; }
+.tela-base .base-filtros input{
+  font:inherit; font-size:14px; color:var(--bt-texto);
+  padding:8px 11px; border:1px solid var(--bt-borda); border-radius:8px;
+  background:#f8fafc; transition:border-color .15s ease, box-shadow .15s ease, background-color .15s ease;
+}
+.tela-base .base-filtros input:hover{ border-color:#cbd5e1; }
+.tela-base .base-filtros input:focus{
+  outline:none; background:#ffffff; border-color:var(--bt-azul);
+  box-shadow:0 0 0 3px rgba(37,99,235,.15);
+}
+
+.tela-base .base-botao-principal,
+.tela-base .base-botao-secundario{
+  display:inline-block; white-space:nowrap; cursor:pointer;
+  font-family:inherit; font-size:12.5px; font-weight:600; line-height:1.4;
+  padding:4px 12px; border-radius:6px;
+  border:1px solid #d5dde6; background:transparent; color:#334155; text-decoration:none;
+  transition:background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.tela-base .base-botao-principal{ padding:8px 16px; }
+.tela-base .base-botao-principal:hover,
+.tela-base .base-botao-secundario:hover{ background:#eef2f7; border-color:#94a3b8; color:#1a365d; }
+.tela-base .base-botao-principal:focus-visible,
+.tela-base .base-botao-secundario:focus-visible{ outline:2px solid var(--bt-azul); outline-offset:2px; }
+
+.tela-base .base-vazio{
+  background:var(--bt-cartao); border:1px dashed #cbd5e1; border-radius:12px;
+  padding:22px; text-align:center; color:var(--bt-texto2); font-size:14px;
+}
+
+.tela-base .procedencia-compacta{ margin:0 0 16px; }
+.tela-base .procedencia-linha{
+  display:flex; align-items:center; flex-wrap:wrap; gap:6px 10px;
+  font-size:13px; color:var(--bt-texto2);
+}
+.tela-base .procedencia-linha strong{ font-weight:600; color:#334155; }
+.tela-base .procedencia-versao{ font:12px ui-monospace, "Cascadia Mono", Consolas, monospace; color:var(--bt-discreto); }
+.tela-base .procedencia-compacta.avisa{
+  background:#fdf7e8; border-left:3px solid #eda100; border-radius:0 8px 8px 0; padding:8px 12px;
+}
+.tela-base .procedencia-compacta.avisa strong{ color:#8a5a00; }
+.tela-base .procedencia-tabelas{ font-size:12.5px; color:var(--bt-texto2); margin:4px 0 0; }
+
+.tela-base .base-cartao{
+  background:var(--bt-cartao); border:1px solid var(--bt-borda); border-radius:12px;
+  box-shadow:0 1px 2px rgba(15,31,51,.04);
+  padding:18px 20px; margin:0 0 18px;
+}
+.tela-base .base-cartao h2{ font-size:15px; font-weight:650; margin:0 0 14px; color:var(--bt-texto); }
+.tela-base .base-cartao-titulo{ display:flex; align-items:baseline; justify-content:space-between; gap:8px 16px; flex-wrap:wrap; }
+.tela-base .base-perguntado{ font-size:12.5px; color:var(--bt-discreto); }
+.tela-base .base-cartao > .ausente{ margin:0; }
+
+.tela-base .base-grade{
+  display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px 24px; margin:0;
+}
+.tela-base .base-par dt{
+  font-size:11px; font-weight:650; letter-spacing:.07em; text-transform:uppercase;
+  color:var(--bt-discreto); margin:0 0 4px;
+}
+.tela-base .base-par dd{ margin:0; font-size:15px; font-weight:650; color:var(--bt-texto); overflow-wrap:anywhere; }
+
+.tela-base .base-rolagem{
+  overflow-x:auto; border:1px solid var(--bt-borda); border-radius:8px;
+}
+.tela-base .data-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+.tela-base .data-table th{
+  background:var(--bt-cabecalho); color:var(--bt-discreto);
+  font-size:12px; font-weight:650; letter-spacing:.05em; text-transform:uppercase;
+  text-align:left; padding:10px 14px; border-bottom:1px solid var(--bt-borda); white-space:nowrap;
+}
+.tela-base .data-table td{
+  padding:11px 14px; border-bottom:1px solid var(--bt-borda); vertical-align:top; color:var(--bt-texto);
+}
+.tela-base .data-table tbody tr:last-child td{ border-bottom:none; }
+.tela-base .data-table tbody tr:hover{ background:#f8fafc; }
+.tela-base .data-table .forte{ font-weight:600; }
+.tela-base .data-table .mono{ font-family:ui-monospace, "Cascadia Mono", Consolas, monospace; }
+.tela-base .data-table .base-percentual{ font-size:15.5px; font-weight:700; white-space:nowrap; }
+.tela-base .data-table .base-vigencia{ white-space:nowrap; }
+.tela-base .data-table .base-fonte{ color:var(--bt-texto2); min-width:180px; }
+.tela-base .data-table .ausente{ font-style:italic; color:var(--bt-discreto); }
+
+.tela-base .base-rodape{
+  margin:34px auto 8px; max-width:760px; text-align:center;
+  font-size:12px; line-height:1.55; color:var(--bt-rodape);
+}
+.tela-base .base-rodape p{ margin:0 0 6px; max-width:none; font-size:12px; color:var(--bt-rodape); }
+.tela-base .base-rodape .aviso-de-uso{
+  background:none; border:none; padding:0; font-style:normal;
+}
+
+@media (max-width:640px){
+  .tela-base .base-grade{ grid-template-columns:1fr; }
+  .tela-base .base-botao-principal{ width:100%; }
+}

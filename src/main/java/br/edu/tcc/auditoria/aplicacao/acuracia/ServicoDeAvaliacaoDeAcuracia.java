@@ -4,7 +4,9 @@ import br.edu.tcc.auditoria.aplicacao.auditoria.CatalogoParaAuditoria;
 import br.edu.tcc.auditoria.aplicacao.auditoria.FonteDeLoteDeDocumentos;
 import br.edu.tcc.auditoria.aplicacao.auditoria.LoteDeDocumentos;
 import br.edu.tcc.auditoria.aplicacao.auditoria.MotorAuditoria;
+import br.edu.tcc.auditoria.aplicacao.auditoria.OrigemDaTolerancia;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ProvedorDeCatalogo;
+import br.edu.tcc.auditoria.aplicacao.auditoria.ToleranciaDaExecucao;
 import br.edu.tcc.auditoria.dominio.regras.Avaliacao;
 import br.edu.tcc.auditoria.dominio.regras.ConjuntoRegras;
 import br.edu.tcc.auditoria.dominio.regras.ToleranciaDeValor;
@@ -21,8 +23,9 @@ public final class ServicoDeAvaliacaoDeAcuracia {
     private final MotorAuditoria motor;
     private final ComparadorDeGabarito comparador;
     private final EscritorDeRelatorioDeAcuracia escritor;
-    private final ToleranciaDeValor tolerancia;
+    private final ToleranciaDaExecucao tolerancia;
 
+    // Construtor na forma anterior à D023: a tolerância informada por quem chama é registrada como configurada.
     public ServicoDeAvaliacaoDeAcuracia(
             FonteDeLoteDeDocumentos fonte,
             ProvedorDeCatalogo provedorDeCatalogo,
@@ -31,6 +34,19 @@ public final class ServicoDeAvaliacaoDeAcuracia {
             ComparadorDeGabarito comparador,
             EscritorDeRelatorioDeAcuracia escritor,
             ToleranciaDeValor tolerancia) {
+        this(fonte, provedorDeCatalogo, fonteDeGabarito, motor, comparador, escritor,
+                tolerancia == null ? null : new ToleranciaDaExecucao(tolerancia, OrigemDaTolerancia.CONFIGURADA));
+    }
+
+    // Construtor do serviço. Emenda de 04/10/2026 (D023): a tolerância vem com a origem, e vai no relatório.
+    public ServicoDeAvaliacaoDeAcuracia(
+            FonteDeLoteDeDocumentos fonte,
+            ProvedorDeCatalogo provedorDeCatalogo,
+            FonteDeGabarito fonteDeGabarito,
+            MotorAuditoria motor,
+            ComparadorDeGabarito comparador,
+            EscritorDeRelatorioDeAcuracia escritor,
+            ToleranciaDaExecucao tolerancia) {
 
         this.fonte = exigir(fonte, "a fonte de documentos");
         this.provedorDeCatalogo = exigir(provedorDeCatalogo, "o provedor de catálogo");
@@ -75,7 +91,7 @@ public final class ServicoDeAvaliacaoDeAcuracia {
             throw new AvaliacaoDeAcuraciaInvalida("O provedor de catálogo não devolveu catálogo.");
         }
 
-        ConjuntoRegras conjunto = ConjuntoRegras.padrao(catalogo.cobertura(), tolerancia);
+        ConjuntoRegras conjunto = ConjuntoRegras.padrao(catalogo.cobertura(), tolerancia.valor());
         List<Avaliacao> avaliacoes = motor.auditar(lote.documentos(), catalogo, conjunto);
 
         return comparador.comparar(
@@ -85,7 +101,8 @@ public final class ServicoDeAvaliacaoDeAcuracia {
                 catalogo.versao(),
                 conjunto.versao(),
                 lote.documentos().size(),
-                lote.quantidadeDeItens());
+                lote.quantidadeDeItens())
+                .comTolerancia(tolerancia);
     }
 
     public RelatorioDeAcuracia avaliarEGravar(Path origem, Path gabarito, Path destino) {

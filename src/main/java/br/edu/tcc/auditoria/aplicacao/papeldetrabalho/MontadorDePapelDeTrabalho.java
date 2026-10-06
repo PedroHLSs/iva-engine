@@ -1,6 +1,8 @@
 package br.edu.tcc.auditoria.aplicacao.papeldetrabalho;
 
+import br.edu.tcc.auditoria.aplicacao.catalogo.ConsultaDaNaturezaDaCarga;
 import br.edu.tcc.auditoria.aplicacao.consulta.AchadoRegistrado;
+import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDaToleranciaDaExecucao;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeAchadosDaExecucao;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeDocumentos;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeNaoAvaliadas;
@@ -9,6 +11,7 @@ import br.edu.tcc.auditoria.aplicacao.consulta.NaoAvaliadaRegistrada;
 import br.edu.tcc.auditoria.dominio.Achado;
 import br.edu.tcc.auditoria.dominio.ChaveAcesso;
 import br.edu.tcc.auditoria.dominio.Evidencia;
+import br.edu.tcc.auditoria.dominio.OrigemEvidencia;
 import br.edu.tcc.auditoria.dominio.execucao.ExecucaoAuditoria;
 
 import java.util.ArrayList;
@@ -21,6 +24,10 @@ import java.util.Optional;
 import java.util.Set;
 
 // Classe que monta o papel de trabalho de uma execução a partir do que está gravado, trocando a chave de acesso pelo pseudônimo.
+// Emenda de 04/10/2026 (D023): consulta a tolerância de valor da R05 que a execução usou.
+// Emenda de 04/10/2026 (D021): consulta a natureza do catálogo da execução, pela mesma porta que a conferência usa.
+// Emenda de 04/10/2026 (D019): consulta também quantos documentos repetidos o lote da execução descartou.
+// Emenda de 04/10/2026 (D018): consulta também os arquivos que a execução não leu, para a planilha não dizer só quantos documentos entraram.
 public final class MontadorDePapelDeTrabalho {
 
     // Separador de agrupamento, fora de qualquer texto que venha de regra ou de catálogo.
@@ -30,17 +37,29 @@ public final class MontadorDePapelDeTrabalho {
     private final ConsultaDeNaoAvaliadas naoAvaliadas;
     private final ConsultaDeDocumentos documentos;
     private final PseudonimizadorDeChave pseudonimizador;
+    private final ConsultaDosArquivosNaoLidos naoLidos;
+    private final ConsultaDosDocumentosRepetidos repetidos;
+    private final ConsultaDaNaturezaDaCarga naturezas;
+    private final ConsultaDaToleranciaDaExecucao tolerancias;
 
-    // Construtor do montador, que recebe as consultas de leitura e o pseudonimizador de chave.
+    // Construtor do montador, que recebe as consultas de leitura, o pseudonimizador de chave e a consulta dos arquivos não lidos.
     public MontadorDePapelDeTrabalho(
             ConsultaDeAchadosDaExecucao achados,
             ConsultaDeNaoAvaliadas naoAvaliadas,
             ConsultaDeDocumentos documentos,
-            PseudonimizadorDeChave pseudonimizador) {
+            PseudonimizadorDeChave pseudonimizador,
+            ConsultaDosArquivosNaoLidos naoLidos,
+            ConsultaDosDocumentosRepetidos repetidos,
+            ConsultaDaNaturezaDaCarga naturezas,
+            ConsultaDaToleranciaDaExecucao tolerancias) {
         this.achados = exigir(achados, "a consulta de apontamentos da execução");
         this.naoAvaliadas = exigir(naoAvaliadas, "a consulta de avaliações não concluídas");
         this.documentos = exigir(documentos, "a consulta de documentos");
         this.pseudonimizador = exigir(pseudonimizador, "o pseudonimizador de chave");
+        this.naoLidos = exigir(naoLidos, "a consulta dos arquivos não lidos");
+        this.repetidos = exigir(repetidos, "a consulta dos documentos repetidos");
+        this.naturezas = exigir(naturezas, "a consulta da natureza do catálogo");
+        this.tolerancias = exigir(tolerancias, "a consulta da tolerância da execução");
     }
 
     // Monta o papel de trabalho da execução indicada, com achados, não avaliados e motivos agrupados.
@@ -58,7 +77,11 @@ public final class MontadorDePapelDeTrabalho {
                 registrados.stream().map(registrado -> linhaDe(registrado, dados)).toList(),
                 naoConcluidas.stream().map(naoAvaliada -> linhaDe(naoAvaliada, dados)).toList(),
                 agrupar(naoConcluidas),
-                itensDistintos(naoConcluidas));
+                itensDistintos(naoConcluidas),
+                naoLidos.daExecucao(execucao.id()),
+                repetidos.daExecucao(execucao.id()),
+                naturezas.daVersao(execucao.versaoCatalogo()),
+                tolerancias.daExecucao(execucao.id()));
     }
 
     // Método auxiliar que monta a linha de achado, separando as evidências em três listas alinhadas.
@@ -73,7 +96,7 @@ public final class MontadorDePapelDeTrabalho {
         List<Optional<String>> esperados = new ArrayList<>();
         for (Evidencia evidencia : achado.evidencias()) {
             campos.add(evidencia.campoAnalisado());
-            encontrados.add(evidencia.valorEncontrado());
+            encontrados.add(encontrado(evidencia, achado.evidencias()));
             esperados.add(evidencia.valorEsperado());
         }
 
@@ -101,6 +124,19 @@ public final class MontadorDePapelDeTrabalho {
                 StatusDeTratativa.de(registrado.tratativa()),
                 registrado.tratativa().map(tratativa -> tratativa.justificativa()),
                 registrado.tratativa().map(tratativa -> tratativa.registradoEm()));
+    }
+
+    // Método auxiliar que devolve o valor encontrado da evidência. Acrescentado em 04/10/2026 (D025): execução gravada antes da correção de R01 e R06 tem o lado da tabela vazio no banco. Quando a nota informou o mesmo campo, numa evidência do documento ao lado, o vazio não pode querer dizer "não informado" — é a tabela que não tem registro, e é isso que a linha diz. Campo que a nota não trouxe, como na R07, continua vazio. Nenhuma regra é reconhecida pelo identificador.
+    private static Optional<String> encontrado(Evidencia evidencia, List<Evidencia> doMesmoAchado) {
+        if (evidencia.valorEncontrado().isPresent()
+                || !(evidencia.origem() instanceof OrigemEvidencia.DeTabelaNormativa)) {
+            return evidencia.valorEncontrado();
+        }
+        boolean aNotaInformouOCampo = doMesmoAchado.stream().anyMatch(outra ->
+                outra.origem() instanceof OrigemEvidencia.DoDocumento
+                        && outra.campoAnalisado().equals(evidencia.campoAnalisado())
+                        && outra.valorEncontrado().isPresent());
+        return aNotaInformouOCampo ? Optional.of(Evidencia.NENHUM_REGISTRO_NA_TABELA) : Optional.empty();
     }
 
     // Método auxiliar que monta a linha de não avaliado a partir da avaliação não concluída.

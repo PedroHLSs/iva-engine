@@ -1,10 +1,13 @@
 package br.edu.tcc.auditoria.infraestrutura.cli;
 
+import br.edu.tcc.auditoria.aplicacao.analise.RegistroDoAcervoDaAnalise;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ResultadoDaAuditoria;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ServicoDeAuditoria;
+import br.edu.tcc.auditoria.aplicacao.auditoria.ToleranciaDaExecucao;
 import br.edu.tcc.auditoria.dominio.Severidade;
 import br.edu.tcc.auditoria.dominio.execucao.ExecucaoAuditoria;
 import br.edu.tcc.auditoria.infraestrutura.lote.FonteDeLoteNoSistemaDeArquivos;
+import br.edu.tcc.auditoria.infraestrutura.lote.OrigemDeArquivoIlegivel;
 import br.edu.tcc.auditoria.infraestrutura.xml.FalhaDeLeitura;
 
 import org.springframework.stereotype.Component;
@@ -14,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 
 // Classe do comando auditar, que audita uma pasta ou um .zip de documentos e mostra o resumo: achados por gravidade e por regra, não avaliadas e arquivos que não foram lidos, para zero apontamento não parecer lote limpo.
+// Emenda de 04/10/2026 (D019): mostra e registra quantos documentos repetidos, com o mesmo conteúdo, o lote descartou. Arquivos com a mesma chave e conteúdo diferente saem na lista dos que ficaram de fora.
+// Emenda de 04/10/2026 (D018): os arquivos que não foram lidos passaram a ser gravados junto da execução, pelo mesmo registro da análise da interface, sem a pasta e sem o CNPJ no nome. Até essa data eram só impressos, e a API e a planilha liam a tabela vazia como "nenhum falhou". Os itens lidos não são gravados aqui: a lista de itens vai vazia, como sempre foi para a CLI.
 @Component
 class ComandoAuditar implements Comando {
 
@@ -23,12 +28,18 @@ class ComandoAuditar implements Comando {
 
     private final ServicoDeAuditoria servico;
     private final FonteDeLoteNoSistemaDeArquivos fonte;
+    private final RegistroDoAcervoDaAnalise acervo;
     private final Saida saida;
 
-    // Construtor que recebe o serviço de auditoria, a fonte de lote e a saída.
-    ComandoAuditar(ServicoDeAuditoria servico, FonteDeLoteNoSistemaDeArquivos fonte, Saida saida) {
+    // Construtor que recebe o serviço de auditoria, a fonte de lote, o registro do acervo e a saída.
+    ComandoAuditar(
+            ServicoDeAuditoria servico,
+            FonteDeLoteNoSistemaDeArquivos fonte,
+            RegistroDoAcervoDaAnalise acervo,
+            Saida saida) {
         this.servico = servico;
         this.fonte = fonte;
+        this.acervo = acervo;
         this.saida = saida;
     }
 
@@ -58,12 +69,22 @@ class ComandoAuditar implements Comando {
         argumentos.exigirSomente(List.of(OPCAO_ORIGEM));
         Path origem = argumentos.caminhoObrigatorio(OPCAO_ORIGEM);
 
+        // O registro de falhas da fonte é do processo: o que já estava nele antes desta auditoria não é dela.
+        int falhasAnteriores = fonte.falhasDeLeitura().size();
         ResultadoDaAuditoria resultado = servico.auditar(origem);
-        imprimir(resultado);
+        List<FalhaDeLeitura> todas = fonte.falhasDeLeitura();
+        List<FalhaDeLeitura> destaAuditoria = todas.subList(falhasAnteriores, todas.size());
+
+        acervo.registrar(
+                resultado.execucao().id(),
+                List.of(),
+                destaAuditoria.stream().map(OrigemDeArquivoIlegivel::de).toList(),
+                resultado.documentosRepetidosDescartados());
+        imprimir(resultado, destaAuditoria);
     }
 
     // Método auxiliar que mostra a execução, os achados, as avaliações e os arquivos não lidos.
-    private void imprimir(ResultadoDaAuditoria resultado) {
+    private void imprimir(ResultadoDaAuditoria resultado, List<FalhaDeLeitura> falhas) {
         ExecucaoAuditoria execucao = resultado.execucao();
 
         saida.linha("Execução %s", execucao.id());
@@ -71,8 +92,13 @@ class ComandoAuditar implements Comando {
         saida.linha("  entrada ............ %s", execucao.hashEntrada());
         saida.linha("  catálogo ........... %s", execucao.versaoCatalogo());
         saida.linha("  conjunto de regras . %s", execucao.versaoConjuntoRegras());
+        // D023 (04/10/2026): a tolerância da R05 usada, com a origem; o padrão aparece escrito como padrão.
+        saida.linha("  tolerância R05 ..... %s", resultado.tolerancia()
+                .map(ToleranciaDaExecucao::texto).orElse(ToleranciaDaExecucao.NAO_REGISTRADA));
         saida.linha("  documentos ......... %d", execucao.quantidadeDocumentos());
         saida.linha("  itens .............. %d", execucao.quantidadeItens());
+        saida.linha("  repetidos descartados . %d (mesmo conteúdo de outro arquivo do lote, contados uma vez)",
+                resultado.documentosRepetidosDescartados());
         saida.linhaEmBranco();
 
         saida.linha("Apontamentos por severidade");
@@ -93,7 +119,6 @@ class ComandoAuditar implements Comando {
                 resultado.achados().size(),
                 resultado.quantidadeDeNaoAvaliadas());
 
-        List<FalhaDeLeitura> falhas = fonte.falhasDeLeitura();
         if (falhas.isEmpty()) {
             saida.linha("Nenhum arquivo deixou de ser lido.");
             return;

@@ -7,5 +7,7 @@ import java.util.UUID;
 public interface RegistroDoAcervoDaAnalise {
 
     // Registra, para a execução que acabou de ser gravada, todos os itens lidos, inclusive os sem apontamento, e os arquivos que falharam, na ordem em que falharam.
-    void registrar(UUID execucaoId, List<ItemDaAnalise> itens, List<ArquivoIlegivel> ilegiveis);
+    // Emenda de 04/10/2026 (D019): registra também quantos documentos repetidos, com o mesmo conteúdo, o lote descartou.
+    void registrar(UUID execucaoId, List<ItemDaAnalise> itens, List<ArquivoIlegivel> ilegiveis,
+                   int documentosRepetidosDescartados);
 }

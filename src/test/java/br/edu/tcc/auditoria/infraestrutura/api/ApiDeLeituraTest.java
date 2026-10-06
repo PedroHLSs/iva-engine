@@ -1,5 +1,7 @@
 package br.edu.tcc.auditoria.infraestrutura.api;
 
+import br.edu.tcc.auditoria.aplicacao.identidade.Perfil;
+import br.edu.tcc.auditoria.aplicacao.identidade.ServicoDeUsuarios;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ServicoDeAuditoria;
 import br.edu.tcc.auditoria.aplicacao.catalogo.CargaDeCatalogo;
 import br.edu.tcc.auditoria.aplicacao.catalogo.ServicoDeImportacaoDeCatalogo;
@@ -114,6 +116,10 @@ class ApiDeLeituraTest {
     @TempDir
     private Path pasta;
 
+    // Etapa 12: toda chamada à API exige sessão; o teste entra como administrador, que alcança todos os endpoints lidos aqui.
+    @Autowired
+    private ServicoDeUsuarios usuariosDaSessao;
+
     @Autowired
     private TestRestTemplate cliente;
 
@@ -145,6 +151,7 @@ class ApiDeLeituraTest {
     @BeforeEach
     void prepararBancoELote() throws IOException {
         jdbc.execute("truncate table " + TABELAS + " cascade");
+        SessaoDeTeste.entrarComo(cliente, usuariosDaSessao, Perfil.ADMINISTRADOR);
         importacaoDeCatalogo.importar(catalogoFicticio());
 
         Path lote = Files.createDirectories(pasta.resolve("lote"));

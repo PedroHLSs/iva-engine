@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 import java.util.UUID;
 
 // Representa um item de documento auditado, com os campos de IBS/CBS como vieram. Coluna null quer dizer campo não declarado, e nunca se grava zero no lugar; as colunas de valor mantêm as casas decimais, porque "0" e "0,00" não são o mesmo registro.
+// Emenda de 03/10/2026 (D015, V18): o item passou a levar os seis campos do grupo gRed, gravados e lidos como os outros — null é "não veio", nunca zero.
 @Entity
 @Table(name = "item_documento")
 class ItemDocumentoEntidade {
@@ -68,6 +69,25 @@ class ItemDocumentoEntidade {
     @Column(name = "valor_cbs")
     private BigDecimal valorCbs;
 
+    // V18 (03/10/2026, D015): os seis campos do grupo gRed. Null é "não veio", como nas outras colunas, e em item gravado antes da V18.
+    @Column(name = "reducao_aliquota_ibs_uf")
+    private BigDecimal reducaoAliquotaIbsUf;
+
+    @Column(name = "aliquota_efetiva_ibs_uf")
+    private BigDecimal aliquotaEfetivaIbsUf;
+
+    @Column(name = "reducao_aliquota_ibs_municipal")
+    private BigDecimal reducaoAliquotaIbsMunicipal;
+
+    @Column(name = "aliquota_efetiva_ibs_municipal")
+    private BigDecimal aliquotaEfetivaIbsMunicipal;
+
+    @Column(name = "reducao_aliquota_cbs")
+    private BigDecimal reducaoAliquotaCbs;
+
+    @Column(name = "aliquota_efetiva_cbs")
+    private BigDecimal aliquotaEfetivaCbs;
+
     // Construtor vazio exigido pelo JPA.
     protected ItemDocumentoEntidade() {
     }
@@ -95,7 +115,13 @@ class ItemDocumentoEntidade {
             BigDecimal aliquotaCbs,
             BigDecimal valorIbsUf,
             BigDecimal valorIbsMunicipal,
-            BigDecimal valorCbs) {
+            BigDecimal valorCbs,
+            BigDecimal reducaoAliquotaIbsUf,
+            BigDecimal aliquotaEfetivaIbsUf,
+            BigDecimal reducaoAliquotaIbsMunicipal,
+            BigDecimal aliquotaEfetivaIbsMunicipal,
+            BigDecimal reducaoAliquotaCbs,
+            BigDecimal aliquotaEfetivaCbs) {
 
         this.hashItem = hashItem;
         this.ncm = ncm;
@@ -112,6 +138,12 @@ class ItemDocumentoEntidade {
         this.valorIbsUf = valorIbsUf;
         this.valorIbsMunicipal = valorIbsMunicipal;
         this.valorCbs = valorCbs;
+        this.reducaoAliquotaIbsUf = reducaoAliquotaIbsUf;
+        this.aliquotaEfetivaIbsUf = aliquotaEfetivaIbsUf;
+        this.reducaoAliquotaIbsMunicipal = reducaoAliquotaIbsMunicipal;
+        this.aliquotaEfetivaIbsMunicipal = aliquotaEfetivaIbsMunicipal;
+        this.reducaoAliquotaCbs = reducaoAliquotaCbs;
+        this.aliquotaEfetivaCbs = aliquotaEfetivaCbs;
     }
 
     // Acessores de leitura, acrescentados na Etapa 11 para a tela do produto; null aqui vira Optional vazio no mapeamento, nunca zero.
@@ -177,6 +209,30 @@ class ItemDocumentoEntidade {
 
     BigDecimal valorCbs() {
         return valorCbs;
+    }
+
+    BigDecimal reducaoAliquotaIbsUf() {
+        return reducaoAliquotaIbsUf;
+    }
+
+    BigDecimal aliquotaEfetivaIbsUf() {
+        return aliquotaEfetivaIbsUf;
+    }
+
+    BigDecimal reducaoAliquotaIbsMunicipal() {
+        return reducaoAliquotaIbsMunicipal;
+    }
+
+    BigDecimal aliquotaEfetivaIbsMunicipal() {
+        return aliquotaEfetivaIbsMunicipal;
+    }
+
+    BigDecimal reducaoAliquotaCbs() {
+        return reducaoAliquotaCbs;
+    }
+
+    BigDecimal aliquotaEfetivaCbs() {
+        return aliquotaEfetivaCbs;
     }
 
     UUID id() {

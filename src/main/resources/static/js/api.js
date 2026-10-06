@@ -1,17 +1,5 @@
-/* ---------------------------------------------------------------------------
-   Os quatro GET da API de leitura. Nada mais.
-
-   Nao existe aqui nenhuma chamada de escrita, e isso nao e omissao: a Etapa 8
-   nao expoe nenhuma. Auditar tem efeito colateral gravado, importar catalogo
-   decide o que o sistema afirma sobre a norma, e tratar achado e ato de uma
-   pessoa identificada — os tres continuam na CLI, atras de quem tem acesso a
-   maquina, e nao atras de uma porta sem autenticacao.
-   --------------------------------------------------------------------------- */
-
-/** Teto de pagina aceito pela API (PaginaExposta.TAMANHO_MAXIMO). */
 export const TAMANHO_MAXIMO = 500;
 
-/** Falha que a pagina sabe explicar para quem esta olhando. */
 export class FalhaDeLeitura extends Error {
   constructor(mensagem, detalhe) {
     super(mensagem);
@@ -87,22 +75,6 @@ export function paginaDeNaoAvaliados(id, filtros, pagina, tamanho) {
   return pegar(`/api/execucoes/${encodeURIComponent(id)}/nao-avaliados${busca}`);
 }
 
-/**
- * Busca TODAS as paginas de um recorte.
- *
- * <h2>Por que a pagina inteira e trazida para o cliente</h2>
- *
- * A API pagina e ordena por severidade, o que e a ordem certa para ela: e
- * deterministica, e paginar sobre ordem instavel devolveria a mesma linha em
- * duas paginas e nenhuma vez em outra.
- *
- * Mas a tela ordena por VALOR EM RISCO e agrupa por (NCM, cClassTrib, regra), e
- * as duas coisas sao globais: o grupo de maior valor pode ter uma ocorrencia na
- * primeira pagina e duas na ultima. Ordenar ou agrupar sobre um recorte daria
- * um resultado que parece certo e esta errado — o modo de falha exato que esta
- * tela existe para evitar. Entao busca-se tudo, em paginas de 500, e o
- * progresso e mostrado enquanto isso.
- */
 export async function todasAsPaginas(buscarPagina, aoProgredir) {
   const acumulado = [];
   let numero = 0;
@@ -120,5 +92,8 @@ export async function todasAsPaginas(buscarPagina, aoProgredir) {
     }
   } while (numero < totalDePaginas);
 
-  return { linhas: acumulado, pagina: ultima.pagina, filtro: ultima.filtro };
+  return {
+    linhas: acumulado, pagina: ultima.pagina, filtro: ultima.filtro, natureza: ultima.natureza,
+    toleranciaDeValor: ultima.toleranciaDeValor,
+  };
 }

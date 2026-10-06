@@ -1,21 +1,8 @@
-/* ---------------------------------------------------------------------------
-   A base tributaria carregada, numa data.
-
-   A data e obrigatoria, e a tela abre PEDINDO a data em vez de escolher uma.
-   A D003 proibiu que uma regra escolhesse a data da consulta e previu que "o
-   que vale hoje" seria um caso de uso proprio, com data explicita. Um padrao
-   silencioso de "hoje" traria o problema de volta pela porta da frente: a
-   resposta mudaria sozinha de um dia para o outro, e uma impressao da tela nao
-   diria a que dia se refere.
-
-   O botao "hoje" existe, e nao contradiz isso: ele e a pessoa escolhendo hoje,
-   com um clique que ela deu.
-   --------------------------------------------------------------------------- */
-
 import { el, trocar } from '../../dom.js';
 import { data as formatarData } from '../../formato.js';
+import { botaoDeInformacao } from '../../painel.js';
 import * as api from '../api.js';
-import { avisoDeUso, faixaDeNatureza, leituraDoCatalogo, valorOuMotivo } from '../pecas.js';
+import { avisoDeUso, leituraDoCatalogo, procedenciaCompacta, valorOuMotivo } from '../pecas.js';
 import { enderecoDaBase, irPara } from '../roteador.js';
 
 export async function desenhar(raiz, parametros, rota) {
@@ -24,23 +11,33 @@ export async function desenhar(raiz, parametros, rota) {
   const classTribPedido = rota.parametros.get('cClassTrib') || '';
 
   const corpo = el('div', {});
-
-  trocar(raiz, [
-    el('h1', { texto: 'Base tributaria carregada' }),
+  const info = botaoDeInformacao('Sobre esta consulta', [
     el('p', {
-      classe: 'sub',
       texto: 'Consulta somente leitura do catalogo importado. Toda resposta e datada, porque o '
         + 'mesmo catalogo responde coisas diferentes em datas diferentes — e por isso a data e '
         + 'obrigatoria.',
     }),
-    formulario(dataPedida, ncmPedido, classTribPedido),
-    corpo,
+  ]);
+
+  trocar(raiz, [
+    el('div', { classe: 'tela-base' }, [
+      el('header', { classe: 'base-cabecalho' }, [
+        el('div', { classe: 'base-titulo' }, [
+          el('h1', { texto: 'Base tributaria carregada' }),
+          info.botao,
+        ]),
+        el('p', { classe: 'base-sub', texto: 'Consulta somente leitura, sempre numa data escolhida.' }),
+        info.balao,
+      ]),
+      formulario(dataPedida, ncmPedido, classTribPedido),
+      corpo,
+    ]),
   ]);
 
   if (!dataPedida) {
     trocar(corpo, [
       el('p', {
-        classe: 'aviso',
+        classe: 'base-vazio',
         texto: 'Escolha uma data para consultar. Sem data a resposta nao diz a que dia se refere.',
       }),
     ]);
@@ -56,6 +53,7 @@ function formulario(dataPedida, ncmPedido, classTribPedido) {
   const campoData = el('input', { type: 'date', id: 'data', value: dataPedida || null });
   const campoNcm = el('input', {
     type: 'text', id: 'ncm', value: ncmPedido || null, inputmode: 'numeric', maxlength: '8',
+    placeholder: '8 digitos',
   });
   const campoClassTrib = el('input', {
     type: 'text', id: 'cClassTrib', value: classTribPedido || null,
@@ -67,155 +65,176 @@ function formulario(dataPedida, ncmPedido, classTribPedido) {
     cClassTrib: campoClassTrib.value,
   }));
 
-  /*
-   * Um <div>, e nao um <form>: formulario sem tratador de envio recarrega a
-   * pagina quando alguem aperta Enter num campo de texto, e a consulta some.
-   */
-  return el('div', { classe: 'filtros' }, [
-    el('div', { classe: 'filtro' }, [
-      el('label', { for: 'data', texto: 'data (obrigatoria)' }),
-      campoData,
+  for (const campo of [campoData, campoNcm, campoClassTrib]) {
+    campo.addEventListener('keydown', (evento) => {
+      if (evento.key === 'Enter') {
+        consultar();
+      }
+    });
+  }
+
+  return el('div', { classe: 'base-filtros', role: 'search' }, [
+    el('div', { classe: 'base-campo' }, [
+      el('label', { for: 'data', texto: 'Data (obrigatoria)' }),
+      el('div', { classe: 'base-campo-data' }, [
+        campoData,
+        el('button', {
+          type: 'button',
+          classe: 'base-botao-secundario',
+          texto: 'hoje',
+          title: 'preenche a data com a de hoje — a escolha continua sendo sua, e fica escrita',
+          aoClicar: () => {
+            const agora = new Date();
+            const mes = String(agora.getMonth() + 1).padStart(2, '0');
+            const dia = String(agora.getDate()).padStart(2, '0');
+            campoData.value = `${agora.getFullYear()}-${mes}-${dia}`;
+          },
+        }),
+      ]),
     ]),
-    el('div', { classe: 'filtro' }, [
+    el('div', { classe: 'base-campo' }, [
       el('label', { for: 'ncm', texto: 'NCM (opcional)' }),
       campoNcm,
     ]),
-    el('div', { classe: 'filtro' }, [
+    el('div', { classe: 'base-campo' }, [
       el('label', { for: 'cClassTrib', texto: 'cClassTrib (opcional)' }),
       campoClassTrib,
     ]),
-    el('div', { classe: 'acoes' }, [
-      el('button', { type: 'button', classe: 'botao principal', texto: 'consultar',
-        aoClicar: consultar }),
-      el('button', {
-        type: 'button',
-        classe: 'botao',
-        texto: 'hoje',
-        title: 'preenche a data com a de hoje — a escolha continua sendo sua, e fica escrita',
-        aoClicar: () => {
-          const agora = new Date();
-          const mes = String(agora.getMonth() + 1).padStart(2, '0');
-          const dia = String(agora.getDate()).padStart(2, '0');
-          campoData.value = `${agora.getFullYear()}-${mes}-${dia}`;
-        },
-      }),
-    ]),
+    el('button', { type: 'button', classe: 'base-botao-principal', texto: 'Consultar',
+      aoClicar: consultar }),
   ]);
 }
 
 function conteudo(resposta) {
   return el('div', {}, [
-    faixaDeNatureza(resposta.natureza),
+    procedenciaCompacta(resposta.natureza),
 
-    el('section', { classe: 'bloco' }, [
+    el('section', { classe: 'base-cartao' }, [
       el('h2', { texto: 'Carga consultada' }),
-      el('dl', { classe: 'identificacao' }, [
-        el('dt', { texto: 'data da consulta' }),
-        el('dd', { classe: 'mono', texto: formatarData(resposta.data) }),
-        el('dt', { texto: 'versao do catalogo' }),
-        el('dd', { classe: 'mono', texto: resposta.versaoDoCatalogo }),
-        el('dt', { texto: 'carga gravada' }),
-        el('dd', { texto: resposta.cargaDisponivel ? 'sim' : 'nao' }),
+      el('dl', { classe: 'base-grade' }, [
+        par('Data da consulta', formatarData(resposta.data)),
+        par('Versao do catalogo', resposta.versaoDoCatalogo),
+        par('Carga gravada', resposta.cargaDisponivel ? 'sim' : 'nao'),
       ]),
     ]),
 
-    /*
-     * A cobertura abre a tela: e ela que separa "a carga nao traz este registro"
-     * de "esta tabela nao foi carregada para esta data" (D004). Quem for ler a
-     * base precisa dela antes de ler qualquer linha, ou lera silencio como
-     * ausencia.
-     */
-    el('section', { classe: 'bloco' }, [
-      el('h2', { texto: 'Cobertura declarada da carga' }),
-      leituraDoCatalogo(resposta.cobertura, (linhas) =>
-        el('ul', { classe: 'lista-catalogo' }, linhas.map((linha) => el('li', {}, [
-          el('strong', { texto: linha.tabela }),
-          referenciaCurta(linha.referencia),
-        ])))),
-    ]),
+    cartao('Cobertura declarada da carga', leituraDoCatalogo(resposta.cobertura, (linhas) =>
+      tabela(['Tabela', 'Vigencia', 'Fonte'], linhas.map((linha) => [
+        el('td', { classe: 'forte', texto: linha.tabela }),
+        ...celulasDaReferencia(linha.referencia),
+      ])))),
 
-    el('section', { classe: 'bloco' }, [
-      el('h2', { texto: 'Aliquotas vigentes na data' }),
-      el('div', { classe: 'tributos' }, resposta.aliquotas.map((doTributo) =>
-        el('div', { classe: 'tributo' }, [
-          el('p', { classe: 'tributo-rotulo', texto: doTributo.rotulo }),
-          leituraDoCatalogo(doTributo.aliquotas, (aliquotas) =>
-            el('ul', { classe: 'lista-catalogo' }, aliquotas.map((aliquota) => el('li', {}, [
-              el('span', { classe: 'mono percentual', texto: aliquota.percentual }),
-              ' — ',
-              el('span', { texto: aliquota.abrangencia }),
-              referenciaCurta(aliquota.referencia),
-            ])))),
-        ]))),
-    ]),
+    cartao('Aliquotas vigentes na data', tabelaDeAliquotas(resposta.aliquotas)),
 
     blocoConsultado('NCM consultado', resposta.ncmPerguntado, resposta.ncmConsultado,
-      (registros) => el('ul', { classe: 'lista-catalogo' }, registros.map((registro) => el('li', {}, [
-        el('span', { classe: 'mono', texto: registro.ncm }),
-        ' — ',
-        el('span', { texto: registro.descricao }),
-        referenciaCurta(registro.referencia),
-      ])))),
+      (registros) => tabela(['NCM', 'Descricao', 'Vigencia', 'Fonte'], registros.map((registro) => [
+        el('td', { classe: 'mono forte', texto: registro.ncm }),
+        el('td', { texto: registro.descricao }),
+        ...celulasDaReferencia(registro.referencia),
+      ]))),
 
     blocoConsultado('Anexos do NCM consultado', resposta.ncmPerguntado, resposta.anexosDoNcm,
-      (registros) => el('ul', { classe: 'lista-catalogo' }, registros.map((registro) => el('li', {}, [
-        el('strong', { texto: registro.anexo }),
-        ' — ',
-        el('span', { texto: registro.tipoDeTratamento }),
-        referenciaCurta(registro.referencia),
-      ])))),
+      (registros) => tabela(['Anexo', 'Tratamento', 'Vigencia', 'Fonte'], registros.map((registro) => [
+        el('td', { classe: 'forte', texto: registro.anexo }),
+        el('td', { texto: registro.tipoDeTratamento }),
+        ...celulasDaReferencia(registro.referencia),
+      ]))),
 
     blocoConsultado('cClassTrib consultado', resposta.classTribPerguntado,
       resposta.classificacaoConsultada,
-      (registros) => el('ul', { classe: 'lista-catalogo' }, registros.map((registro) => el('li', {}, [
-        el('span', { classe: 'mono', texto: registro.codigo }),
-        ' — ',
-        el('span', { texto: registro.dispositivoLegal }),
-        el('p', { classe: 'nota' }, [
-          'CST admitidos: ',
-          registro.cstsAdmitidos.length
+      (registros) => tabela(
+        ['Codigo', 'Dispositivo legal', 'CST admitidos', 'Reducao', 'Vigencia', 'Fonte'],
+        registros.map((registro) => [
+          el('td', { classe: 'mono forte', texto: registro.codigo }),
+          el('td', { texto: registro.dispositivoLegal }),
+          el('td', {}, [registro.cstsAdmitidos.length
             ? el('span', { classe: 'mono', texto: registro.cstsAdmitidos.join(', ') })
-            : valorOuMotivo(null, registro.motivoSemCstAdmitido),
-        ]),
-        el('p', { classe: 'nota' }, [
-          'reducao: ',
-          valorOuMotivo(registro.percentualReducao, registro.motivoSemReducao),
-        ]),
-        referenciaCurta(registro.referencia),
-      ])))),
+            : valorOuMotivo(null, registro.motivoSemCstAdmitido)]),
+          el('td', { classe: 'mono' }, [valorOuMotivo(registro.percentualReducao, registro.motivoSemReducao)]),
+          ...celulasDaReferencia(registro.referencia),
+        ]))),
 
-    el('p', { classe: 'nota', texto: resposta.comoConsultar }),
-    avisoDeUso(resposta.aviso),
+    el('footer', { classe: 'base-rodape' }, [
+      el('p', { texto: resposta.comoConsultar }),
+      avisoDeUso(resposta.aviso),
+    ]),
   ]);
 }
 
-/**
- * Um bloco de consulta pontual.
- *
- * Nao perguntado e perguntado-sem-resposta sao estados diferentes: o primeiro
- * some da tela, o segundo aparece com o motivo. Colapsar os dois faria a tela
- * parecer ter consultado o que nao consultou.
- */
+function tabelaDeAliquotas(tributos) {
+  const colunas = ['Imposto / parcela', 'Aliquota', 'Abrangencia', 'Vigencia', 'Fonte'];
+  const linhas = (tributos || []).flatMap((doTributo) => {
+    const leitura = doTributo.aliquotas;
+    const encontrado = (leitura && leitura.encontrado) || [];
+    if (encontrado.length === 0) {
+      return [[
+        el('td', { classe: 'forte', texto: doTributo.rotulo }),
+        el('td', { colspan: String(colunas.length - 1), classe: 'ausente',
+          texto: leitura ? leitura.motivoDaAusencia : 'a resposta nao trouxe este bloco' }),
+      ]];
+    }
+    return encontrado.map((aliquota) => [
+      el('td', { classe: 'forte', texto: doTributo.rotulo }),
+      el('td', { classe: 'mono base-percentual', texto: aliquota.percentual }),
+      el('td', { texto: aliquota.abrangencia }),
+      ...celulasDaReferencia(aliquota.referencia),
+    ]);
+  });
+  if (linhas.length === 0) {
+    return el('p', { classe: 'ausente', texto: 'a resposta nao trouxe nenhum tributo' });
+  }
+  return tabela(colunas, linhas);
+}
+
 function blocoConsultado(titulo, perguntado, leitura, comoDesenhar) {
   if (perguntado === null || perguntado === undefined) {
     return null;
   }
-  return el('section', { classe: 'bloco' }, [
-    el('h2', { texto: titulo }),
-    el('p', { classe: 'nota' }, ['perguntado: ', el('span', { classe: 'mono', texto: perguntado })]),
+  return el('section', { classe: 'base-cartao' }, [
+    el('div', { classe: 'base-cartao-titulo' }, [
+      el('h2', { texto: titulo }),
+      el('span', { classe: 'base-perguntado' }, ['perguntado: ', el('span', { classe: 'mono', texto: perguntado })]),
+    ]),
     leituraDoCatalogo(leitura, comoDesenhar),
   ]);
 }
 
-function referenciaCurta(ref) {
-  if (!ref) {
-    return el('span', { classe: 'ausente', texto: 'sem referencia na resposta' });
-  }
-  return el('p', { classe: 'referencia' }, [
-    el('span', { texto: 'de ' + formatarData(ref.vigenciaInicio) + ' ate ' }),
-    ref.vigenciaFim
-      ? el('span', { texto: formatarData(ref.vigenciaFim) })
-      : el('span', { classe: 'ausente', texto: ref.motivoDaVigenciaSemFim }),
-    el('span', { texto: ' — fonte: ' + ref.fonteNormativa }),
+function cartao(titulo, conteudoDoCartao) {
+  return el('section', { classe: 'base-cartao' }, [el('h2', { texto: titulo }), conteudoDoCartao]);
+}
+
+function par(chave, valor) {
+  return el('div', { classe: 'base-par' }, [
+    el('dt', { texto: chave }),
+    el('dd', { texto: valor }),
   ]);
+}
+
+function tabela(colunas, linhas) {
+  return el('div', { classe: 'base-rolagem' }, [
+    el('table', { classe: 'data-table' }, [
+      el('thead', {}, [el('tr', {}, colunas.map((coluna) => el('th', { scope: 'col', texto: coluna })))]),
+      el('tbody', {}, linhas.map((celulas) => el('tr', {}, celulas))),
+    ]),
+  ]);
+}
+
+function celulasDaReferencia(ref) {
+  if (!ref) {
+    return [el('td', { colspan: '2', classe: 'ausente', texto: 'sem referencia na resposta' })];
+  }
+  const fim = ref.vigenciaFim
+    ? el('span', { texto: formatarData(ref.vigenciaFim) })
+    : el('span', { classe: 'ausente', title: ref.motivoDaVigenciaSemFim }, [
+      '(nao declarado)',
+      el('span', { classe: 'so-leitor-de-tela', texto: ' — ' + ref.motivoDaVigenciaSemFim }),
+    ]);
+  return [
+    el('td', { classe: 'base-vigencia' }, [
+      el('span', { classe: 'mono', texto: formatarData(ref.vigenciaInicio) }),
+      ' ate ',
+      fim,
+    ]),
+    el('td', { classe: 'base-fonte', texto: ref.fonteNormativa }),
+  ];
 }

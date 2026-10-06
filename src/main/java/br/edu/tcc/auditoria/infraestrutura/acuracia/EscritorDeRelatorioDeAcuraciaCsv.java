@@ -4,6 +4,7 @@ import br.edu.tcc.auditoria.aplicacao.acuracia.EnderecoDaAvaliacao;
 import br.edu.tcc.auditoria.aplicacao.acuracia.EscritorDeRelatorioDeAcuracia;
 import br.edu.tcc.auditoria.aplicacao.acuracia.MetricasDaRegra;
 import br.edu.tcc.auditoria.aplicacao.acuracia.RelatorioDeAcuracia;
+import br.edu.tcc.auditoria.aplicacao.auditoria.ToleranciaDaExecucao;
 import br.edu.tcc.auditoria.dominio.acuracia.ContagemDeAcuracia;
 
 import org.springframework.stereotype.Component;
@@ -82,6 +83,9 @@ public class EscritorDeRelatorioDeAcuraciaCsv implements EscritorDeRelatorioDeAc
         comentario(saida, "Avaliação de acurácia do motor de regras contra gabarito rotulado à mão.");
         comentario(saida, "catálogo: %s", relatorio.versaoDoCatalogo());
         comentario(saida, "conjunto de regras: %s", relatorio.versaoDoConjuntoDeRegras());
+        // D023 (04/10/2026): a tolerância da R05 usada na medição, com a origem; sem ela, "não registrada".
+        comentario(saida, "tolerância de valor (R05): %s", relatorio.tolerancia()
+                .map(ToleranciaDaExecucao::texto).orElse(ToleranciaDaExecucao.NAO_REGISTRADA));
         comentario(saida, "documentos auditados: %d", relatorio.documentosAuditados());
         comentario(saida, "itens auditados: %d", relatorio.itensAuditados());
         comentario(saida, "avaliações produzidas pelo motor: %d", relatorio.avaliacoesProduzidas());

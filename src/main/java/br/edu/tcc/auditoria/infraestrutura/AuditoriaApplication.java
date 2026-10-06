@@ -4,7 +4,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 
-// Classe que inicia a aplicação Spring. Fica em infraestrutura para o Spring só varrer esse pacote, deixando aplicacao e dominio sem anotação. Com um comando, roda o comando e sai com o código dele; sem argumento nenhum, sobe a interface web em http://127.0.0.1:8080/ (mudou em 12/09/2026: antes só mostrava a lista de comandos).
 @SpringBootApplication
 public class AuditoriaApplication {
 

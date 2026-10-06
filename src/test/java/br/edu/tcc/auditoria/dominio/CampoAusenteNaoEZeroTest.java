@@ -125,6 +125,12 @@ class CampoAusenteNaoEZeroTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
                 Optional.empty());
     }
 
@@ -142,6 +148,12 @@ class CampoAusenteNaoEZeroTest {
                 Optional.empty(),
                 Optional.empty(),
                 aliquotaCbs,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty());
@@ -163,7 +175,13 @@ class CampoAusenteNaoEZeroTest {
                 Optional.empty(),
                 Optional.empty(),
                 Optional.empty(),
-                valorCbs);
+                valorCbs,
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty(),
+                Optional.empty());
     }
 
     private static ItemDocumento itemComTodosOsCamposDeIbsCbs(Optional<BigDecimal> valor) {
@@ -179,6 +197,12 @@ class CampoAusenteNaoEZeroTest {
                 cst,
                 cst,
                 classificacao,
+                valor,
+                valor,
+                valor,
+                valor,
+                valor,
+                valor,
                 valor,
                 valor,
                 valor,

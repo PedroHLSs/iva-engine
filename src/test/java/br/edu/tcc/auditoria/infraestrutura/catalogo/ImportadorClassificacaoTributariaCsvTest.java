@@ -54,7 +54,7 @@ class ImportadorClassificacaoTributariaCsvTest {
         ClassificacaoTributaria segunda = importar("classificacao-tributaria-ficticia.csv").get(1);
 
         assertThat(segunda.camposObrigatoriosCondicionados())
-                .containsExactly("campoFicticioUm", "campoFicticioDois");
+                .hasValue(List.of("campoFicticioUm", "campoFicticioDois"));
     }
 
     @Test

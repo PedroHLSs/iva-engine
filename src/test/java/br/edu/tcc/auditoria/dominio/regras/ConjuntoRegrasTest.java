@@ -26,15 +26,15 @@ class ConjuntoRegrasTest {
         Map<String, String> versaoPorRegra = PADRAO.regras().stream()
                 .collect(Collectors.toMap(RegraAuditoria::id, RegraAuditoria::versao));
 
-        assertThat(PADRAO.versao()).isEqualTo("2026.1");
+        assertThat(PADRAO.versao()).isEqualTo("2026.6");
         assertThat(versaoPorRegra).containsExactlyInAnyOrderEntriesOf(Map.of(
                 "R01", "1.0.0",
                 "R02", "1.0.0",
-                "R03", "1.0.0",
-                "R04", "1.0.0",
-                "R05", "1.0.0",
+                "R03", "1.1.0",
+                "R04", "1.1.0",
+                "R05", "1.3.0",
                 "R06", "1.0.0",
-                "R07", "1.0.0"));
+                "R07", "1.1.0"));
     }
 
     @Test

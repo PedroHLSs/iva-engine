@@ -1,6 +1,7 @@
 package br.edu.tcc.auditoria.dominio.regras;
 
 import br.edu.tcc.auditoria.dominio.Documento;
+import br.edu.tcc.auditoria.dominio.Evidencia;
 import br.edu.tcc.auditoria.dominio.ItemDocumento;
 import br.edu.tcc.auditoria.dominio.Ncm;
 import br.edu.tcc.auditoria.dominio.Severidade;
@@ -60,7 +61,9 @@ public final class RegraNcmExiste extends RegraDeItem {
                 documento,
                 List.of(
                         doDocumento("ncm", item, ncm.get().valor()),
-                        daTabela("ncm", TABELA, cobertura.fonteNormativa(), Optional.empty(), Optional.empty())),
+                        // Emenda de 04/10/2026 (D025): o lado da tabela diz que não há registro. Até essa data vinha vazio, o que pelo contrato de Evidencia é "o campo não veio na nota". O critério e a versão não mudaram.
+                        daTabela("ncm", TABELA, cobertura.fonteNormativa(),
+                                Optional.of(Evidencia.NENHUM_REGISTRO_NA_TABELA), Optional.empty())),
                 cobertura.fonteNormativa(),
                 cobertura.vigencia(),
                 ValorEmRisco.naoCalculavel(

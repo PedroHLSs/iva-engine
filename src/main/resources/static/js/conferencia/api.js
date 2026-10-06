@@ -1,18 +1,5 @@
-/* ---------------------------------------------------------------------------
-   O cliente da conferencia.
+import { escrever, ler } from '../sessao.js';
 
-   Separado de js/api.js de proposito. Aquele e o cliente da Etapa 9: fala com
-   os quatro GET de leitura e tem escrito, no topo, que nao existe chamada de
-   escrita ali. Continua verdade para ele. Este fala com a porta de escrita que
-   a etapa de conferencia abriu — uma so, POST /api/analises — e com as leituras
-   que dependem dela.
-
-   Importar catalogo e tratar achado continuam fora: o primeiro decide o que o
-   sistema afirma sobre a norma, o segundo e ato de pessoa identificada, e nao
-   ha autenticacao aqui.
-   --------------------------------------------------------------------------- */
-
-/** Falha que a pagina sabe explicar para quem esta olhando. */
 export class FalhaDaApi extends Error {
   constructor(mensagem, detalhe, situacao) {
     super(mensagem);
@@ -29,7 +16,6 @@ const SEM_API =
   'Nao foi possivel falar com o sistema. Ele sobe com o perfil "api" ativo e escuta so em '
   + '127.0.0.1.';
 
-/** Le a resposta uma vez e devolve corpo interpretado, ou lanca explicando. */
 async function interpretar(resposta, caminho) {
   const corpo = await resposta.text();
   let json = null;
@@ -70,33 +56,45 @@ function consulta(parametros) {
   return partes.length ? `?${partes.join('&')}` : '';
 }
 
-/* --- a unica escrita ------------------------------------------------------ */
-
-/**
- * Envia um .xml avulso ou um .zip com varios.
- *
- * O nome do arquivo vai junto porque e ele que decide como o pacote e tratado
- * do outro lado. O progresso do envio nao e acompanhado: fetch nao o expoe, e
- * inventar uma barra que anda sozinha seria pior que dizer "enviando".
- */
 export async function analisar(arquivo) {
   const formulario = new FormData();
   formulario.append('arquivo', arquivo, arquivo.name);
-
-  let resposta;
-  try {
-    resposta = await fetch('/api/analises', {
-      method: 'POST',
-      body: formulario,
-      headers: { Accept: 'application/json' },
-    });
-  } catch (semRede) {
-    throw new FalhaDaApi(SEM_API, INVOCACAO);
-  }
-  return interpretar(resposta, '/api/analises');
+  return escrever('POST', '/api/analises', formulario);
 }
 
-/* --- leituras da conferencia ---------------------------------------------- */
+export async function corrigir(analiseId, arquivo) {
+  const formulario = new FormData();
+  formulario.append('arquivo', arquivo, arquivo.name);
+  return escrever('POST', `/api/analises/${encodeURIComponent(analiseId)}/correcoes`, formulario);
+}
+
+export function naoConcluidas(analiseId, pagina, tamanho) {
+  return pegar(`/api/execucoes/${encodeURIComponent(analiseId)}/nao-avaliados${consulta({ pagina, tamanho })}`);
+}
+
+export function autoria(analiseId) {
+  return pegar(`/api/analises/${encodeURIComponent(analiseId)}/autoria`);
+}
+
+export function historico(filtros) {
+  return pegar(`/api/analises${consulta(filtros)}`);
+}
+
+export function previaDaMedicao() {
+  return pegar('/api/acuracia/previa');
+}
+
+export async function medirAcuracia(notas, gabarito, cargaEsperada) {
+  const formulario = new FormData();
+  formulario.append('notas', notas, notas.name);
+  formulario.append('gabarito', gabarito, gabarito.name);
+  formulario.append('cargaEsperada', cargaEsperada);
+  return escrever('POST', '/api/acuracia', formulario);
+}
+
+export function vinculos(analiseId) {
+  return ler(`/api/analises/${encodeURIComponent(analiseId)}/vinculos`);
+}
 
 export function analise(id) {
   return pegar(`/api/analises/${encodeURIComponent(id)}`);
@@ -127,19 +125,10 @@ export function produtosDoGrupo(id, chave, pagina, tamanho) {
   return pegar(`/api/analises/${encodeURIComponent(id)}/grupos/produtos${busca}`);
 }
 
-/**
- * A base tributaria numa data.
- *
- * A data e obrigatoria e vem sempre de quem pergunta. Nao ha aqui nenhum
- * `new Date()` alimentando este parametro por padrao: a D003 admitiu este caso
- * de uso com data explicita, e um padrao silencioso de "hoje" traria de volta o
- * problema que ela fechou.
- */
 export function baseTributaria(data, ncm, cClassTrib) {
   return pegar(`/api/base-tributaria${consulta({ data, ncm, cClassTrib })}`);
 }
 
-/** O historico usa a listagem de execucoes da Etapa 8, que ja existe. */
 export function execucoes(limite) {
   return pegar(`/api/execucoes${consulta({ limite })}`);
 }

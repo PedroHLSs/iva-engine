@@ -9,8 +9,10 @@ import br.edu.tcc.auditoria.aplicacao.conferencia.DetalheDoProduto;
 import br.edu.tcc.auditoria.aplicacao.conferencia.MontadorDaConferencia;
 import br.edu.tcc.auditoria.aplicacao.conferencia.ProdutoConferido;
 import br.edu.tcc.auditoria.aplicacao.conferencia.VerificacaoDoProduto;
+import br.edu.tcc.auditoria.aplicacao.conferencia.RegraDeColapso;
 import br.edu.tcc.auditoria.aplicacao.conferencia.VersaoDaRegra;
 import br.edu.tcc.auditoria.aplicacao.catalogo.ConsultaDaNaturezaDaCarga;
+import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDaToleranciaDaExecucao;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeDocumentos;
 import br.edu.tcc.auditoria.aplicacao.consulta.DadosDoDocumento;
 import br.edu.tcc.auditoria.aplicacao.papeldetrabalho.PseudonimizadorDeChave;
@@ -38,15 +40,18 @@ class MontadorDaConferenciaExposta {
     private final PoliticaDeExposicao politica;
     private final MontadorDeRecibo recibos;
     private final ConsultaDaNaturezaDaCarga naturezas;
+    private final ConsultaDaToleranciaDaExecucao tolerancias;
 
     // Construtor que recebe o montador da conferência, as consultas de documentos e de procedência, o pseudonimizador, a política de exposição e o montador de recibo.
+    // Emenda de 04/10/2026 (D023): recebe também a consulta da tolerância da R05, que vai ao detalhe do produto.
     MontadorDaConferenciaExposta(
             MontadorDaConferencia conferencias,
             ConsultaDeDocumentos documentos,
             PseudonimizadorDeChave pseudonimizador,
             PoliticaDeExposicao politica,
             MontadorDeRecibo recibos,
-            ConsultaDaNaturezaDaCarga naturezas) {
+            ConsultaDaNaturezaDaCarga naturezas,
+            ConsultaDaToleranciaDaExecucao tolerancias) {
 
         this.conferencias = conferencias;
         this.documentos = documentos;
@@ -54,6 +59,7 @@ class MontadorDaConferenciaExposta {
         this.politica = politica;
         this.recibos = recibos;
         this.naturezas = naturezas;
+        this.tolerancias = tolerancias;
     }
 
     // Devolve o resultado de uma análise: o recibo de leitura e as contagens da conferência.
@@ -108,7 +114,8 @@ class MontadorDaConferenciaExposta {
                 FaixaDeNatureza.de(
                         naturezas.daVersao(detalhe.tratamento().versaoDoCatalogo()),
                         detalhe.tratamento().versaoDoCatalogo()),
-                AvisoDeUso.TEXTO);
+                AvisoDeUso.TEXTO,
+                ToleranciaExposta.de(tolerancias.daExecucao(id)));
     }
 
     // Devolve a tela do lote: o resumo e os grupos, todos de uma vez. Os grupos são poucos, e quem pagina é a lista de produtos dentro de cada grupo.
@@ -203,7 +210,7 @@ class MontadorDaConferenciaExposta {
                 reprocessado ? ProdutoExposto.AVISO_DE_REPROCESSAMENTO : null);
     }
 
-    // Método auxiliar que converte uma verificação para a resposta, com a versão da regra ou o motivo de faltar.
+    // Método auxiliar que converte uma verificação para a resposta, com a versão da regra ou o motivo de faltar. Mudou na Etapa 13: passou a levar se a verificação nasce recolhida, decidido pela RegraDeColapso.
     private static ProdutoExposto.VerificacaoExposta expor(VerificacaoDoProduto verificacao) {
         NomeDaRegra nome = NomeDaRegra.de(verificacao.regraId());
         return switch (verificacao.versao()) {
@@ -214,7 +221,8 @@ class MontadorDaConferenciaExposta {
                     registrada.valor(),
                     null,
                     verificacao.estado().name(),
-                    verificacao.estado().rotulo());
+                    verificacao.estado().rotulo(),
+                    RegraDeColapso.verificacaoNasceRecolhida(verificacao.estado()));
             case VersaoDaRegra.NaoRegistrada ausente -> new ProdutoExposto.VerificacaoExposta(
                     verificacao.regraId(),
                     nome.nome(),
@@ -222,7 +230,8 @@ class MontadorDaConferenciaExposta {
                     null,
                     ausente.motivo(),
                     verificacao.estado().name(),
-                    verificacao.estado().rotulo());
+                    verificacao.estado().rotulo(),
+                    RegraDeColapso.verificacaoNasceRecolhida(verificacao.estado()));
         };
     }
 

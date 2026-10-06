@@ -35,21 +35,35 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ExportadorXlsxTest {
 
     // Leiaute da aba Resumo, em índices de linha começando em zero.
-    private static final int LINHA_DO_TITULO = 0;
-    private static final int LINHA_DO_ROTULO_DE_IDENTIFICACAO = 2;
-    private static final int LINHA_DA_EXECUCAO = 3;
-    private static final int LINHA_DA_DATA_HORA = 4;
-    private static final int LINHA_DA_VERSAO_DO_CATALOGO = 5;
-    private static final int LINHA_DA_VERSAO_DAS_REGRAS = 6;
-    private static final int LINHA_DO_HASH_DE_ENTRADA = 7;
-    private static final int LINHA_DE_DOCUMENTOS = 8;
-    private static final int LINHA_DE_ITENS = 9;
-    private static final int LINHA_DA_PRIMEIRA_SEVERIDADE = 13;
-    private static final int LINHA_DO_TOTAL_DE_ACHADOS = 17;
-    private static final int LINHA_DA_PRIMEIRA_REGRA = 21;
-    private static final int LINHA_DE_NAO_CONCLUIDAS = 27;
-    private static final int LINHA_DE_ITENS_ATINGIDOS = 28;
-    private static final int LINHA_DO_PRIMEIRO_MOTIVO = 31;
+    // D021 (04/10/2026): a faixa de procedência ocupa a primeira linha de toda aba, e tudo desceu uma. No Resumo,
+    // a natureza do catálogo e as tabelas sem natureza declarada entraram abaixo da versão do catálogo — o papel
+    // fictício usa a aridade antiga, que fica com a natureza não declarada.
+    private static final int LINHA_DA_FAIXA = 0;
+    private static final int LINHA_DO_TITULO = 1;
+    private static final int LINHA_DO_ROTULO_DE_IDENTIFICACAO = 3;
+    private static final int LINHA_DA_EXECUCAO = 4;
+    private static final int LINHA_DA_DATA_HORA = 5;
+    private static final int LINHA_DA_VERSAO_DO_CATALOGO = 6;
+    private static final int LINHA_DA_NATUREZA = 7;
+    private static final int LINHA_DA_VERSAO_DAS_REGRAS = 9;
+    // D023 (04/10/2026): a tolerância da R05 entrou abaixo da versão das regras, e as seguintes desceram uma.
+    private static final int LINHA_DA_TOLERANCIA = 10;
+    private static final int LINHA_DO_HASH_DE_ENTRADA = 11;
+    private static final int LINHA_DE_DOCUMENTOS = 12;
+    private static final int LINHA_DE_ITENS = 13;
+    // D018 (04/10/2026): a linha dos arquivos não lidos entrou logo abaixo dos itens, e as seguintes desceram uma.
+    // D019 (04/10/2026): a dos documentos repetidos entrou abaixo dela, e as seguintes desceram mais uma.
+    private static final int LINHA_DOS_NAO_LIDOS = 14;
+    private static final int LINHA_DOS_REPETIDOS = 15;
+    private static final int LINHA_DA_PRIMEIRA_SEVERIDADE = 19;
+    private static final int LINHA_DO_TOTAL_DE_ACHADOS = 23;
+    private static final int LINHA_DA_PRIMEIRA_REGRA = 27;
+    private static final int LINHA_DE_NAO_CONCLUIDAS = 33;
+    private static final int LINHA_DE_ITENS_ATINGIDOS = 34;
+    private static final int LINHA_DO_PRIMEIRO_MOTIVO = 37;
+
+    // D021: nas abas de linhas, o cabeçalho fica abaixo da faixa.
+    private static final int CABECALHO = ExportadorXlsx.LINHA_DO_CABECALHO;
 
     // Colunas da aba Achados.
     private static final int COLUNA_DOCUMENTO = 0;
@@ -79,7 +93,8 @@ class ExportadorXlsxTest {
     void gerarPlanilha() throws IOException {
         arquivo = pasta.resolve("papel-de-trabalho.xlsx");
         // Fuso fixo: a coluna de data e hora não pode depender de onde o teste roda.
-        new ExportadorXlsx(ZoneOffset.UTC).exportar(PapelDeTrabalhoFicticio.completo(), arquivo);
+        // Etapa 12: a justificativa passou a ser opt-in; este teste confere a planilha com ela ligada.
+        new ExportadorXlsx(ZoneOffset.UTC, true).exportar(PapelDeTrabalhoFicticio.completo(), arquivo);
         gerada = abrir(arquivo);
     }
 
@@ -111,11 +126,47 @@ class ExportadorXlsxTest {
     }
 
     @Test
-    void deveTerAsTresAbasNaOrdem() {
-        assertThat(gerada.getNumberOfSheets()).isEqualTo(3);
+    void deveTerAsQuatroAbasNaOrdem() {
+        assertThat(gerada.getNumberOfSheets()).isEqualTo(4);
         assertThat(gerada.getSheetName(0)).isEqualTo(ExportadorXlsx.ABA_RESUMO);
         assertThat(gerada.getSheetName(1)).isEqualTo(ExportadorXlsx.ABA_ACHADOS);
         assertThat(gerada.getSheetName(2)).isEqualTo(ExportadorXlsx.ABA_NAO_AVALIADOS);
+        assertThat(gerada.getSheetName(3)).isEqualTo(ExportadorXlsx.ABA_NAO_LIDOS);
+    }
+
+    // D018: o papel de trabalho fictício não registra a leitura, e a planilha diz isso em vez de zero.
+    @Test
+    void deveDizerQueALeituraNaoFoiRegistradaEmVezDeZero() {
+        Sheet resumo = gerada.getSheet(ExportadorXlsx.ABA_RESUMO);
+        assertThat(texto(resumo, LINHA_DOS_NAO_LIDOS, 0)).isEqualTo(ExportadorXlsx.ROTULO_DOS_NAO_LIDOS);
+        assertThat(texto(resumo, LINHA_DOS_NAO_LIDOS, 1)).isEqualTo(ExportadorXlsx.LEITURA_NAO_REGISTRADA);
+        assertThat(texto(gerada.getSheet(ExportadorXlsx.ABA_NAO_LIDOS), CABECALHO + 1, 0))
+                .isEqualTo(ExportadorXlsx.LEITURA_NAO_REGISTRADA);
+    }
+
+    // D021: a faixa abre o Resumo, e a natureza do catálogo está na identificação. O papel fictício usa a aridade antiga, que fica com a procedência não declarada.
+    @Test
+    void deveAbrirComAFaixaEDizerANaturezaNaIdentificacao() {
+        Sheet resumo = gerada.getSheet(ExportadorXlsx.ABA_RESUMO);
+        assertThat(texto(resumo, LINHA_DA_FAIXA, 0)).startsWith("PROCEDÊNCIA NÃO DECLARADA");
+        assertThat(texto(resumo, LINHA_DA_NATUREZA, 0)).isEqualTo(ExportadorXlsx.ROTULO_DA_NATUREZA);
+        assertThat(texto(resumo, LINHA_DA_NATUREZA, 1)).isEqualTo("Procedência não declarada");
+    }
+
+    // D023: sem a tolerância registrada — o papel fictício usa a aridade antiga —, a planilha diz isso em vez de um valor.
+    @Test
+    void deveDizerQueAToleranciaNaoFoiRegistradaEmVezDeUmValor() {
+        Sheet resumo = gerada.getSheet(ExportadorXlsx.ABA_RESUMO);
+        assertThat(texto(resumo, LINHA_DA_TOLERANCIA, 0)).isEqualTo(ExportadorXlsx.ROTULO_DA_TOLERANCIA);
+        assertThat(texto(resumo, LINHA_DA_TOLERANCIA, 1)).startsWith("(não registrada");
+    }
+
+    // D019: sem a contagem de documentos repetidos registrada, a planilha diz isso em vez de zero.
+    @Test
+    void deveDizerQueOsRepetidosNaoForamRegistradosEmVezDeZero() {
+        Sheet resumo = gerada.getSheet(ExportadorXlsx.ABA_RESUMO);
+        assertThat(texto(resumo, LINHA_DOS_REPETIDOS, 0)).isEqualTo(ExportadorXlsx.ROTULO_DOS_REPETIDOS);
+        assertThat(texto(resumo, LINHA_DOS_REPETIDOS, 1)).isEqualTo(ExportadorXlsx.REPETIDOS_NAO_REGISTRADOS);
     }
 
     @Test
@@ -221,17 +272,17 @@ class ExportadorXlsxTest {
     void deveEscreverUmaLinhaPorAchadoComOCabecalhoNoTopo() {
         Sheet achados = gerada.getSheet(ExportadorXlsx.ABA_ACHADOS);
 
-        assertThat(texto(achados, 0, COLUNA_DOCUMENTO)).isEqualTo("Documento (pseudônimo)");
-        assertThat(texto(achados, 0, COLUNA_FUNDAMENTO)).isEqualTo("Fundamento normativo");
+        assertThat(texto(achados, CABECALHO, COLUNA_DOCUMENTO)).isEqualTo("Documento (pseudônimo)");
+        assertThat(texto(achados, CABECALHO, COLUNA_FUNDAMENTO)).isEqualTo("Fundamento normativo");
         assertThat(achados.getLastRowNum())
                 .as("duas linhas de achado depois do cabeçalho")
-                .isEqualTo(2);
+                .isEqualTo(CABECALHO + 2);
     }
 
     @Test
     void devePermitirRastrearOAchadoAteODocumentoEODispositivoLegal() {
         Sheet achados = gerada.getSheet(ExportadorXlsx.ABA_ACHADOS);
-        int primeiro = 1;
+        int primeiro = CABECALHO + 1;
 
         assertThat(texto(achados, primeiro, COLUNA_DOCUMENTO))
                 .isEqualTo(PapelDeTrabalhoFicticio.PSEUDONIMO_PRIMEIRO);
@@ -257,7 +308,7 @@ class ExportadorXlsxTest {
     @Test
     void deveAlinharAsEvidenciasLinhaALinhaDentroDaCelula() {
         Sheet achados = gerada.getSheet(ExportadorXlsx.ABA_ACHADOS);
-        int primeiro = 1;
+        int primeiro = CABECALHO + 1;
 
         assertThat(texto(achados, primeiro, COLUNA_CAMPO)).isEqualTo("cClassTrib\ncstIbs");
         assertThat(texto(achados, primeiro, COLUNA_ENCONTRADO))
@@ -272,9 +323,9 @@ class ExportadorXlsxTest {
     void deveEscreverValorEmRiscoComoNumeroEOMotivoQuandoNaoHaValor() {
         Sheet achados = gerada.getSheet(ExportadorXlsx.ABA_ACHADOS);
 
-        assertThat(numero(achados, 1, COLUNA_VALOR_EM_RISCO))
+        assertThat(numero(achados, CABECALHO + 1, COLUNA_VALOR_EM_RISCO))
                 .isEqualTo(PapelDeTrabalhoFicticio.VALOR_EM_RISCO.doubleValue());
-        assertThat(texto(achados, 2, COLUNA_VALOR_EM_RISCO))
+        assertThat(texto(achados, CABECALHO + 2, COLUNA_VALOR_EM_RISCO))
                 .as("sem montante, a célula traz o motivo — nunca fica vazia sem explicação")
                 .isEqualTo(PapelDeTrabalhoFicticio.MOTIVO_DO_VALOR_AUSENTE);
     }
@@ -283,11 +334,11 @@ class ExportadorXlsxTest {
     void deveMostrarOStatusDeTratativaEAJustificativa() {
         Sheet achados = gerada.getSheet(ExportadorXlsx.ABA_ACHADOS);
 
-        assertThat(texto(achados, 1, COLUNA_TRATATIVA)).isEqualTo("ACEITO");
-        assertThat(texto(achados, 1, COLUNA_JUSTIFICATIVA))
+        assertThat(texto(achados, CABECALHO + 1, COLUNA_TRATATIVA)).isEqualTo("ACEITO");
+        assertThat(texto(achados, CABECALHO + 1, COLUNA_JUSTIFICATIVA))
                 .isEqualTo(PapelDeTrabalhoFicticio.JUSTIFICATIVA);
 
-        assertThat(texto(achados, 2, COLUNA_TRATATIVA))
+        assertThat(texto(achados, CABECALHO + 2, COLUNA_TRATATIVA))
                 .as("apontamento sem decisão aparece como ABERTO, e não como célula vazia")
                 .isEqualTo("ABERTO");
     }
@@ -296,19 +347,19 @@ class ExportadorXlsxTest {
     void deveDizerQuandoAVigenciaNaoTemFim() {
         Sheet achados = gerada.getSheet(ExportadorXlsx.ABA_ACHADOS);
 
-        assertThat(texto(achados, 2, COLUNA_VIGENCIA_ATE)).isEqualTo(Celulas.SEM_FIM_DECLARADO);
+        assertThat(texto(achados, CABECALHO + 2, COLUNA_VIGENCIA_ATE)).isEqualTo(Celulas.SEM_FIM_DECLARADO);
     }
 
     @Test
     void deveEscreverUmaLinhaPorAvaliacaoNaoConcluidaComOMotivo() {
         Sheet naoAvaliados = gerada.getSheet(ExportadorXlsx.ABA_NAO_AVALIADOS);
 
-        assertThat(texto(naoAvaliados, 0, 7)).isEqualTo("Motivo");
-        assertThat(naoAvaliados.getLastRowNum()).isEqualTo(3);
-        assertThat(texto(naoAvaliados, 1, 0)).isEqualTo(PapelDeTrabalhoFicticio.PSEUDONIMO_PRIMEIRO);
-        assertThat(numero(naoAvaliados, 1, 4)).isEqualTo(1);
-        assertThat(texto(naoAvaliados, 1, 7)).isEqualTo(PapelDeTrabalhoFicticio.MOTIVO_REPETIDO);
-        assertThat(texto(naoAvaliados, 3, 7)).isEqualTo(PapelDeTrabalhoFicticio.MOTIVO_UNICO);
+        assertThat(texto(naoAvaliados, CABECALHO, 7)).isEqualTo("Motivo");
+        assertThat(naoAvaliados.getLastRowNum()).isEqualTo(CABECALHO + 3);
+        assertThat(texto(naoAvaliados, CABECALHO + 1, 0)).isEqualTo(PapelDeTrabalhoFicticio.PSEUDONIMO_PRIMEIRO);
+        assertThat(numero(naoAvaliados, CABECALHO + 1, 4)).isEqualTo(1);
+        assertThat(texto(naoAvaliados, CABECALHO + 1, 7)).isEqualTo(PapelDeTrabalhoFicticio.MOTIVO_REPETIDO);
+        assertThat(texto(naoAvaliados, CABECALHO + 3, 7)).isEqualTo(PapelDeTrabalhoFicticio.MOTIVO_UNICO);
     }
 
     @Test
@@ -317,10 +368,10 @@ class ExportadorXlsxTest {
         new ExportadorXlsx(ZoneOffset.UTC).exportar(PapelDeTrabalhoFicticio.semNada(), vazia);
 
         try (Workbook planilha = abrir(vazia)) {
-            assertThat(planilha.getNumberOfSheets()).isEqualTo(3);
+            assertThat(planilha.getNumberOfSheets()).isEqualTo(4);
             assertThat(planilha.getSheet(ExportadorXlsx.ABA_ACHADOS).getLastRowNum())
-                    .as("só o cabeçalho")
-                    .isZero();
+                    .as("só a faixa e o cabeçalho")
+                    .isEqualTo(CABECALHO);
             assertThat(texto(planilha.getSheet(ExportadorXlsx.ABA_RESUMO),
                     LINHA_DO_HASH_DE_ENTRADA, 1))
                     .as("lote sem apontamento continua tendo identificação de execução")

@@ -9,6 +9,9 @@ import org.apache.poi.ss.usermodel.IndexedColors;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.apache.poi.ss.usermodel.Workbook;
 
+import java.util.HashMap;
+import java.util.Map;
+
 // Classe que cria os estilos de célula uma vez por planilha, e não por célula, porque o Excel tem limite de estilos e o arquivo ficaria enorme.
 final class EstilosDaPlanilha {
 
@@ -21,9 +24,14 @@ final class EstilosDaPlanilha {
     private final CellStyle dataHora;
     private final CellStyle inteiro;
     private final CellStyle monetario;
+    private final Workbook planilha;
+    private final Map<Integer, CellStyle> monetarioPorEscala = new HashMap<>();
+    private final CellStyle faixaDeAviso;
+    private final CellStyle faixaNormativa;
 
     // Construtor que cria todos os estilos: título, rótulo, cabeçalho, texto, texto longo, data, data e hora, inteiro e dinheiro.
     EstilosDaPlanilha(Workbook planilha) {
+        this.planilha = planilha;
         Font fonteDeTitulo = planilha.createFont();
         fonteDeTitulo.setBold(true);
         fonteDeTitulo.setFontHeightInPoints((short) 12);
@@ -72,10 +80,42 @@ final class EstilosDaPlanilha {
         this.inteiro.setDataFormat(planilha.createDataFormat().getFormat("0"));
 
         // Dinheiro com duas casas fixas, para não esconder a diferença de centavos apontada.
+        // Emenda de 04/10/2026 (D025): este estilo virou a base dos estilos por escala, em monetario(int). Com duas casas fixas, 7,11100 aparecia 7,11: a escala declarada do valor sumia da planilha.
         this.monetario = planilha.createCellStyle();
         this.monetario.setVerticalAlignment(VerticalAlignment.TOP);
         this.monetario.setAlignment(HorizontalAlignment.RIGHT);
         this.monetario.setDataFormat(planilha.createDataFormat().getFormat("#,##0.00"));
+
+        // D021: a faixa de procedência do catálogo, na primeira linha de cada aba. Com aviso, fundo amarelo e
+        // borda; o texto diz a situação por extenso, e a cor nunca é a única pista.
+        Font fonteDaFaixa = planilha.createFont();
+        fonteDaFaixa.setBold(true);
+        fonteDaFaixa.setFontHeightInPoints((short) 12);
+
+        this.faixaDeAviso = planilha.createCellStyle();
+        this.faixaDeAviso.setFont(fonteDaFaixa);
+        this.faixaDeAviso.setWrapText(true);
+        this.faixaDeAviso.setVerticalAlignment(VerticalAlignment.CENTER);
+        this.faixaDeAviso.setFillForegroundColor(IndexedColors.LIGHT_YELLOW.getIndex());
+        this.faixaDeAviso.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        this.faixaDeAviso.setBorderTop(BorderStyle.THICK);
+        this.faixaDeAviso.setBorderBottom(BorderStyle.THICK);
+        this.faixaDeAviso.setBorderLeft(BorderStyle.THICK);
+        this.faixaDeAviso.setBorderRight(BorderStyle.THICK);
+
+        this.faixaNormativa = planilha.createCellStyle();
+        this.faixaNormativa.setFont(fonteEmNegrito);
+        this.faixaNormativa.setWrapText(true);
+        this.faixaNormativa.setVerticalAlignment(VerticalAlignment.CENTER);
+        this.faixaNormativa.setBorderBottom(BorderStyle.THIN);
+    }
+
+    CellStyle faixaDeAviso() {
+        return faixaDeAviso;
+    }
+
+    CellStyle faixaNormativa() {
+        return faixaNormativa;
     }
 
     CellStyle titulo() {
@@ -110,7 +150,14 @@ final class EstilosDaPlanilha {
         return inteiro;
     }
 
-    CellStyle monetario() {
-        return monetario;
+    // Devolve o estilo de dinheiro com as casas decimais da escala informada, criado uma vez por escala. Acrescentado em 04/10/2026 (D025).
+    CellStyle monetario(int escala) {
+        return monetarioPorEscala.computeIfAbsent(Math.max(0, escala), casas -> {
+            CellStyle estilo = planilha.createCellStyle();
+            estilo.cloneStyleFrom(monetario);
+            estilo.setDataFormat(planilha.createDataFormat()
+                    .getFormat(casas == 0 ? "#,##0" : "#,##0." + "0".repeat(casas)));
+            return estilo;
+        });
     }
 }

@@ -1,29 +1,10 @@
-/* ---------------------------------------------------------------------------
-   Tela 5 - Acuracia.
-
-   ESTA TELA NAO FALA COM A API, E ISSO E DECISAO, NAO FALTA
-
-   A Etapa 8 removeu /api/execucoes/{id}/acuracia de proposito: acuracia e
-   propriedade de uma MEDICAO contra gabarito, nao de uma execucao de auditoria,
-   e o harness nao persiste nada - medir nao e auditar. Entao a fonte aqui e o
-   proprio CSV que o comando "avaliar-acuracia" grava, lido dentro do navegador.
-   Nenhum byte sai da maquina e a tela funciona sem rede.
-
-   O QUE ELA SE RECUSA A LER
-
-   O cabecalho de comentarios do CSV lista, em texto claro, as chaves de acesso
-   dos enderecos do gabarito que o motor nao avaliou. Os digitos intermediarios
-   da chave sao o CNPJ do emitente. A tela CONTA essas linhas e nunca as
-   escreve, do mesmo modo que visualizacao/resultados.html.
-   --------------------------------------------------------------------------- */
-
 import { el, trocar } from '../dom.js';
 import { inteiro, metrica, INDEFINIDA } from '../formato.js';
 import { barrasDeCobertura } from '../svg.js';
+import { botaoDeInformacao } from '../painel.js';
 
 const SEPARADOR = ';';
 
-/** Compara texto ignorando acento e caixa, para nao depender da grafia do CSV. */
 function chave(texto) {
   return texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
 }
@@ -41,13 +22,6 @@ const ROTULOS = [
 
 const MARCA_DOS_ENDERECOS = 'enderecos do gabarito que o motor nao avaliou:';
 
-/**
- * Le o relatorio.
- *
- * As linhas iniciadas por "#" sao cabecalho de comentario. Depois da marca dos
- * enderecos, cada comentario carrega uma chave de acesso: essas sao contadas e
- * descartadas na leitura, e nao chegam a existir como dado nesta pagina.
- */
 export function lerRelatorio(texto) {
   const identificacao = { enderecosOmitidos: 0 };
   const linhas = [];
@@ -122,21 +96,39 @@ export async function desenhar(tela) {
     },
   });
 
-  trocar(tela, [
-    el('h1', { texto: 'Acuracia' }),
+  entrada.id = 'relatorio-de-acuracia';
+  entrada.className = 'campo-arquivo-oculto';
+  estado.className = 'zona-de-arquivo-estado';
+  estado.setAttribute('aria-live', 'polite');
+
+  const sobreATela = botaoDeInformacao('Sobre esta tela', [
     el('p', {
-      classe: 'sub',
       texto: 'Esta tela nao consulta a API. Acuracia e propriedade de uma medicao contra '
         + 'gabarito, nao de uma execucao de auditoria, e o harness nao persiste nada: medir nao '
-        + 'e auditar. Escolha o CSV que o comando "avaliar-acuracia" gravou - o arquivo e lido '
-        + 'aqui dentro do navegador e nenhum byte sai da maquina.',
+        + 'e auditar.',
     }),
-    el('div', { classe: 'filtros' }, [
-      el('div', { classe: 'filtro' }, [
-        el('label', { texto: 'relatorio de acuracia (.csv)' }),
-        entrada,
-        estado,
-      ]),
+    el('p', {
+      texto: 'O arquivo e lido aqui dentro do navegador e nenhum byte sai da maquina. As chaves '
+        + 'de acesso que o cabecalho do CSV lista em texto claro sao contadas e nunca escritas.',
+    }),
+  ]);
+  sobreATela.botao.textContent = '?';
+
+  trocar(tela, [
+    el('div', { classe: 'cabecalho-da-acuracia' }, [
+      el('div', { classe: 'titulo-de-secao-linha' }, [el('h1', { texto: 'Acuracia' }), sobreATela.botao]),
+      sobreATela.balao,
+      el('p', {
+        classe: 'sub',
+        texto: 'Faca o upload do relatorio CSV gerado pelo comando de avaliacao. A leitura e feita '
+          + 'no seu navegador, e o arquivo nao e enviado a lugar nenhum.',
+      }),
+    ]),
+    el('label', { classe: 'zona-de-arquivo', for: entrada.id }, [
+      entrada,
+      el('span', { classe: 'zona-de-arquivo-titulo', texto: 'Clique para selecionar o relatorio de acuracia (.CSV)' }),
+      el('span', { classe: 'zona-de-arquivo-botao', 'aria-hidden': 'true', texto: 'Escolher arquivo' }),
+      estado,
     ]),
     conteudo,
   ]);
@@ -192,14 +184,6 @@ function desenharRelatorio(relatorio) {
   ];
 }
 
-/**
- * Por que uma metrica ficou sem denominador, lido da propria linha.
- *
- * O CSV escreve "(indefinida)" e nao diz o motivo - a coluna nao teria onde
- * couber. Aqui o motivo e recomposto das contagens da mesma linha, que estao
- * todas no arquivo, e vai escrito embaixo do valor. Metrica indefinida sem
- * explicacao convida a leitura de "deu zero".
- */
 function motivoDaIndefinicao(linha, nome) {
   const n = (coluna) => Number(linha[coluna] || 0);
   if (nome === 'precisao') {

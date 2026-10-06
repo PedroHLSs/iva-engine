@@ -66,7 +66,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @SpringBootTest(properties = {
         "auditoria.tolerancia-de-valor=0.01",
-        "auditoria.pseudonimizacao.sal=sal-ficticio-de-teste-aaaaaaaaaaaaaaaaaaaa"
+        "auditoria.pseudonimizacao.sal=sal-ficticio-de-teste-aaaaaaaaaaaaaaaaaaaa",
+        // Etapa 12: a justificativa na planilha passou a ser opt-in; este teste confere a tratativa na planilha com ela ligada.
+        "auditoria.exportacao.expor-justificativa=true"
 })
 @Testcontainers
 @EnabledIf("dockerDisponivel")
@@ -167,18 +169,19 @@ class PapelDeTrabalhoDePontaAPontaTest {
 
         try (Workbook gerada = abrir(planilha)) {
             Sheet achados = gerada.getSheet(ExportadorXlsx.ABA_ACHADOS);
-            assertThat(achados.getLastRowNum()).isEqualTo(1);
+            // D021 (04/10/2026): a faixa de natureza ocupa a primeira linha, e o cabeçalho, a segunda.
+            assertThat(achados.getLastRowNum()).isEqualTo(2);
 
-            assertThat(achados.getRow(1).getCell(0).getStringCellValue())
+            assertThat(achados.getRow(2).getCell(0).getStringCellValue())
                     .as("documento pseudonimizado, nunca a chave")
                     .hasSize(64);
-            assertThat(achados.getRow(1).getCell(4).getLocalDateTimeCellValue().toLocalDate())
+            assertThat(achados.getRow(2).getCell(4).getLocalDateTimeCellValue().toLocalDate())
                     .isEqualTo(LocalDate.of(2026, 1, 15));
-            assertThat(achados.getRow(1).getCell(6).getNumericCellValue()).isEqualTo(1);
-            assertThat(achados.getRow(1).getCell(13).getStringCellValue())
+            assertThat(achados.getRow(2).getCell(6).getNumericCellValue()).isEqualTo(1);
+            assertThat(achados.getRow(2).getCell(13).getStringCellValue())
                     .as("o dispositivo legal vem do catálogo importado e chega inteiro à planilha")
                     .isEqualTo(DISPOSITIVO_FICTICIO);
-            assertThat(achados.getRow(1).getCell(17).getStringCellValue()).isEqualTo("ABERTO");
+            assertThat(achados.getRow(2).getCell(17).getStringCellValue()).isEqualTo("ABERTO");
         }
     }
 
@@ -192,8 +195,8 @@ class PapelDeTrabalhoDePontaAPontaTest {
 
         try (Workbook gerada = abrir(planilha)) {
             Sheet naoAvaliados = gerada.getSheet(ExportadorXlsx.ABA_NAO_AVALIADOS);
-            assertThat(naoAvaliados.getLastRowNum()).isEqualTo(papel.quantidadeDeNaoAvaliados());
-            assertThat(naoAvaliados.getRow(1).getCell(7).getStringCellValue())
+            assertThat(naoAvaliados.getLastRowNum()).isEqualTo(papel.quantidadeDeNaoAvaliados() + 1);
+            assertThat(naoAvaliados.getRow(2).getCell(7).getStringCellValue())
                     .as("o motivo diz o que faltou, e não apenas que faltou algo")
                     .isNotBlank();
         }
@@ -217,8 +220,8 @@ class PapelDeTrabalhoDePontaAPontaTest {
 
         try (Workbook gerada = abrir(planilha)) {
             Sheet achados = gerada.getSheet(ExportadorXlsx.ABA_ACHADOS);
-            assertThat(achados.getRow(1).getCell(17).getStringCellValue()).isEqualTo("ACEITO");
-            assertThat(achados.getRow(1).getCell(18).getStringCellValue()).isEqualTo(JUSTIFICATIVA);
+            assertThat(achados.getRow(2).getCell(17).getStringCellValue()).isEqualTo("ACEITO");
+            assertThat(achados.getRow(2).getCell(18).getStringCellValue()).isEqualTo(JUSTIFICATIVA);
         }
     }
 

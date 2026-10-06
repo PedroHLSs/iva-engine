@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import br.edu.tcc.auditoria.aplicacao.auditoria.ToleranciaDaExecucao;
+
 // Representa o relatório de acurácia de um conjunto de regras, incluindo informações sobre versões, contagens e métricas por regra.
 public record RelatorioDeAcuracia(
         String versaoDoCatalogo,
@@ -15,9 +17,29 @@ public record RelatorioDeAcuracia(
         int avaliacoesProduzidas,
         int avaliacoesSemLinhaNoGabarito,
         List<MetricasDaRegra> porRegra,
-        List<EnderecoDaAvaliacao> gabaritoSemAvaliacao) {
+        List<EnderecoDaAvaliacao> gabaritoSemAvaliacao,
+        Optional<ToleranciaDaExecucao> tolerancia) {
+
+    // Emenda de 04/10/2026 (D023): carrega a tolerância de valor da R05 usada na medição, com a origem; as métricas da R05 dependem dela. Vazia na aridade anterior, que não sabe qual foi.
+
+    // Construtor na aridade anterior à D023: a tolerância fica não registrada.
+    public RelatorioDeAcuracia(
+            String versaoDoCatalogo,
+            String versaoDoConjuntoDeRegras,
+            int documentosAuditados,
+            int itensAuditados,
+            int avaliacoesProduzidas,
+            int avaliacoesSemLinhaNoGabarito,
+            List<MetricasDaRegra> porRegra,
+            List<EnderecoDaAvaliacao> gabaritoSemAvaliacao) {
+        this(versaoDoCatalogo, versaoDoConjuntoDeRegras, documentosAuditados, itensAuditados, avaliacoesProduzidas,
+                avaliacoesSemLinhaNoGabarito, porRegra, gabaritoSemAvaliacao, Optional.empty());
+    }
 
     public RelatorioDeAcuracia {
+        if (tolerancia == null) {
+            throw new AvaliacaoDeAcuraciaInvalida("A tolerância vem vazia quando não foi registrada, nunca nula.");
+        }
         exigirTexto(versaoDoCatalogo, "a versão do catálogo");
         exigirTexto(versaoDoConjuntoDeRegras, "a versão do conjunto de regras");
         exigirNaoNegativo(documentosAuditados, "documentosAuditados");
@@ -51,6 +73,13 @@ public record RelatorioDeAcuracia(
 
         porRegra = List.copyOf(porRegra);
         gabaritoSemAvaliacao = List.copyOf(gabaritoSemAvaliacao);
+    }
+
+    // Devolve o mesmo relatório com a tolerância usada na medição (D023).
+    public RelatorioDeAcuracia comTolerancia(ToleranciaDaExecucao usada) {
+        return new RelatorioDeAcuracia(versaoDoCatalogo, versaoDoConjuntoDeRegras, documentosAuditados,
+                itensAuditados, avaliacoesProduzidas, avaliacoesSemLinhaNoGabarito, porRegra, gabaritoSemAvaliacao,
+                Optional.of(usada));
     }
 
     public ContagemDeAcuracia consolidado() {

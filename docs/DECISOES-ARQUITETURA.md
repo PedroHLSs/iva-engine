@@ -331,6 +331,12 @@ Custos aceitos:
 **Etapa:** 3 — Motor de regras
 **Status:** Aceita
 
+> **Emendada pela D015 (03/10/2026).** O critério que esta decisão deu à R02 —
+> coluna em branco é indistinguível de coluna que ninguém preencheu, e fica
+> `NAO_AVALIADO` — passou a valer também para a R07, que até essa data lia a
+> lista vazia de campos exigidos como "nenhum campo exigido" e respondia
+> `CONFORME`. O texto abaixo fica como foi decidido na Etapa 3.
+
 ### Contexto
 
 As regras de auditoria perguntam ao catálogo e reportam o que ouvem. A regra de
@@ -749,6 +755,10 @@ arquivo CSV, `cobertura.csv`.
 Não é conteúdo normativo — é a escolha de quem audita sobre quanta diferença de
 arredondamento não merece apontamento. Escolher por conta própria seria decidir,
 em nome do usuário, quantos centavos ficam invisíveis no relatório.
+*(Emendado pela D023, 04/10/2026: desde 21/09/2026 o `application.properties`
+trazia `0.01` dentro do placeholder, e esta afirmação era falsa sem que nada o
+dissesse. Hoje há padrão, declarado numa propriedade própria, e toda execução
+grava o valor e a origem, que aparecem em toda saída do resultado.)*
 
 ### Consequência
 
@@ -1340,7 +1350,9 @@ Custos aceitos:
   par (item, regra). Se algum dia uma regra passar a não avaliar certos itens, o
   número muda de significado sem ninguém mexer nesta camada. A mitigação é a conta ir
   impressa: quem confere vê `quantidadeItens 340 - achado 4 - naoAvaliado 12` e
-  percebe.
+  percebe. *(Emenda de 27/09/2026: na tela de execuções da visão técnica a conta
+  passou para trás de um botão "i", que abre por clique, toque ou teclado. Ver a
+  revisão de 27/09/2026 na D010.)*
 - **Sem autenticação, o bind em localhost é o único controle de acesso.** Trocar
   `server.address` por `0.0.0.0` sem antes resolver autenticação publica documento
   fiscal de uma empresa real para a rede inteira. O arquivo de perfil diz isso no
@@ -1519,6 +1531,117 @@ Nada que vem da API ou do CSV é interpretado como marcação: todo texto entra 
 - **A página depende de módulos ES.** Abrir `index.html` por duplo clique não
   funciona: `file://` bloqueia `import` entre módulos, e não haveria API do outro
   lado de qualquer forma. Ela é servida pelo próprio sistema, com o perfil `api`.
+
+### Revisão de 27/09/2026 — a tela de execuções em visual de painel
+
+O usuário pediu para limpar a tela de execuções da visão técnica, que tinha
+muita coisa disputando a atenção. O texto acima fica como está; esta revisão
+registra o que passou a valer **só nessa tela**. Vale também para a D009, no
+ponto da conta do conforme.
+
+A mudança fica em `js/telas/execucoes.js` e num arquivo novo, `css/execucoes.css`.
+O estilo só vale quando o `<body>` tem a classe `na-execucoes`, que `js/app.js`
+liga nessa rota. O panorama e as demais telas não mudaram, e a figura hachurada
+de `svg.js` continua inteira, em uso no panorama.
+
+**Três pedidos batiam em regras escritas, e o usuário decidiu cada um:**
+
+- **Barra plana no lugar da hachurada.** Cor continua não sendo a única
+  codificação, mas o recurso mudou: cada fatia leva a marca de forma do desfecho
+  (● ▲ ■), a legenda repete marca e número, e valor zero ou não derivável segue
+  sem fatia e escrito na legenda. A barra só com cor, sem nenhuma marca, foi
+  oferecida e recusada. As severidades viraram pílulas **sem triângulos**, porque
+  o nome da severidade vai escrito dentro delas e é ele que codifica.
+- **A conta do conforme foi para trás de um botão "i".** Isso emenda a D009,
+  que dizia que ela sai "impressa ao lado". Nesta tela, a conta e a explicação do
+  não avaliado abrem por clique, toque ou teclado (Esc fecha), e não só ao passar
+  o mouse. **A exceção é o conforme não derivável:** ali o motivo substitui o
+  número e continua à vista, porque ausência é escrita e nunca fica escondida.
+  Nas outras telas a conta continua impressa.
+- **O hash de entrada sai abreviado com reticências.** O valor inteiro continua
+  no texto do documento: ele aparece ao passar o mouse (`title`), por inteiro
+  quando o campo recebe foco pelo teclado, e sai completo ao selecionar e copiar.
+  O subtítulo deixou de dizer que a identificação aparece "inteira".
+
+Contraste medido para AA e anotado no cabeçalho de `css/execucoes.css`.
+
+**Verificação:** feita por sonda em Node contra um DOM mínimo, com dado fictício.
+A sonda não é versionada. Foram 18 conferências passando, e três sabotagens
+acusadas: fatia sem marca de forma, motivo do não derivável escondido, e "não
+derivável" virando zero na legenda. **Não foi aberta em navegador.**
+
+### Revisão de 27/09/2026, mais tarde — o panorama no mesmo visual, e as abas
+
+O mesmo tratamento foi estendido ao panorama, a pedido do usuário, com as mesmas
+três decisões acima: barra plana com marca de forma, conta atrás do botão "i", e
+hash abreviado com o valor inteiro no texto. Para as duas telas usarem as mesmas
+peças, a grade, a barra e o botão "i" foram para `js/comum.js` e para um módulo
+novo, `js/painel.js`. `css/execucoes.css` virou `css/painel.css`, e a classe do
+`<body>` passou de `na-execucoes` para `visual-painel`, ligada nas duas rotas.
+
+- **O gráfico por regra e a tabela viraram uma tabela só**, com as colunas
+  regra, apontamentos, não avaliados, conformes e situação. **A coluna "leitura"
+  saiu**, porque repetia a situação. A distinção entre os dois zeros, que a
+  regra 2 de `INTERFACE-WEB.md` mostrava em quatro lugares, passa a aparecer em
+  três, nenhum dependente de cor:
+  - o número de não avaliados, sempre escrito, inclusive zero;
+  - a situação por extenso, com marca própria — ● "Avaliou tudo" e ▲ "Nem tudo
+    foi avaliado". O pedido era só a bolinha; o triângulo no segundo caso segue
+    a marca do não avaliado;
+  - os motivos, na seção logo abaixo.
+  Saiu o gráfico hachurado.
+- **As explicações longas foram para botões "i"**: o total de avaliações com a
+  conta, a nota de que nenhum desfecho se deduz dos outros, e o parágrafo sobre
+  os motivos. O pedido era tooltip só ao passar o mouse; usei o mesmo botão da
+  tela de execuções, que também abre por clique, toque e teclado. O conforme não
+  derivável continua com o motivo à vista.
+- **Os botões Panorama / Achados / Não avaliados viraram abas**, com
+  `aria-current` na atual. Como `navegacaoDaExecucao` é compartilhada, as abas
+  aparecem iguais também em achados, no detalhe do achado e em não avaliados.
+- `barraDeDesfechos` e `barrasPorRegra`, em `svg.js`, ficaram sem chamador.
+  Foram mantidas, como na revisão da Etapa 1 com métodos sem uso.
+
+**Verificação:** feita por sonda em Node contra um DOM mínimo, com dado fictício.
+O panorama teve 19 conferências passando e a tela de execuções continuou com 18.
+Cinco sabotagens foram acusadas:
+- situação igual para os dois zeros;
+- zero de não avaliado escrito em branco;
+- motivo do conforme não derivável escondido;
+- todas as abas marcadas como atuais;
+- fatia sem marca de forma, em `painel.js`, que as duas telas usam.
+
+**Não foi aberta em navegador.**
+
+### Revisão de 27/09/2026, por último — a acurácia com área de envio, e a página sem rodapé
+
+A pedido do usuário:
+
+- **Em `tecnica.html` saíram o texto abaixo da barra (`.sub-topo`) e o rodapé.**
+  O `index.html` continua com os dois.
+- **O cabeçalho da acurácia ficou curto.** O texto técnico foi para um botão
+  "?", que é o mesmo botão "i" das outras telas: medir não é auditar, nenhum
+  byte sai da máquina, e as chaves de acesso do cabeçalho do CSV são contadas e
+  nunca escritas.
+  - A frase pedida terminava em "de forma segura". Troquei por "o arquivo não é
+    enviado a lugar nenhum", que é o que a tela de fato garante.
+- **O campo de arquivo virou uma área de envio**: um `<label>` ligado ao campo
+  por `for`, com o campo **escondido só da vista, e não com `display:none`** —
+  `display:none` o tiraria da ordem de foco, pelo mesmo motivo registrado em
+  `conferencia.css` na Etapa 13. O estado da leitura é anunciado com
+  `aria-live`.
+- **O botão usa `#1a365d`**, como nas outras telas deste visual, e não
+  `#2563eb`.
+
+**Verificação:** feita por sonda em Node contra um DOM mínimo, com 12
+conferências passando. Três sabotagens acusadas:
+- `label` sem ligação com o campo;
+- campo com `display:none`;
+- a chave de acesso deixando de ser contada.
+
+A terceira passou despercebida na primeira rodada. Com essa sabotagem, a linha
+da chave continua descartada mais adiante no código, então nada vazava; o que
+mudava era a contagem, e a sonda não a conferia. A conferência da contagem foi
+acrescentada. **Não foi aberta em navegador.**
 
 ---
 
@@ -1791,6 +1914,10 @@ do resultado da própria análise que a leu.
 `falha_de_leitura_da_execucao` (V7) e é contado à parte, nunca somado a nenhum
 dos quatro estados. O resumo do lote mostra os quatro números **mais** a contagem
 de ilegíveis, e `ResumoDaConferencia` nem sequer tem campo onde eles caberiam.
+*(Emendado pela D018, 04/10/2026: até essa data, só a análise da interface
+gravava a tabela; o `auditar` imprimia as falhas e não as gravava, e a tabela
+vazia era lida como zero. Hoje as duas gravam, e execução sem a leitura
+registrada responde "não registrado", nunca zero.)*
 
 #### O conforme é derivado, e a derivação é subtração
 
@@ -1958,6 +2085,10 @@ com valor `FICTICIO` ou `NORMATIVO`. Linha sem ela recusa o arquivo inteiro, e
 duas naturezas no mesmo arquivo também — um arquivo tem uma procedência só.
 `cobertura.csv` não a tem: ele declara período e fonte, não conteúdo, e a de
 alíquota não teria onde ser declarada, porque alíquota não tem linha de cobertura.
+*(Revertido pela D021, 04/10/2026, a pedido do usuário: a fonte que o
+`cobertura.csv` declara é citada como fundamento dos apontamentos, e fonte
+fictícia saía sob "Catálogo normativo". O `cobertura.csv` passou a declarar
+natureza, com a mesma regra dos outros arquivos.)*
 
 **Guardada por tabela, e não por carga**, por causa do caso misto: alguém carregar
 um anexo real e o resto fictício. Um sinalizador único teria de escolher entre
@@ -2225,4 +2356,2586 @@ divergente — recusa esperada por esta revisão. Numa cópia sem essa linha, pa
 cinco tabelas são lidas. A gravação no banco pelo `importar-catalogo` **não foi
 exercitada** sobre essa carga. A sonda não é versionada.
 
+### Revisão de 27/09/2026 — a tela de envio enxugada, e a conferência sem rodapé
+
+A pedido do usuário, a tela inicial da conferência (`conferencia/telas/enviar.js`
+e o arquivo novo `css/envio.css`, ligado pela classe `na-envio` no `<body>`)
+foi enxugada:
+
+- **Subtítulo curto.** As três explicações viraram uma legenda só: "Formatos
+  aceitos: .xml (NF-e/NFC-e) ou arquivos compactados em .zip. (Atenção: formato
+  .rar não suportado.)". Saíram:
+  - o motivo técnico da recusa do `.rar`. O servidor continua recusando o
+    `.rar` com a mensagem clara da Etapa 11;
+  - a frase de que arquivo ilegível do pacote não interrompe os outros. A tela
+    de resultado continua contando os ilegíveis à parte.
+- **A área de arrastar continua.** O botão virou chamada principal, e os dois
+  atalhos viraram botões discretos, com ícone.
+- **Em `index.html` saíram o texto abaixo da barra e o rodapé**, como já tinha
+  sido feito na visão técnica. A tela de login perdeu o rodapé junto.
+- **Três desvios do pedido:**
+  - o campo continua escondido só da vista, e não com `display:none`, que o
+    tiraria do teclado. O campo agora vem antes do rótulo, e o botão mostra o
+    foco quando o campo o recebe;
+  - o botão usa `#1a365d`, e não `#2563eb`;
+  - a legenda usa `#5b6778`: o `#64748b` pedido dava 4,4 de contraste sobre o
+    fundo do hover.
+
+**Verificação:** feita por sonda em Node contra um DOM mínimo, com 11
+conferências passando. Três sabotagens acusadas:
+- escolher o arquivo sem disparar o envio;
+- legenda sem o aviso do `.rar`;
+- botão sem ligação com o campo.
+
+A conferência do envio falhou duas vezes na primeira rodada, as duas por defeito
+da sonda: um arquivo fictício que o `FormData` recusa, e o pedido do token
+contra falsificação respondido com erro. Nas duas, o envio parava antes de
+sair. **Não foi aberta em navegador.**
+
+### Revisão de 30/09/2026 — a R04 lê a tributação integral declarada pelo catálogo
+
+O texto acima e as revisões anteriores ficam como estão. Esta registra a primeira
+mudança de regra desde a Etapa 3. Ela foi pedida pelo usuário, com autorização
+prévia e lista fechada de arquivos.
+
+**O critério antigo, e por que falhava.** A R04 1.0.0 considerava "tributação
+integral" o código que o catálogo não marcava como benefício **e** que não
+informava redução (`percentualReducao` vazio). A revisão de 14/09/2026 já dizia
+que "a regra acima lê `0` como redução declarada", e é exatamente esse o defeito.
+Um código integral transcrito da fonte com `0;0` nas colunas de redução fica com
+redução **presente**, igual a zero. Para a regra, isso era "não integral", e a
+resposta era `CONFORME` justamente no caso que ela existe para apontar. A sonda
+mostrou o efeito numa nota com NCM em anexo e código de tributação integral: R04
+`CONFORME`. Em 102 notas montadas sobre os códigos com redução zero do catálogo
+de exemplos, a R04 1.0.0 não disparou em nenhuma.
+
+Não havia como consertar isso dentro do critério antigo. Ler `0` como "sem
+redução" apagaria a distinção da D002 entre não declarado e declarado zero. E
+o fato de o código ser integral não se deduz da redução: há código com redução
+zero que não é de tributação integral.
+
+**O critério novo (R04 1.1.0).** O catálogo passa a declarar o fato, na coluna
+`tributacaoIntegral` de `classificacao-tributaria.csv`:
+
+- `S`, com NCM em anexo → `ACHADO`, **continua INFORMATIVA**;
+- `N` → `CONFORME`, qualquer que seja a redução, inclusive zero;
+- não declarado → `NAO_AVALIADO`, com motivo que cita o código e a coluna. Vale
+  **também quando o código tem benefício marcado**: a regra não deduz "integral"
+  nem "não integral" de nenhum outro campo.
+
+A redução deixou de ser critério. Severidade, evidências e valor em risco não
+mudaram.
+
+**Decisão do usuário (seção 5), fonte informada: LC 214/2025.**
+
+- `tributacaoIntegral = S` para os códigos com CST `000`.
+- `tributacaoIntegral = N` para os códigos com CST `010`, `011`, `200`, `221`,
+  `222`, `400`, `410`, `510`, `515`, `550`, `620`, `800`, `810`, `811`, `820` e
+  `830`.
+
+O sistema não sabe isso, e nada no código o afirma. A decisão vive **só** no CSV
+de exemplos, que ganhou a coluna e mais nada: 5 linhas `S` e 156 `N`. O
+cabeçalho de comentários, a linha `200025` e os demais valores ficaram como
+estavam, conferido linha a linha contra cópia anterior.
+
+**Invariante declarada pelo usuário**, aplicada pelo importador: `S` com
+`indicadorDeBeneficio = true`, ou `S` com redução diferente de zero, é incoerente
+e recusa a linha. `S` com redução em branco é aceito, também por decisão do
+usuário. A invariante mora no importador, não em `ClassificacaoTributaria`.
+
+**O importador.**
+
+- Coluna ausente → tudo não declarado. Um arquivo anterior à coluna continua
+  importando.
+- Célula em branco → não declarado.
+- Valor diferente de `S` ou `N` → recusa a linha, com linha, coluna e valor.
+  Maiúsculas e minúsculas contam, como em `natureza`.
+- O tudo ou nada da Etapa 12 continua: uma linha recusada recusa a carga inteira.
+
+**Versões novas.** R04 `1.0.0` → `1.1.0`, e `ConjuntoRegras.VERSAO_PADRAO`
+`2026.1` → `2026.2`. As outras seis regras continuam em `1.0.0`. Pela D006, a
+identidade do apontamento leva a versão da regra, e um apontamento da R04 em
+`1.0.0` não se confunde com um em `1.1.0`. Antes da mudança, o banco local tinha
+**0** apontamentos da R04 (de 16), **0** tratativas da R04 (de 0), **0**
+registros de tratativa da R04 e **15** avaliações não concluídas da R04, em 25
+execuções. Nenhuma tratativa foi reaberta, porque não havia nenhuma.
+
+**Consequência, registrada a pedido do usuário.** As cargas de catálogo já
+gravadas no banco têm `tributacao_integral` nula: a V14 cria a coluna vazia, sem
+`INSERT` nem `UPDATE`. Ao reprocessar contra elas, a R04 1.1.0 dá `NAO_AVALIADO`
+onde o NCM está em anexo. Só uma carga nova, importada com a coluna, resolve. É
+o mesmo custo da `natureza` na Etapa 11. A V14 não toca carga selada: `ALTER
+TABLE` não dispara os gatilhos de linha da V11.
+
+**Acurácia da Etapa 7.** Ela continua correspondendo ao código porque **nenhum
+rótulo do gabarito da Etapa 7 é da R04**. Isso foi conferido, e não só
+afirmado: a sonda rodou o motor inteiro com o conjunto 2026.1 (R04 1.0.0
+reconstituída pelo critério antigo) e com o 2026.2, sobre as notas de
+`src/test/resources/documentos`, comparando o desfecho célula a célula.
+
+| Catálogo | Células | Mudam | Rotuladas vistas | Rotuladas que mudam |
+|---|---|---|---|---|
+| `exemplos/catalogo` | 42 | 0 | 14 de 15 | 0 |
+| fictício da sonda | 42 | 0 | 14 de 15 | 0 |
+| fictício de controle, sem a coluna | 42 | 3 (R04, `CONFORME` → `NAO_AVALIADO`) | 14 de 15 | 0 |
+
+A célula rotulada que falta é a do documento corrompido, que o leitor não lê. As
+3 mudanças do catálogo de controle são a consequência acima, em células sem
+rótulo.
+
+**Arquivos de etapas anteriores alterados, com autorização prévia:**
+
+- `dominio/catalogo/ClassificacaoTributaria`: componente novo `Optional<Boolean>
+  tributacaoIntegral`, que recusa nulo. Um construtor com a aridade antiga deixa
+  o campo não declarado.
+- `dominio/regras/RegraTratamentoDeAnexoNaoAproveitado` e `ConjuntoRegras`.
+- `ImportadorClassificacaoTributariaCsv`, `ClassificacaoTributariaEntidade` e
+  `MapeadorDeCatalogo`.
+- Migration nova `V14__tributacao_integral.sql`.
+- Nos testes, `RegraTratamentoDeAnexoNaoAproveitadoTest` e
+  `QuatroCenariosDeConferenciaTest`: só o campo novo nos casos integrais e
+  conformes, um teste novo de não declarado e o Javadoc do segundo. Nenhum teste
+  renomeado, e `CenarioFicticio` não foi tocado.
+- O literal de versão em `ConjuntoRegrasTest`, `AcuraciaPelaApiTest`,
+  `HistoricoPelaApiTest` e `ComandoAvaliarAcuraciaTest`. Os três últimos foram
+  trocados porque conferem uma execução feita pelo próprio teste.
+- Novo: `TributacaoIntegralNaR04Test`.
+
+Nenhum `import` de framework entrou em `dominio/`. Ficaram de fora, por
+decisão do usuário: a R05, a severidade da R04, a exposição na API e na tela
+(`ClassificacaoDoCatalogo`, `TratamentoExposto`) e `aliquota-vigente.csv`.
+
+**Verificação.**
+
+- `mvn test`: **1025 testes, nenhuma falha, nenhum erro, nenhum pulado**, com o
+  Docker de pé. Antes eram 1016. A diferença são os 8 de
+  `TributacaoIntegralNaR04Test` e o teste de não declarado.
+- Os testes novos foram escritos antes da implementação. Contra o código antigo,
+  7 dos 8 falharam. O que passou é o de `N` com redução zero, que é a guarda
+  contra disparar demais.
+- Duas sabotagens, desfeitas por cópia:
+  - voltar ao critério "redução vazia" derruba o teste de `S` com `0;0`
+    (`expected: ACHADO but was: CONFORME`);
+  - fazer a R04 disparar com `N` derruba o teste de `N` com redução zero
+    (`expected: CONFORME but was: ACHADO`).
+- Sonda contra o código novo, com `exemplos/catalogo`:
+  - **a nota real de avaliação** dá R04 `CONFORME` → `ACHADO` INFORMATIVA, e as
+    outras seis regras não mudam;
+  - **102 notas** derivadas dela, uma por código com redução `0;0`: a R04 dispara
+    em exatamente 5, que são os 5 códigos declarados `S`, e dá `CONFORME` nas 97
+    declaradas `N`. Zero divergências.
+- As notas derivadas foram apagadas depois da sonda. A sonda não é versionada e
+  não imprime chave.
+- A nota real estava em `src/main/resources/schemas/`, e por isso ia para
+  `target/classes`. Foi movida para `dados/avaliacao/`, bloqueado pelo
+  `.gitignore`.
+
+### Revisão de 30/09 a 02/10/2026 — R03 e R05 em 1.1.0, e a cobertura por anexo
+
+O texto acima e as revisões anteriores ficam como estão. Esta registra a segunda
+mudança de regra desde a Etapa 3, pedida pelo usuário com autorização prévia e
+lista fechada de arquivos, em três rodadas: R05, R03 e cobertura por anexo.
+
+**Por que as duas regras entraram juntas.** A nota de avaliação `TESTE_02`
+(NCM `31010000`, cClassTrib `200028`, CST `200`, `gRed` com `pRedAliq` 60) saía
+com dois erros que se anulavam na tela:
+
+- **R05 GRAVE, falso positivo.** A R05 1.0.0 conferia o valor contra a alíquota
+  cheia, e a redução declarada não entrava na conta.
+- **R03 CONFORME, falso negativo.** A R03 1.0.0 aceitava o NCM em **qualquer**
+  anexo. `200028` é serviço de educação (Anexo II), e o NCM da nota está só no
+  Anexo IX.
+
+Corrigir só a R05 deixaria a nota inteira sem divergência. Por isso as duas
+mudaram no mesmo salto de conjunto.
+
+**Versões.** R03 `1.0.0` → `1.1.0`, R05 `1.0.0` → `1.1.0`, e
+`ConjuntoRegras.VERSAO_PADRAO` `2026.2` → `2026.3`. A R04 continua em `1.1.0`,
+e as outras quatro regras em `1.0.0`. Severidades não mudaram. Antes da
+mudança, o banco local tinha:
+
+- execuções: 25 com o conjunto `2026.1`, 3 com o `2026.2` e nenhuma com o
+  `2026.3`;
+- R05 1.0.0: 8 apontamentos e 18 avaliações não concluídas;
+- R03 1.0.0: nenhum apontamento e 37 avaliações não concluídas;
+- nenhuma tratativa nem registro de tratativa de nenhuma das duas.
+
+Nenhuma tratativa foi reaberta, porque não havia nenhuma. O banco local está na
+`V14` do Flyway; a `V15` e a `V16` entram na próxima subida.
+
+#### Fontes e arquivos de decisão
+
+**Fontes informadas pelo usuário (seção 5):**
+
+- a Tabela de Classificação Tributária do IBS/CBS, do Portal da Conformidade
+  Fácil (`https://dfe-portal.svrs.rs.gov.br/Cff/ClassificacaoTributaria`),
+  página obtida em 30/09/2026;
+- a LC 214/2025, texto consolidado com as alterações da LC 227/2026 (Planalto),
+  conferido em **[data não informada pelo usuário]**.
+
+**Arquivos de decisão**, em `dados/decisoes/`, que o `.gitignore` bloqueia:
+
+- `d2-anexos-admitidos.csv`: colunas
+  `codigo;cst;reducao;descricaoOficial;anexosAdmitidos;trechoQueJustifica`. São
+  61 linhas, uma por código com `indicadorDeBeneficio = true`: 42 `NENHUM` e 19
+  com anexo. Foi gerado pela regra de extração do usuário e conferido por ele
+  linha a linha.
+- `anexos-declarados.csv`: a lista de anexos válidos e quais estão carregados.
+  Foi preenchido pelo usuário e copiado sem alteração para
+  `exemplos/catalogo/anexos-declarados.csv`.
+
+O sistema não sabe nada disso. As decisões vivem só nesses arquivos e nos CSV
+de `exemplos/catalogo`.
+
+#### As decisões D1 a D9 do usuário
+
+- **D1.** `reducao_cbs` e `reducao_ibs` do catálogo são percentuais de redução da
+  **alíquota** (`pRedCBS` e `pRedIBS` da tabela oficial). A redução de base
+  (CST `222`; CST `210` com o indicador `ind_RedutorBC`) não é representada por
+  essas colunas. Não foi criada coluna de incidência.
+  *(Emendada pela D017, 03/10/2026: passou a existir a coluna
+  `reducaoIncideSobre`; não declarado continua sendo alíquota.)*
+- **D2.** Coluna nova `anexosAdmitidos` em `classificacao-tributaria.csv`,
+  preenchida exatamente com a coluna de mesmo nome de `d2-anexos-admitidos.csv`.
+  O formato é uma lista de identificadores do `item-anexo.csv` separados por
+  `|`, ou `NENHUM`. Códigos ausentes do arquivo não foram preenchidos.
+  - **Regra de extração, declarada pelo usuário:** os anexos citados na
+    descrição oficial do código no formato "(Anexo N)". Descrição sem citação dá
+    `NENHUM`.
+  - **O único caso fora da regra foi o `200006`.** A descrição longa cita o
+    Anexo XII para dispositivos *não* listados nele. Ficou marcado `REVISAR`, e
+    o usuário decidiu `NENHUM`.
+- **D3.** As linhas do ANEXO-IX em `item-anexo.csv` passam a citar a fonte
+  "LC 214/2025, art. 138, Anexo IX".
+- **D4.** Redução em branco no catálogo: R05 `NAO_AVALIADO`, com motivo (D002).
+  Código fora do catálogo, ou item sem cClassTrib: fator 1, como na 1.0.0.
+  *(Emendada pela D016, 03/10/2026: "código fora do catálogo: fator 1" vale só
+  dentro da cobertura declarada da tabela de classificações; fora dela, a R05
+  1.2.0 dá `NAO_AVALIADO`. Item sem cClassTrib continua com fator 1.)*
+- **D5.** CST `222` ou `210` com redução diferente de zero no catálogo: R05
+  `NAO_AVALIADO`, com o motivo de que redução de base não é suportada. Nos
+  demais casos o fator incide sobre a alíquota.
+  *(Emendada pela D017, 03/10/2026: a redução de base deixou de ser reconhecida
+  pelo CST, escrito em código, e passou a ser declarada pela carga, com
+  `reducaoIncideSobre = BASE`.)*
+- **D6.** A lista de anexos válidos é declarada pelo usuário em
+  `anexos-declarados.csv`, com as colunas
+  `identificadorDoAnexo;tipoDeCodigo;vigenciaInicio;vigenciaFim;fonteNormativa;natureza`.
+  - `tipoDeCodigo` aceita `NCM`, `NBS` ou `NCM_E_NBS`.
+  - `natureza` mantém o sentido da Etapa 11 (`FICTICIO` ou `NORMATIVO`).
+  - A tabela entra na procedência da carga como `ANEXO_DECLARADO`: é a quinta
+    entrada de `NaturezaDaCarga` e conta no cálculo da situação. Carga sem ela
+    continua com quatro entradas e a mesma situação de antes.
+- **D7.** Cobertura **por anexo**: um anexo está carregado numa data somente se
+  tem `vigenciaInicio` e a data cai na vigência.
+  - Anexo declarado sem vigência existe, e serve para validar identificadores,
+    mas não está carregado.
+  - Anexo `NBS` declarado carregado e sem nenhuma linha no `item-anexo.csv` está
+    **carregado e vazio de NCM**, e não "não carregado".
+- **D8.** A R03 1.1.0:
+  - `NENHUM`: não exige anexo;
+  - `CONFORME` se o NCM está em algum anexo admitido e carregado na data;
+  - `ACHADO` somente se **todos** os anexos admitidos estão carregados na data e
+    o NCM não está em nenhum deles;
+  - qualquer outro caso é `NAO_AVALIADO`, com o motivo "anexo admitido não
+    carregado [lista]". Isso inclui a cobertura parcial: um código com dois
+    anexos admitidos, só um carregado, e o NCM fora do carregado;
+  - continuam os motivos que já existiam: cobertura da tabela fora da data, item
+    sem NCM e código sem `anexosAdmitidos` declarado.
+- **D9.** Validação da carga, completa e por substituição:
+  - identificador de `anexosAdmitidos` fora da lista declarada recusa a carga
+    inteira;
+  - código que cita anexo, com `anexos-declarados.csv` ausente, recusa a carga;
+  - cargas antigas gravadas no banco, sem cobertura por anexo, dão R03
+    `NAO_AVALIADO` para os códigos com anexo, sem erro;
+  - esta checagem **substituiu** a de 30/09/2026, que conferia o identificador
+    contra as linhas do `item-anexo.csv`. Aquela recusava `exemplos/catalogo`
+    inteiro, com 13 anexos citados e sem nenhuma linha.
+
+**O sentido da vigência em `anexos-declarados.csv`.** Nesse arquivo,
+`vigenciaInicio` preenchida quer dizer "este anexo está carregado **por
+completo** no `item-anexo.csv` a partir desta data". **Não é a vigência da
+lei.** A vigência do vínculo entre NCM e anexo continua nas linhas do
+`item-anexo.csv`. É por isso que anexo com linhas pode estar declarado sem
+vigência: as linhas existem, mas são recorte, e a R03 não pode concluir "o NCM
+não está no anexo" a partir de um recorte.
+
+No catálogo de exemplos, só o **ANEXO-II** e o **ANEXO-III** têm vigência. São
+os dois `NBS`, sem linha nenhuma no `item-anexo.csv`, e portanto carregados e
+vazios de NCM. Os demais 15 anexos estão declarados sem vigência, inclusive o
+IV, o V, o VI e o IX, que têm linhas.
+
+#### O `item-anexo.csv` de exemplos, corrigido e ampliado pelo usuário
+
+O arquivo passou de 48 para 196 linhas, todas `REDUCAO_60`, `NORMATIVO` e com
+vigência desde 2026-01-01:
+
+| Anexo | Linhas | Fonte |
+|---|---|---|
+| ANEXO-IX | 48 | LC 214/2025, art. 138, Anexo IX |
+| ANEXO-IV | 64 | LC 214/2025, art. 131, Anexo IV |
+| ANEXO-V | 20 | LC 214/2025, art. 132, Anexo V |
+| ANEXO-VI | 64 | LC 214/2025, art. 133, Anexo VI |
+
+- **Fontes:** corrigidas pelo usuário, uma por anexo. Antes citavam o art. 129.
+  A D3 tinha corrigido só o ANEXO-IX.
+- **Os quatro são recortes, e não os anexos inteiros.** Mesmo assim, as linhas
+  declaram `natureza = NORMATIVO`. Isso é correto: cada linha transcreve a
+  norma, e o que falta são linhas, não exatidão. A incompletude é dita em outro
+  lugar, no `anexos-declarados.csv`, onde os quatro anexos estão sem vigência.
+- **Datas:** a `vigenciaInicio` das 64 linhas do ANEXO-IV veio em `01/01/2026` e
+  foi trocada para `2026-01-01`, com autorização. Nenhuma outra coluna mudou.
+- **NCM em dois anexos:** só dois, `38249989` (IX e IV) e `29152100` (IX e VI).
+  A chave do item de anexo é o par NCM e anexo, no domínio, na carga e no
+  banco, e aceita isso.
+- **`cobertura.csv`:** a linha `ITEM_ANEXO` passou a citar a fonte "LC 214/2025,
+  Anexos IV, V, VI e IX (consolidado LC 227/2026), recortes". O cabeçalho
+  passou a dizer a natureza declarada tabela por tabela, e todas são
+  `NORMATIVO`. As linhas `CLASSIFICACAO_TRIBUTARIA` e `NCM` continuam com
+  "FONTE FICTICIA DE EXEMPLO v0.0", e a linha de comentário "Nao use este
+  arquivo como referencia normativa." continua lá. Nenhuma das duas foi pedida.
+
+#### A premissa da Etapa 11 que caiu
+
+`QuatroCenariosDeConferenciaTest` afirmava que **o mesmo documento produz a
+mesma situação nos quatro cenários**. O que mudava entre eles era só a carga. Isso
+só valia porque a R05 1.0.0 ignorava a redução. A nota fictícia
+`nfe-item-completo.xml` traz valores cheios, e o cenário "diferenciado
+aproveitado" (`comReducao()`, redução 99,99) concluía sem divergência
+**exatamente porque a redução não entrava na conta**.
+
+Com a R05 1.1.0:
+
+- `comReducao()` passou a declarar redução 60;
+- o cenário diferenciado usa uma nota fictícia própria,
+  `nfe-item-completo-reducao-60.xml`, com os valores calculados com 60% de
+  redução sobre as alíquotas fictícias da carga. `nfe-item-completo.xml` não foi
+  alterada;
+- `oMesmoDocumentoDeveMostrarEnquadramentosDiferentesEmCargasDiferentes`
+  continua com a mesma nota nas duas cargas, e passou a afirmar situações
+  **diferentes**: `SEM_DIVERGENCIA_IDENTIFICADA` sem anexo, e
+  `POSSIVEL_DIVERGENCIA` com anexo e redução, com a R05 como origem. A prova de
+  que o enquadramento vem do catálogo passou a ser "os mesmos bytes produzem
+  resultados diferentes sob catálogos diferentes";
+- `integral()`, nesse teste, e `carga()`, em `HistoricoPelaApiTest`, passaram de
+  redução não declarada para zero declarado. Pela D4, não declarado agora é
+  `NAO_AVALIADO`.
+
+Nenhum desfecho esperado mudou.
+
+#### Arquivos
+
+**Alterados, de etapas anteriores, com autorização prévia:**
+
+- `dominio/`: `ClassificacaoTributaria` (componente `anexosAdmitidos`),
+  `CoberturaDoCatalogo` (lista de anexos declarados, com o construtor antigo
+  mantido), `RegraValorDeTributoConfere`, `RegraBeneficioExigeNcmEmAnexo` e
+  `ConjuntoRegras`. Neste último mudaram a versão e a linha que entrega a
+  cobertura à R03. Nenhum `import` de framework.
+- `aplicacao/catalogo/`: `CargaDeCatalogo` (validação da D9 na montagem, o que
+  cobre a edição), `NaturezaDaCarga` e `SubstituicaoDeTabelas`.
+- `infraestrutura/`: `ImportadorClassificacaoTributariaCsv`,
+  `LeitorDeCatalogoEmCsv` (inclusive a substituição),
+  `ClassificacaoTributariaEntidade`, `MapeadorDeCatalogo`,
+  `NaturezaDaCargaNoBanco`, `ProvedorDeCatalogoNoBanco`,
+  `RepositorioDeCargaDeCatalogoNoBanco` e `AcervoDeCargasNoBanco`.
+- Testes: `ConjuntoRegrasTest`, `RegraBeneficioExigeNcmEmAnexoTest`,
+  `QuatroCenariosDeConferenciaTest`, `HistoricoPelaApiTest`,
+  `AcuraciaPelaApiTest` e `ComandoAvaliarAcuraciaTest`. Em
+  `RegraBeneficioExigeNcmEmAnexoTest`, todo teste que espera `NAO_AVALIADO`
+  passou a conferir também o motivo. Dois deles continuavam verdes por
+  coincidência quando a R03 passou a exigir `anexosAdmitidos`.
+
+**Novos:**
+
+- `dominio/catalogo/AnexoDeclarado` e `TipoDeCodigoDoAnexo`;
+- `ImportadorAnexosDeclaradosCsv`, `AnexoDeclaradoEntidade` e
+  `AnexoDeclaradoJpa`;
+- `V15__anexos_admitidos.sql`, com uma coluna anulável, e
+  `V16__anexo_declarado.sql`, com uma tabela vazia e o gatilho de carga selada.
+  Nenhuma das duas tem `INSERT` ou `UPDATE`;
+- sete classes de teste e uma nota fictícia (abaixo).
+
+A API e o JavaScript não mudaram de código. O conteúdo exposto mudou: a faixa de
+procedência pode trazer a quinta tabela.
+
+#### Verificação
+
+**Suíte:**
+
+- antes: 1025 testes;
+- depois da R05 e da R03: 1048;
+- depois da cobertura por anexo: 1070;
+- na entrega: **1070 testes, nenhuma falha, nenhum erro, nenhum pulado**, com o
+  Docker de pé, e o `git status` idêntico antes e depois.
+
+**Testes novos, escritos antes da implementação e com dados fictícios:**
+
+- `RegraValorDeTributoConfereComReducaoTest`,
+  `RegraBeneficioExigeNcmEmAnexoAdmitidoTest`, `AnexosAdmitidosNoCsvTest` e
+  `AnexoAdmitidoInexistenteNaCargaTest`: 20 testes, 14 vermelhos antes;
+- `CoberturaPorAnexoNaR03Test`, `AnexosDeclaradosNaCargaTest` e
+  `FaixaComAnexosDeclaradosTest`: 22 testes, 14 vermelhos antes.
+
+**Sabotagens, todas desfeitas por cópia e conferidas idênticas ao original:**
+
+| Sabotagem | Resultado |
+|---|---|
+| R05 ignora a redução | 3 de 18 falham |
+| R05 lê redução em branco como zero | 1 de 18 falha |
+| R05 aplica a redução com CST de redução de base | 1 de 18 falha |
+| R03 volta à cobertura global | 4 de 20 falham |
+| R03 volta à versão de 30/09 | 5 de 20 falham |
+| R03 trata anexo `NBS` vazio como não carregado | 1 de 20 falha |
+| R03, troca inofensiva de controle | 0 de 20 |
+| D9 sem conferência na carga editada | 1 de 13 falha |
+
+A volta à cobertura global **não** derruba o teste do anexo vazio, ao contrário
+do que se esperava. Na cobertura global todo anexo conta como carregado, então o
+anexo vazio continua dando `ACHADO`. O erro que esse teste pega é o inverso, e
+foi a terceira sabotagem da R03 que o mostrou.
+
+**Sonda com `exemplos/catalogo`**, em `/tmp`, pelo leitor real e pelo motor
+inteiro, com notas derivadas das de avaliação por troca de `cClassTrib` e `NCM`.
+A sonda não é versionada e não imprime chave.
+
+- A carga é aceita: 161 classificações, 196 itens de anexo e 17 anexos
+  declarados. As cinco tabelas são `NORMATIVO`, e a situação é `NORMATIVO`.
+- Resultados por nota:
+
+| Nota | R03 | R04 | R05 |
+|---|---|---|---|
+| `TESTE_02` (`200028`, NCM `31010000`) | `ACHADO` (ANEXO-II carregado e vazio) | `CONFORME` | `CONFORME` |
+| `200038`, NCM `31010000` | `NAO_AVALIADO`, "anexo admitido não carregado [ANEXO-IX]" | `CONFORME` | `CONFORME` |
+| `200030`, NCM `90189099` | `NAO_AVALIADO`, "[ANEXO-IV]" | `CONFORME` | `CONFORME` |
+| `200034`, NCM `31010000` | `NAO_AVALIADO`, "[ANEXO-VII]" | `CONFORME` | `CONFORME` |
+| `200028`, NCM `90189099` | `ACHADO` (ANEXO-II carregado e vazio) | `CONFORME` | `CONFORME` |
+| `200001` (`NENHUM`), NCM `31010000` | `CONFORME`: não exige anexo | `CONFORME` | `ACHADO`* |
+| `TESTE_01` (`000001`, NCM `31010000`) | `CONFORME` | `ACHADO` INFORMATIVA (ANEXO-IX) | `CONFORME` |
+| `000001`, NCM `90189099` | `CONFORME` | `ACHADO` INFORMATIVA (ANEXO-IV) | `CONFORME` |
+| `515001`, NCM `31010000` | `NAO_AVALIADO`, "[ANEXO-IX]" | `CONFORME` | `CONFORME` |
+
+\* A nota foi derivada da `TESTE_02`, com valores reduzidos em 60%, e o
+`200001` declara redução 100. O `ACHADO` é a conta da R05 sobre valores que não
+foram feitos para esse código, e não diz nada sobre o código.
+
+A `TESTE_01` não mudou de desfecho em relação à rodada anterior. Na R04, os dois
+`000001` disparam pelas linhas do recorte, embora o ANEXO-IX e o ANEXO-IV
+estejam declarados não carregados: a R04 não lê a cobertura por anexo. No
+`515001`, a R05 dá `CONFORME` porque aplica a redução de 60% como em qualquer
+código. **O diferimento não é tratado.** Nenhuma classe de `src/main` menciona
+diferimento, e a nota traz `vDif` zerado.
+
+**Acurácia da Etapa 7.** Os rótulos do gabarito que dependem das regras
+alteradas são os **6 da R05**: 3 `ACHADO` e 3 `CONFORME`. Nenhum é da R03 nem da
+R04. Os outros 9 são da R01 (2), da R02 (6) e da R06 (1).
+
+**Não há commit no estado `2026.2`:** os oito commits com `ConjuntoRegras` estão
+em `2026.1`. O estado `2026.2` foi reconstruído em `/tmp` a partir das cópias de
+segurança da sessão, depois de conferir a lista contra `git status`, os não
+rastreados e as datas de modificação:
+
+- 16 arquivos de produção foram restaurados;
+- 7 arquivos novos foram removidos;
+- o resto de `src/main` ficou idêntico ao repositório;
+- 12 arquivos de `dominio/regras` só tinham a data mudada (um `touch` de
+  recompilação), e 11 deles são iguais ao último commit. O décimo segundo é a
+  R04, que difere do commit só pela mudança de 30/09 e não foi escrita por
+  esta mudança.
+
+Comparação célula a célula, com o comparador real da Etapa 7:
+
+| Estado | Arquivos | Documentos | Avaliações | R05 | Consolidado |
+|---|---|---|---|---|---|
+| `2026.2`: código, catálogo e pasta de então | 5 | 4 | 42 | VP1 FP2 FN0 VN0 NAv3 | VP1 FP3 FN0 VN0 NAv10 SemAval1 |
+| Final: `2026.3` | 6 | 5 | 49 | VP1 FP2 FN0 VN0 NAv3 | VP1 FP3 FN0 VN0 NAv10 SemAval1 |
+
+**Nenhuma das 15 células rotuladas muda.** Das 15, 14 são legíveis; a do
+documento corrompido é `SemAval` nos dois estados. As métricas por regra são
+idênticas.
+
+Duas observações saíram da comparação:
+
+- **A pasta `src/test/resources/documentos` ganhou um sexto XML.**
+  `nfe-item-completo-reducao-60.xml`, criado nesta mudança, tem a mesma chave de
+  acesso de `nfe-item-completo.xml`. Para o `avaliar-acuracia` com
+  `--origem=src/test/resources/documentos`, os 3 rótulos dessa chave passam a
+  ser avaliados duas vezes. O comparador aceita porque os desfechos coincidem
+  nas sete regras, mas recusaria a medição se algum dia divergissem. Por isso
+  mudam "documentos auditados" e "avaliações", e as métricas não.
+- **O resultado esperado escrito no cabeçalho do `gabarito-exemplo.csv` já não
+  corresponde** em nenhum dos dois estados. Por exemplo, a R01 dá `FP1` onde o
+  cabeçalho espera `VN1`. Como é igual nos dois, não é efeito desta mudança. A
+  causa não foi investigada.
+
+#### Consequências declaradas
+
+- **Cargas gravadas antes da V15 e da V16** têm `anexos_admitidos` nulo e
+  nenhuma linha em `anexo_declarado`. Ao reprocessar contra elas:
+  - a R03 dá `NAO_AVALIADO` para todo código de benefício;
+  - a R05 dá `NAO_AVALIADO` onde a redução não foi declarada.
+
+  Só uma carga nova resolve, como na `natureza` (Etapa 11) e na
+  `tributacaoIntegral` (30/09).
+- **Um código que admite o ANEXO-II ou o ANEXO-III dá R03 `ACHADO` para
+  qualquer NCM.** Os dois estão declarados carregados e são de `NBS`. É o
+  desenho da D7, e é o caso da `TESTE_02`.
+- **Todo código que admite um anexo declarado não carregado dá R03
+  `NAO_AVALIADO`** enquanto o anexo não for carregado por completo.
+
+#### Pendências
+
+- **A R04 depende de o anexo estar completo no `item-anexo.csv`.** Com recorte,
+  um NCM fora das linhas carregadas não dispara a R04. Ela também não lê a
+  cobertura por anexo da D7.
+- **Carregar por completo os Anexos IV, V, VI e IX**, com NCM e NBS, e os
+  demais. Só então declarar a vigência deles no `anexos-declarados.csv`.
+- **Casar por NCM não prova o enquadramento** nos itens "Ex" com descrição
+  restrita. O NCM pode estar no anexo e o produto não ser o descrito.
+- **Diferimento na R05 (CST `515`).** A R05 aplica a redução e ignora o
+  diferimento.
+- **Composição do `vBC`**, com a exclusão do ICMS. A R05 confere o valor contra
+  a base declarada, sem conferir como a base foi composta.
+- **Cabeçalho do `aliquota-vigente.csv`.** Ele diz que os percentuais são
+  impossíveis de confundir com alíquota real e que não são referência
+  normativa, mas as três linhas declaram `natureza = NORMATIVO`.
+- **O rótulo "versão" e os nomes técnicos na faixa de procedência.** A tela
+  escreve os nomes das tabelas crus (`ANEXO_DECLARADO`, `ITEM_ANEXO` e os
+  demais), sem rótulo legível.
+- **A busca de carga por versão ordena como texto.** `carga_catalogo.versao` é
+  texto livre e entra como desempate depois de `importado_em desc`, em seis
+  lugares: `AcervoDeCargasNoBanco` (duas vezes), `CargaCatalogoJpa` (usado por
+  `ProvedorDeCatalogoNoBanco` e `RepositorioDeCargaDeCatalogoNoBanco`),
+  `ProvedorDaCargaEsperada` e `ProvedorDeCatalogoQueSela`. Só pesa com duas
+  cargas importadas no mesmo instante.
+
 ---
+
+## D013 — Identidade, perfis, e a carga de catálogo que não muda depois de usada
+
+**Etapa:** 12 — Autenticação, perfis de usuário e CRUD de usuários e de cargas
+**Status:** Aceita
+
+> Emenda a **D009** nas exclusões de escopo "sem autenticação" e "sem
+> multiusuário", e a **D009/D012** na parte que mantinha importar catálogo e
+> tratar achado fora da API. Emenda a **D007** na parte da justificativa da
+> tratativa na planilha. O que cada uma decidiu continua registrado onde está.
+>
+> **Não emenda:** D001 (domínio sem framework), D002 (ausência é um estado), D003
+> (consulta normativa na data do documento), D004 (silêncio do catálogo só dentro
+> da cobertura), D006 (identidade do apontamento e da tratativa pelo conteúdo) e
+> D008 (acurácia por gabarito). **Nada sob `dominio/` foi alterado nesta etapa**,
+> e a medição da Etapa 7 continua correspondendo ao código.
+>
+> "Multiusuário" não é "multiempresa". A seção 4 do CLAUDE.md continua
+> intacta: há uma empresa só, e várias pessoas dela.
+
+### Contexto
+
+Até a Etapa 11 o sistema não sabia quem o usava. Isso tinha três consequências,
+todas registradas nas decisões anteriores como limites conscientes:
+
+- importar catálogo e tratar achado ficaram fora da API, porque o primeiro decide
+  o que o sistema afirma sobre a norma e o segundo é juízo de uma pessoa, e não
+  havia pessoa identificada (D009, D012);
+- a tratativa gravava decisão, justificativa e data, mas não quem decidiu;
+- o bind em `127.0.0.1` era o único controle de acesso.
+
+A etapa pede identidade, três perfis, CRUD de usuários e de cargas, e a tratativa
+pela web. A armadilha estava nas cargas: o `ProvedorDeCatalogoPorVersao` reabre
+cada análise com a carga que ela usou. Editar uma linha de carga usada mudaria o
+fundamento que uma análise passada cita, sem que nada avisasse. É a mesma família
+de falso negativo silencioso que o R04 corrigiu no motor.
+
+Três premissas do pedido não conferiam com o código, e foram corrigidas antes de
+qualquer linha:
+
+- **a justificativa não tinha opt-in na planilha.** O opt-in existia só na API;
+  `ExportadorXlsx` a escrevia sempre, e o guarda de vazamento da Etapa 6 nunca a
+  via, porque o papel que ele montava não tinha tratativa;
+- **a importação parava na primeira linha recusada**, e não listava todas;
+- **a "guarda de cobertura declarada sobre tabela sem registros" não existia.**
+  Existia a recusa de carga sem registro em tabela nenhuma, e a de arquivo
+  ausente. Uma tabela só com cabeçalho e cobertura declarada era aceita.
+
+### Decisão
+
+#### Três perfis, e a permissão conferida no servidor
+
+| Perfil | Pode |
+|---|---|
+| `ADMINISTRADOR` | tudo o que o fiscal faz, mais usuários e cargas de catálogo |
+| `FISCAL` | enviar nota, corrigir análise, registrar tratativa, ler tudo |
+| `CONSULTA` | só ler |
+
+A matriz, endpoint por endpoint, está em
+`infraestrutura/seguranca/MatrizDePermissoes` e é aplicada no filtro do Spring
+Security, **antes de qualquer controlador**. O que não está nela é negado a
+todos (`/api/**` → `denyAll`). Execução, análise e achado **não têm PUT nem
+DELETE para perfil nenhum**: são registro de auditoria, e a tratativa é o único
+caminho de intervenção humana.
+
+Esconder botão não é controle de acesso. As telas escondem o que o perfil não
+pode fazer só por conveniência; o teste `PermissoesPorEndpointTest` chama cada
+endpoint direto, por HTTP, com cada perfil, e confere 403 onde não pode e 401
+sem sessão. A matriz esperada está **escrita à mão no teste**, e não lida da
+matriz de produção — lida de lá, uma permissão alargada por engano seria
+alargada junto na expectativa. O teste confere também que todo endpoint
+registrado no Spring tem linha na matriz e que toda linha tem endpoint: endpoint
+novo sem permissão decidida quebra o build.
+
+#### Sessão no servidor, senha em BCrypt, e o usuário relido a cada pedido
+
+- **Sessão no servidor**, com cookie `http-only` e `same-site=strict`. Sem
+  "lembrar-me" e sem recuperação por e-mail. Token no navegador foi recusado: ele
+  teria de morar onde o JavaScript da página alcança.
+- **Token contra falsificação de pedido** em toda escrita, pego em
+  `GET /api/sessao/csrf`. Inclusive no login.
+- **BCrypt, custo 12**, com sal sorteado por senha e gravado dentro do próprio
+  hash. Argon2 foi considerado; exigiria BouncyCastle, uma dependência a mais,
+  sem ganho que se pague aqui.
+- **A senha só existe no corpo do pedido.** Os tipos que a carregam —
+  `SenhaInformada`, `HashDeSenha` e os três pedidos da API — têm `toString` que a
+  omite. Isso não é cosmético: o Spring MVC, em nível de detalhe, loga o corpo
+  lido pelo `toString`, e o teste de log mostra `senha=omitida` exatamente nessa
+  linha.
+- **A recusa de login é uma só** para login inexistente, senha errada e usuário
+  desativado, e o BCrypt roda mesmo sem usuário, contra um hash de comparação,
+  para o tempo de resposta não dizer quais logins existem.
+- **O usuário é relido do banco a cada pedido** (`RecargaDoUsuario`). Rebaixar
+  alguém vale no pedido seguinte, e desativar encerra a sessão na hora, sem
+  esperar ela vencer.
+
+**O bind continua em `127.0.0.1`.** Sem HTTPS, a senha trafegaria em texto
+claro pela rede, e senha exposta é pior que nenhuma: dá a impressão de acesso
+protegido. Abrir o bind exige HTTPS antes, e HTTPS continua fora do escopo.
+
+#### Usuários: o último administrador, e desativar no lugar de apagar
+
+- **O sistema nunca fica sem administrador ativo.** Excluir, rebaixar e
+  desativar conferem isso numa transação com a tabela `usuario` travada, para
+  dois administradores não se rebaixarem ao mesmo tempo.
+- **Excluir quem já registrou tratativa ou correção de análise é desativar.** A
+  tratativa é juízo humano registrado, e precisa continuar atribuída a alguém
+  identificável. A pergunta "já registrou" olha o **histórico**, e não a decisão
+  que vale hoje — quem foi sobrescrito por outra pessoa também registrou.
+  `ON DELETE RESTRICT` é a segunda barreira: o banco recusa apagar mesmo que o
+  código erre.
+- **Nenhuma migration cria usuário.** O primeiro administrador nasce pelo comando
+  `criar-administrador`, na máquina do sistema, com a senha digitada no console,
+  sem eco, duas vezes. O mesmo comando é a recuperação de acesso: se o login já
+  existe, redefine a senha, põe o perfil de administrador e reativa.
+
+#### A tratativa grava quem decidiu, e o histórico só cresce
+
+`Tratativa` (domínio) não tem autor, e **continua sem ter**. A autoria mora ao
+lado, na aplicação e na infraestrutura:
+
+- `ServicoDeTratativaAtribuida` grava a decisão que vale hoje na tabela
+  `tratativa`, pelo mesmo `RepositorioTratativa` de sempre, e acrescenta uma linha
+  em `tratativa_registro`, com o autor, na mesma transação;
+- `tratativa_registro` **só recebe acréscimo**: um gatilho recusa `UPDATE` e
+  `DELETE`. Tratar de novo muda a decisão que vale, e não apaga quem decidiu
+  antes;
+- as tratativas anteriores a esta etapa foram copiadas para o histórico **com
+  autor nulo e o motivo escrito** — "registrada antes de o sistema identificar
+  usuários". Ausência escrita, nunca suposta (D002);
+- **quem decidiu vem da sessão**, nunca do corpo do pedido. Há teste mandando um
+  `autorId` de outra pessoa no corpo e conferindo que ele é ignorado;
+- pela CLI, `tratar-achado` passou a exigir `--usuario` e a pedir a senha no
+  terminal. Consequência aceita: o comando não serve para roteiro automático.
+  Tratativa é ato humano.
+
+O `ServicoDeTratativa` da Etapa 5, que grava sem autor, **continua existindo**,
+mas nenhuma entrada do sistema o usa mais para gravar.
+
+#### A justificativa passou a ser opt-in também na planilha
+
+`ExportadorXlsx` só escreve a justificativa se a instalação ligar
+`auditoria.exportacao.expor-justificativa`. Desligada — o padrão —, a célula traz
+o motivo da omissão. O guarda de vazamento da planilha passou a plantar um CNPJ e
+uma razão social fictícios na justificativa e a conferir as duas direções: por
+padrão nenhum dos dois sai no arquivo; ligada, os dois saem — o que prova que o
+guarda olha a coluna certa.
+
+#### Carga de catálogo: selada na entrega, imutável depois
+
+**O selo.** `carga_catalogo.selada_em` é preenchida **no momento em que a carga
+é entregue ao motor**, e não quando a análise termina de gravar. O
+`ProvedorDeCatalogoQueSela` trava a linha da carga mais recente
+(`select ... for update`), sela, e só então entrega o conteúdo. A edição de
+rascunho trava a mesma linha e confere de novo que ela não está selada. Selar na
+gravação deixaria uma janela: a análise lê o rascunho X, alguém o edita enquanto
+o motor roda, e a execução grava "usei X" tendo avaliado o X antigo.
+
+**O selo só anda num sentido.** Não volta a nulo nem se as análises que usaram a
+carga forem apagadas por `recomecar-do-zero`: relatórios exportados antes
+continuam citando a versão, e ela precisa continuar querendo dizer o mesmo
+conteúdo. O selo vale também para a medição de acurácia, que entrega a carga ao
+motor do mesmo jeito.
+
+**Carga selada:**
+
+- **exclusão recusada**, com a quantidade de análises que dependem dela. Com N = 0
+  — análise que falhou depois do selo, ou acervo recomeçado —, a mensagem diz que
+  a carga foi entregue a uma análise e que relatórios exportados podem citá-la;
+- **edição cria carga nova**, com versão própria e `derivada_de` apontando para a
+  original. A original fica intacta, byte a byte — o teste confere por resumo de
+  todas as linhas de todas as tabelas. A carga nova passa a ser a mais recente, e
+  é ela que as próximas análises usam.
+
+**Rascunho** — carga nunca entregue a análise — é editado no lugar e excluído
+livremente.
+
+**Gatilhos no banco** recusam inserir, alterar ou apagar linha de qualquer tabela
+de carga selada, apagar a carga selada, e tirar ou trocar o selo. É a mesma
+função das restrições `check` do resto do esquema: barreira de última instância.
+
+**A tela diz o efeito antes de confirmar.** `GET /api/cargas/{versao}` traz a
+prévia — "esta carga é usada por N análise(s); salvar criará a versão X" — e o
+botão de salvar diz o mesmo. O pedido de edição leva o efeito que a tela mostrou;
+se ele mudou enquanto a pessoa editava, o servidor responde 409, **não grava
+nada**, e devolve a prévia nova. Nunca troca "alterar rascunho" por "criar
+versão" em silêncio.
+
+**Edição é substituição de CSV**, uma ou mais tabelas; a que não vier é copiada
+da origem, com a natureza que tinha. Formulário de linha foi recusado: seria uma
+segunda porta de entrada para conteúdo normativo, e a seção 5 existe para não
+haver segunda porta.
+
+#### A importação recusa a carga inteira, com todas as linhas
+
+Os quatro importadores e o `cobertura.csv` passaram a ler até o fim, juntando
+cada recusa com arquivo, linha, coluna e valor, e a carga é recusada **numa
+mensagem só**, sem gravar nada. Falta de coluna no cabeçalho aparece uma vez por
+arquivo, e não uma vez por linha. A `natureza` continua obrigatória em toda linha
+dos quatro arquivos de dados; ausente, a carga falha, e nunca assume valor.
+
+Limite declarado: linha com número de campos diferente do cabeçalho interrompe a
+leitura **daquele arquivo** — é o `LeitorCsv` que recusa, e ele não foi alterado —,
+mas os outros arquivos continuam sendo lidos e os problemas deles aparecem.
+
+A guarda nova, **cobertura declarada sobre tabela sem registro**, recusa a
+carga. É o mesmo critério de "natureza declarada só em tabela com registro",
+aplicado à cobertura. **Consequência que precisa ser dita:** como `cobertura.csv`
+exige cobertura para as três tabelas (a D004 e o domínio pedem isso), as três —
+classificação, NCM e item de anexo — passam a ser obrigatoriamente não vazias.
+Só a de alíquotas, que não tem cobertura, pode vir só com o cabeçalho.
+
+A guarda vale na importação por CSV (linha de comando e web) e na edição. Carga
+montada direto em Java, como nos testes das Etapas 8 e 11, não passa por ela.
+
+#### Corrigir a entrada é outra análise
+
+Dado já auditado não é editável. `POST /api/analises/{id}/correcoes` recebe o
+arquivo corrigido, roda uma análise **nova** — com o próprio `hash_entrada`,
+correspondendo ao que ela processou — e grava em `correcao_de_analise` que ela
+corrige a anterior. A anterior não muda. Tabela à parte, e não coluna em
+`execucao_auditoria`, para não haver caminho de escrita na linha da execução.
+
+### Consequência
+
+- **Nada sob `dominio/` mudou.** A acurácia da Etapa 7 continua valendo.
+- **Dependências novas:** `spring-boot-starter-security` e
+  `spring-security-test` (só teste).
+- **Migrations novas, todas sem dado normativo:** `V10` (usuário e histórico de
+  tratativa, com a cópia das tratativas existentes sem autor), `V11` (selo,
+  origem e gatilhos, com o selo retroativo nas cargas já citadas por execução),
+  `V12` (vínculo de correção).
+- **Toda a API exige sessão.** Os três testes HTTP das Etapas 8 e 11 passaram a
+  entrar como administrador por `SessaoDeTeste`, pelo mesmo caminho do navegador.
+  Um perfil de teste com a segurança desligada foi recusado: tornaria falso dizer
+  que a segurança está testada.
+- **A planilha mudou:** a coluna de justificativa traz o motivo da omissão, a não
+  ser que a instalação ligue a exposição.
+- **As três tabelas com cobertura não podem mais vir vazias.**
+- **`tratar-achado` pede senha no terminal**, e sem terminal recusa.
+- **O guarda `SpringWebNaoVazaDaApiTest` acusou a primeira versão** do pacote de
+  segurança, que usava Jackson e um filtro do Spring MVC fora de
+  `infraestrutura/api`. O guarda estava certo: o filtro virou
+  `jakarta.servlet.Filter` puro e a resposta de recusa, JSON escrito à mão.
+
+**Arquivos de etapas anteriores alterados, com autorização prévia e cláusula de
+emenda:**
+
+- Etapa 2 e 7: `LinhaCsv` (recusa com coluna e valor para quem implementa a
+  interface nova `RecusaPorCampo`; as mensagens são as mesmas, e o gabarito da
+  Etapa 7 recebe exatamente o que recebia);
+- Etapa 2: `LeitorDeCatalogoEmCsv` e os quatro importadores;
+- Etapa 5: `ComandoTratarAchado`;
+- Etapa 6: `ExportadorXlsx`; nos testes, `NenhumIdentificadorEmTextoClaroNaExportacaoTest`
+  (acréscimo), `ExportadorXlsxTest` (**uma linha**: o exportador do teste liga a
+  justificativa) e `PapelDeTrabalhoDePontaAPontaTest` (**uma propriedade**, idem);
+- Etapa 8: `application-api.properties`; nos testes, `ApiDeLeituraTest`
+  (entra com sessão);
+- Etapa 9: `js/telas/achado.js` (histórico e formulário de tratativa) e
+  `tecnica.html`;
+- Etapa 11: `index.html`, `js/conferencia/app.js`, `api.js`, `roteador.js` e
+  `telas/resultado.js`; nos testes, `AnaliseDePontaAPontaTest` e
+  `QuatroCenariosDeConferenciaTest` (entram com sessão);
+- `pom.xml`.
+
+`ConfiguracaoDaAuditoria`, `ProvedorDeCatalogoNoBanco`, `RepositorioTratativaNoBanco`,
+`ServicoDeTratativa`, `ControladorDeAnalises`, `TratadorDeErrosDaApi`,
+`ConfiguracaoDaApi`, `AchadoExposto` e `MontadorDeRespostas` **não foram
+alterados**, embora estivessem na lista autorizada: o selo entrou como
+decorador `@Primary`, a autoria em serviço e adaptador novos, as recusas novas
+em `TratadorDeErrosDaIdentidade`, e o histórico da tratativa num endpoint
+próprio.
+
+**Verificação.** `mvn test`: **981 testes, nenhuma falha, nenhum pulado**, com o
+Docker de pé. São os 904 da revisão de 14/09/2026 mais 77 novos, entre eles
+`PermissoesPorEndpointTest`, `UsuariosPelaApiTest`, `CargasPelaApiTest`,
+`TratativaECorrecaoPelaApiTest`, `ServicoDeUsuariosTest`, `ServicoDeCargasTest`,
+`RecusaDaCargaInteiraTest` e `ComandosDeIdentidadeTest`.
+
+Na direção contrária, treze sabotagens no código de produção, cada uma aplicada,
+rodada contra os testes que a deveriam pegar e desfeita. Todas foram acusadas:
+matriz com fiscal importando carga; filtro conferindo só sessão, e não perfil;
+entrega ao motor sem selar; `toString` do pedido mostrando a senha; exclusão sem
+a regra do último administrador; exclusão sempre apagando; justificativa ligada
+por padrão na planilha; importação parando na primeira linha; guarda de
+cobertura desligada; carga selada editada no lugar; gatilho da classificação
+removido; filtro de recarga do usuário removido; conferência de perfil da
+tratativa removida.
+
+Duas sabotagens **passaram na primeira rodada**, e as duas eram furo de teste:
+
+- editar carga selada no lugar mirou `EstadoDaCarga.efeitoDaEdicao()`, que não
+  tinha chamador — o serviço decidia pelo selo direto. O serviço passou a usar o
+  método, e a decisão mora num lugar só;
+- sem o filtro de recarga, o teste de rebaixamento continuava verde, porque o
+  serviço de tratativa também confere o perfil. O teste passou a usar a listagem
+  de usuários, que só o filtro recusa.
+
+O teste de senha em log **acusou vazamento na primeira rodada**, e o vazamento
+era do cliente HTTP do próprio teste, que loga o corpo que envia. O log do
+servidor, lido no mesmo arquivo, mostrava `senha=omitida`. O teste passou a
+silenciar só o log do cliente, e a exigir que o servidor tenha logado o corpo
+lido — sem isso, "a senha não aparece" passaria por não haver log.
+
+**Interface:** sonda em Node contra um DOM mínimo, 22 conferências, e cinco
+sabotagens numa cópia das páginas, todas acusadas. A primeira rodada das
+sabotagens de interface "passou" inteira porque o executor chamou um `bash` sem
+`node`, e nada rodou; o executor passou a exigir as 22 conferências rodadas em
+cada sabotagem. A sonda não é versionada.
+
+**Sistema empacotado:** o jar, contra um PostgreSQL descartável —
+`criar-administrador` sem terminal recusa com código 2 e não grava; a restrição
+do banco recusa senha em texto claro na coluna do hash; a página estática abre
+sem sessão; a API sem sessão responde 401; login sem token, 403; senha errada,
+401 com a recusa única; consulta lê execuções e recebe 403 ao listar usuários,
+excluir carga e enviar nota; a senha não aparece no log do servidor.
+
+~~**Pendência, não autorizada e por isso não feita:** três textos de etapas
+anteriores ficaram falsos e estão fora da lista autorizada — a linha que
+`ComandoServir` imprime ("Importar catálogo e tratar achado continuam na CLI"),
+com a asserção correspondente em `ComandoServirTest`, e os comentários de classe
+de `ControladorDeAnalises` e `ControladorDeExecucoes`.~~ **Corrigida em
+24/09/2026, com autorização.** `ComandoServir` passou a imprimir que toda chamada
+exige login e quem pode escrever, com cláusula registrando a frase anterior; o
+teste foi renomeado para `deveAnunciarQueExigeLoginEQuemPodeEscrever` e passou a
+exigir que a frase antiga não volte — com ela restaurada, ele falha. Os dois
+controladores ganharam cláusula de emenda no comentário, sem mudança de código.
+
+### Revisão de 03/10/2026 — a guarda de cobertura passa a conferir por anexo
+
+A revisão adversarial de 03/10/2026 mostrou que a guarda decidida acima conferia
+só a **tabela**: `item-anexo.csv` não vazio passava, mesmo que um anexo declarado
+carregado em `anexos-declarados.csv` não tivesse nenhuma linha — bastava outro
+anexo ter. Demonstrado com `exemplos/catalogo` sem as linhas do ANEXO-IX, mantido
+declarado carregado: a carga era aceita, a R03 passava de 1 para 5 `ACHADO`
+GRAVE no corpus de avaliação, inclusive na nota de controle, e a R04 caía, em
+silêncio, de 2 apontamentos para 0. É o defeito que esta guarda existe para
+impedir, uma granularidade abaixo.
+
+**A guarda passou a exigir, para cada anexo declarado carregado de tipo `NCM` ou
+`NCM_E_NBS`, ao menos uma linha em `item-anexo.csv` com aquele identificador e
+vigência que se sobreponha ao período de carregamento.** A recusa é uma só,
+nomeia cada anexo, o tipo e o período declarado, e diz o que falta. Vale nos
+mesmos caminhos da guarda de tabela: importação pela linha de comando e pela
+web, e edição de carga.
+
+Duas decisões do usuário, postas antes de qualquer linha, porque o pedido
+literal — "todo anexo declarado" — recusaria o próprio `exemplos/catalogo`, com
+13 anexos sem linha, e contradiria a D012:
+
+- **ficam de fora o anexo de `NBS` e o anexo declarado sem vigência.** O de NBS
+  carregado e sem linha está "carregado e vazio de NCM" (D7), porque
+  `item-anexo.csv` só guarda NCM; o sem vigência existe para validar
+  identificador e não está carregado (D6, D9), e a R03 não conclui sobre ele;
+- **a linha precisa valer no período de carregamento**, e não só existir: uma
+  linha que vale apenas antes da data em que o anexo foi declarado carregado
+  deixa o anexo vazio na data das notas do mesmo jeito.
+
+`dominio/` não foi tocado. A sobreposição de períodos é conferida na própria
+guarda, que fica em `aplicacao/catalogo`.
+
+**Verificação.**
+
+- `AnexoCarregadoSemLinhaTest`, pelo caminho real da importação, com CSV
+  fictícios em diretório: 7 testes, escritos antes da mudança, **4 vermelhos**
+  contra a guarda antiga — os quatro de recusa. Os três que passaram são os de
+  aceitação: anexo com linha no período, anexo de NBS vazio, anexo de NCM sem
+  vigência.
+- Um teste da revisão de 01/10/2026 afirmava o caso agora recusado:
+  `AnexoAdmitidoInexistenteNaCargaTest.deveAceitarAnexoDeclaradoMesmoSemNenhumaLinhaEmItemAnexo`
+  declarava o anexo sem linha como de NCM. O teste existe para mostrar que a D9
+  confere o identificador contra a lista declarada, e não contra
+  `item-anexo.csv`; o próprio Javadoc dele cita o anexo de NBS como exemplo. O
+  anexo do teste passou a ser de NBS, com comentário, e a asserção não mudou.
+- Suíte: **1117 testes, nenhuma falha, nenhum erro, nenhum pulado**, com o
+  Docker de pé.
+- Sabotagens, contra os mesmos 30 testes, cada arquivo restaurado e conferido
+  por SHA-256: controle 0 de 30; guarda sem conferência por anexo, 4; qualquer
+  linha valendo em qualquer vigência, 1; anexo `NCM_E_NBS` de fora, 1; anexo de
+  NBS também cobrado, 3; anexo sem vigência também cobrado, 1; recusa nomeando só
+  o primeiro anexo, 1. Todas acusadas.
+- Pelo jar, com o cenário demonstrado (`exemplos/catalogo` sem as linhas do
+  ANEXO-IX): o jar anterior aceitava a carga, com 148 itens de anexo; o novo
+  recusa, com código 2, nomeando o ANEXO-IX, o tipo e o período. E
+  `exemplos/catalogo` íntegro continua importando, com 196 itens de anexo.
+
+---
+
+## D014 — Apresentação: abas, colapso decidido no servidor, histórico no servidor e acurácia pelos arquivos da pessoa
+
+**Etapa:** 13 — Apresentação
+**Status:** Aceita
+
+> Emenda a **D010** e a **D012** na organização das telas, e a **D008** na parte
+> de onde a medição pode ser disparada. **Não emenda** a D008 no consolidado: ele
+> continua micro, e a média macro foi pedida e **removida** (ver abaixo).
+>
+> **Nada sob `dominio/` mudou**, nenhuma regra, nenhum catálogo. A acurácia da
+> Etapa 7 continua correspondendo ao código.
+
+### Contexto
+
+O resultado de uma análise ocupava uma página longa, com tudo aberto; o histórico
+pedia as últimas vinte e cinco execuções e fazia uma segunda chamada por linha;
+a acurácia só lia o CSV que o comando `avaliar-acuracia` já tinha escrito. A
+etapa pede abas, colapso do que está conforme, histórico paginado e filtrado no
+servidor, acurácia calculada a partir dos arquivos da pessoa, e acessibilidade.
+
+Dois riscos atravessam a etapa, e são os de sempre do projeto: esconder
+pendência — um lote com seis conformidades e quatro não concluídos abrir
+parecendo limpo — e mostrar número sem dizer contra o que foi calculado.
+
+### Decisão
+
+#### O resumo fica fora das abas
+
+Os quatro estados dos produtos, inclusive os zeros, a quantidade de produtos com
+alguma verificação sem conclusão, os arquivos ilegíveis contados à parte, e a
+versão do catálogo e das regras ficam num **resumo fixo acima das abas**, e não
+dentro de nenhuma. "Não foi possível concluir" nunca fica atrás de uma aba que a
+pessoa possa não abrir.
+
+As abas — Resumo, Produtos, Não concluídos, Agrupamentos (só no lote) e Detalhes
+técnicos — são detalhamento. A aba de não concluídos traz a contagem no rótulo, e
+diz "(0)" em vez de sumir. As abas seguem o padrão ARIA, com setas, Home e End, e
+a escolhida vai no endereço.
+
+#### A regra de colapso, e quem a decide
+
+> Nasce recolhida somente a explicação de uma verificação cujo estado é
+> `SEM_DIVERGENCIA_IDENTIFICADA`; toda outra nasce aberta, e nenhum agrupamento
+> nasce recolhido se contiver ao menos uma verificação que não seja
+> `SEM_DIVERGENCIA_IDENTIFICADA`.
+
+**Quem decide é o servidor**, em `RegraDeColapso` (aplicação), por lista de
+permissão com um valor só: estado novo nasce aberto. A decisão sai nas respostas
+como `recolhidaPorPadrao` (passo e verificação) e `recolhidoPorPadrao` (grupo), e
+os construtores dessas respostas **recusam** recolher o que não é "sem
+divergência" — segunda barreira.
+
+A tela só obedece. `js/colapso.js` é o único módulo que cria `<details>`, não
+menciona estado nenhum, e nasce aberto a não ser que receba `true`. Um teste de
+código-fonte confere as três coisas, e confere que nenhum módulo compara estado
+ou situação com código literal — é o que faz a regra sobreviver à próxima tela.
+Recolher esconde a explicação; o selo do estado continua visível no resumo do
+bloco.
+
+A cláusula dos agrupamentos existe porque um grupo recolhido com uma pendência
+dentro esconderia a pendência pela porta dos fundos, mesmo com a regra por
+verificação correta.
+
+**Consequência na visão técnica (Etapa 9):** os grupos de achados e de não
+avaliados eram `<details>` fechados — pendência atrás de clique. Passaram pelo
+mesmo auxiliar, e nascem abertos.
+
+#### Histórico: paginado e filtrado no servidor
+
+`GET /api/analises` devolve só a página pedida, da mais recente para a mais
+antiga, com filtros por período, por situação mais grave presente, por quantidade
+de produtos com possível divergência e por quem executou. Cada linha traz a
+versão do catálogo e a das regras, e os quatro estados separados, com os zeros.
+*(Emendado pela D020, 04/10/2026: a execução que não registrou os itens lidos —
+a do comando `auditar` — vinha com quatro zeros, que não eram a contagem. Hoje
+vem "não registrado", e nenhum filtro de situação ou de quantidade a exclui.)*
+
+- **"Situação mais grave presente", e não "predominante".** Pela maioria, um
+  lote com seis sem divergência e quatro não concluídos seria filtrado como sem
+  divergência. O critério é a precedência dos estados, a mesma da situação do
+  produto. **O rótulo do filtro na tela diz isso**, com a explicação ao lado.
+- **O resumo por execução é gravado** em `resumo_da_execucao` (V13), calculado
+  pelo mesmo `MontadorDaConferencia` que monta a tela — a tradução de desfecho em
+  estado continua num lugar só. Execução sem resumo é completada na primeira
+  consulta ao histórico. Os quatro números ficam em colunas separadas; não há
+  coluna de total nem de soma.
+- **Quem executou** fica em `autoria_da_execucao` (V13), gravado no envio pela
+  web e na correção. **Execução da linha de comando fica com "executor não
+  registrado", por desenho, e não por lacuna a preencher depois.** A CLI não tem
+  pessoa logada, e execução anterior à Etapa 13 não gravava quem a disparou. Não
+  se cria executor padrão nem se atribui a CLI a um usuário: isso seria afirmar
+  quem executou sem saber. Quem executou análise é desativado, e não apagado,
+  pela mesma regra da tratativa.
+
+#### Acurácia pelos arquivos da pessoa
+
+`POST /api/acuracia` recebe **as notas e o gabarito** — medir roda o motor de
+novo, e o motor precisa das notas — e mede com o mesmo
+`ServicoDeAvaliacaoDeAcuracia` e o mesmo `ComparadorDeGabarito` do comando. Nada
+é recalculado na camada web, e nada é gravado. O gabarito é o mesmo CSV que o
+comando consome. (A tela antiga não pedia xlsx: lia o CSV de resultado. Ela
+continua na visão técnica.)
+
+**Medir sela a carga.** Entregar a carga ao motor a sela, como já acontecia no
+comando. Sem aviso, alguém selaria um rascunho sem querer ao medir, e descobriria
+depois que não consegue mais editá-lo no lugar. Por isso a tela mostra, **antes
+do botão**, "esta medição usará e selará a carga X", e o pedido leva a carga que
+a tela mostrou. Se a mais recente mudou nesse meio tempo, o servidor recusa com
+409, sem medir e sem selar — o mesmo padrão de "edição sem surpresa" da D013.
+Medir é de fiscal e administrador; consulta vê a prévia e não mede.
+
+**Toda linha de métrica carrega a versão do catálogo, a do conjunto de regras e a
+cobertura**, e o construtor da resposta exige as três. Métrica sem item avaliado
+sai "(indefinida)", escrita pelo servidor, nunca zero nem célula vazia. Não
+avaliado fica fora de precisão, recall e F1, e aparece só na cobertura.
+
+**O consolidado é micro**, e a tela diz isso. **A média macro por regra foi
+pedida e removida.** A D008 a recusou porque obrigaria a decidir o que fazer com
+as regras de métrica indefinida, e essa pergunta continua sem resposta
+defensável. A preocupação que motivou o pedido — uma regra com muitas linhas
+dominar o consolidado — já está coberta pela tabela por regra, sempre exibida ao
+lado. Registrado aqui para o pedido não voltar sem uma resposta nova para aquela
+pergunta.
+
+#### Usabilidade
+
+- **Contraste WCAG AA**, medido pela fórmula de luminância: o cinza das notas
+  (3,41:1) e o amarelo e o azul usados como texto (2,05 e 4,19) reprovavam, e
+  passaram a tons que dão 5,15, 5,62 e 5,58. As cores originais continuam nas
+  bordas e nos fundos.
+- Foco de teclado visível em tudo o que recebe foco; abas navegáveis por teclado;
+  todo campo com rótulo associado.
+- Cor nunca é a única codificação: estado com marca de forma e rótulo por
+  extenso. Na impressão, todas as abas aparecem abertas. A planilha só usa cor
+  no cabeçalho; o estado de cada linha sai em texto.
+- Estados vazios dizem o que aconteceu e o próximo passo; operação demorada mostra
+  o tempo decorrido; tabelas largas rolam no próprio contêiner.
+
+### Consequência
+
+- **Nada sob `dominio/` mudou.** Nenhuma dependência nova. Migration nova: `V13`,
+  duas tabelas vazias.
+- **Três endpoints de leitura e um de escrita novos**, todos na matriz de
+  permissões: `GET /api/analises`, `GET /api/analises/{id}/autoria`,
+  `GET /api/acuracia/previa` e `POST /api/acuracia`.
+- **A primeira consulta ao histórico depois da atualização calcula o resumo de
+  todas as execuções antigas**, uma vez.
+- **Pendência:** a recusa de rótulo desconhecido no gabarito cita o valor e os
+  aceitos, mas não o número da linha. Quem a lança é o domínio, e o
+  `LeitorDeGabaritoCsv` (Etapa 7) não acrescenta a linha. Corrigir exige mexer
+  naquele arquivo.
+
+**Arquivos de etapas anteriores alterados**, como consequência do desenho
+aprovado, cada um com cláusula de emenda:
+
+- Etapa 8: `PassoExposto`, `ProdutoExposto`, `GrupoExposto` e
+  `MontadorDaConferenciaExposta` (o campo de colapso); `ControladorDeAnalises`
+  (grava quem executou); nos testes, `RepresentacaoNuncaOmiteTest` (o argumento
+  novo nos três construtores).
+- Etapa 9: `js/telas/achados.js` e `js/telas/naoavaliados.js` (grupos passam a
+  nascer abertos); `tecnica.html` (folha de estilo nova).
+- Etapa 11: `index.html`, `js/conferencia/app.js`, `api.js`, `roteador.js`, e as
+  telas `resultado.js`, `nota.js`, `lote.js`, `produto.js`, `historico.js` e
+  `enviar.js`.
+- Etapa 12: `ControladorDeCorrecoes` (grava quem executou),
+  `RepositorioDeUsuariosNoBanco` (quem executou conta como registro atribuído),
+  `MatrizDePermissoes`; nos testes, `PermissoesPorEndpointTest`.
+
+**Verificação.** `mvn test`: **1016 testes, nenhuma falha, nenhum pulado**, com o
+Docker de pé. São os 981 da Etapa 12 mais 35 novos, entre eles
+`RegraDeColapsoTest`, `ColapsoSoPeloServidorTest`, `HistoricoPelaApiTest`,
+`HistoricoSemSomaProibidaTest`, `SituacaoMaisGravePresenteTest` e
+`AcuraciaPelaApiTest`.
+
+Na direção contrária, seis sabotagens no servidor, todas acusadas: regra de
+colapso recolhendo não concluído; agrupamento recolhido com pendência; situação
+do histórico pela maioria; filtro de situação ignorado no banco; medição usando
+qualquer carga mais recente; resposta aceitando recolher não concluído. **Uma
+passou na primeira rodada** — a da maioria —, porque as análises do teste por
+HTTP têm um produto só, e nelas "maioria" e "mais grave" coincidem. O caso de seis
+sem divergência e quatro não concluídos foi acrescentado, e a sabotagem passou a
+ser acusada.
+
+**Interface:** sonda em Node contra um DOM mínimo, 35 conferências, e sete
+sabotagens numa cópia das páginas, todas acusadas, cada uma com as 35
+conferências rodadas: colapso recolhendo tudo; resumo fixo removido de cima das
+abas; aba de não concluídos sem a contagem; histórico sem mandar o filtro ao
+servidor; medição mandando a carga de agora e não a que a tela mostrou; passo
+recolhido à força; filtro rotulado só "Situação". A sonda não é versionada.
+
+---
+
+### Revisão de 27/09/2026 — o resultado da análise em visual de painel
+
+A pedido do usuário, a tela de resultado foi enxugada. Os arquivos:
+`css/resultado.css`, que é novo, e `css/painel.css`, que o `index.html` passou a
+carregar. As duas folhas são ligadas pelas classes `na-resultado` e
+`visual-painel` no `<body>`, na rota do resultado. O que mudou:
+
+- **Procedência da carga numa linha** (`procedenciaCompacta`, em `pecas.js`).
+  - O pedido era esconder o card sempre atrás de um ícone. Isso foi posto ao
+    usuário e recusado, porque um resultado sobre carga fictícia ficaria sem
+    aviso visível. **Quem decide continua sendo o servidor, por `exigeAviso`.**
+  - Sem aviso: uma linha discreta com o rótulo e a versão.
+  - Com aviso: um alerta compacto, à vista, com as tabelas de demonstração
+    escritas.
+  - Nos dois casos, a explicação inteira fica atrás do botão "i".
+  - `faixaDeNatureza` continua inteira, e em uso nas telas de base e de carga.
+- **Quadros de estados compactos** (`quadroDeEstados(..., { compacto: true })`).
+  - Cada célula leva só o número, a marca e o rótulo.
+  - As quatro explicações vão juntas para um botão "i" ao lado do título. A nota
+    de como as verificações foram contadas vai junto.
+  - As quatro células continuam idênticas entre si, inclusive os zeros.
+  - Sem a opção, a função se comporta como antes, e é assim que a tela de
+    produto a usa.
+- **O resumo fixo continua cumprindo esta decisão:** a pendência, os ilegíveis e
+  as versões estão escritos, em letra menor, e nenhum deles atrás de botão. O
+  pedido admitia tooltip para a pendência, e ela ficou à vista, porque "não foi
+  possível concluir" não pode sair do resumo.
+- **O aviso de uso saiu da aba Resumo e foi para o pé da página**, fora das abas.
+  Com isso, passou a aparecer qualquer que seja a aba aberta.
+  - O cinza pedido para ele, `#94a3b8`, dava 2,4 de contraste. Ficou `#5b6778`.
+- **Documento em grade.**
+  - Sem chave exposta, a célula diz "não exposta nesta instalação", e o motivo
+    do servidor fica atrás de um "?". O pedido sugeria "chave mascarada
+    (proteção de CNPJ)", mas a chave não é mascarada: ela não é exposta, por
+    configuração.
+  - O pseudônimo sai inteiro, com quebra.
+- **Abas no mesmo desenho das outras telas**, em `#1a365d`.
+
+**Verificação:** feita por sonda em Node contra um DOM mínimo, com dado
+fictício, e rodada duas vezes: com carga fictícia e com carga normativa. Foram
+14 conferências passando nas duas rodadas. Quatro sabotagens acusadas:
+- procedência ignorando `exigeAviso`;
+- células com zero sumindo;
+- pendência saindo do resumo fixo;
+- aviso de uso sumindo.
+
+**Não foi aberta em navegador.** Os testes do Maven não foram rodados.
+
+### Revisão de 27/09/2026 — o detalhe do produto consolidado
+
+A pedido do usuário, para cortar a rolagem do detalhe do produto. O estilo mora
+em `css/produto.css`, ligado pela classe `na-produto`, que reaproveita
+`visual-painel` e `na-resultado`. **Duas partes do pedido foram postas ao
+usuário e recusadas por ele:**
+
+- **Apagar as listas "O que o documento declarou" e "Tratamento indicado".** A
+  tabela "lado a lado" tem 5 linhas; a lista do declarado tem os campos todos
+  (NCM, CFOP, cClassTrib, bases, valores), e o tratamento é a resposta que a
+  tela existe para dar (D012). No lugar disso:
+  - o declarado e a comparação viraram **uma tabela só**, com todos os campos
+    declarados e o indicado ao lado, casado pelo nome do campo. Onde a carga não
+    indica nada, a célula diz "sem indicação na carga". Linha da comparação que
+    não casar com nenhum campo declarado entra no fim da tabela, para nada sumir;
+  - o tratamento continua **inteiro**, num cartão em grade.
+- **Destacar em vermelho as linhas em que declarado e indicado diferem.** A
+  tabela continua sem veredito: nenhuma linha é marcada.
+
+O resto do pedido entrou:
+
+- **Topo:** o título, a situação como pílula, a procedência compacta (com
+  alerta quando o servidor exige) e o documento em grade. As explicações da
+  situação foram para um "i".
+- **Cartões de verificações do produto:** saíram. O estado de cada verificação
+  continua escrito, regra a regra, em "Por que este resultado".
+- **Descrições:** ficaram em dois cartões.
+  - Sem descrição, aparece "não disponível", com o motivo do servidor atrás de
+    um "?".
+  - O pedido era "descrição anonimizada". A descrição não é anonimizada, é não
+    exposta, por configuração — então a palavra não foi usada.
+- **Regras:**
+  - a frase "versão da regra: …" virou uma etiqueta curta (`v1.0.0`) no
+    cabeçalho de cada regra. Sem versão, o motivo continua escrito;
+  - o esperado ausente virou um traço, com texto para leitor de tela e o motivo
+    atrás de um "?";
+  - o valor em risco foi para o topo da explicação, em destaque, na cor de
+    texto de divergência;
+  - o colapso continua decidido pelo servidor (`recolhidaPorPadrao`).
+- **Aviso de uso:** no pé da página, em `#5b6778`. O `#94a3b8` pedido reprovava
+  em contraste.
+
+**Verificação:** feita por sonda em Node contra um DOM mínimo, com dado fictício.
+Foram 22 conferências passando. Cinco sabotagens acusadas:
+- a linha que só existe na comparação sumindo;
+- a tabela marcando linha diferente;
+- o colapso forçado aberto;
+- a base normativa saindo da tela;
+- o motivo do esperado virando texto à vista.
+
+**Não foi aberta em navegador.** Os testes do Maven não foram rodados.
+
+**Acréscimo do mesmo dia.** A pedido do usuário, saíram do detalhe dois textos
+que o servidor manda para regra concluída sem violação: a conta da derivação e o
+motivo de não haver versão (o banco não grava avaliação conforme). A regra sai
+só com o cabeçalho — o nome e a pílula "sem divergência identificada" — e sem
+área recolhível vazia. **O motivo da pendência continua**, porque é ele que diz
+por que a regra não concluiu. A sonda passou a 25 conferências, e acusou as duas
+sabotagens: a conta da derivação voltando, e a pendência sumindo junto.
+
+### Revisão de 05/10/2026 — a tabela de análises anteriores cabendo na tela
+
+A pedido do usuário, com autorização prévia para `js/conferencia/telas/historico.js`
+e `css/historico.css` (seção 6), e cláusula de emenda nos dois.
+
+**O diagnóstico do pedido não se confirmou, e a medição está aqui.** O pedido
+era envolver a tabela num contêiner com `overflow-x:auto`, porque "a rolagem
+horizontal é da página". O contêiner já existia (`.hist-rolagem`). Medido no
+Edge sem interface, com 20 linhas fictícias e os textos reais do servidor:
+
+| janela | tabela | área visível | página rola para o lado | barra horizontal em y |
+|---|---|---|---|---|
+| 1340×675 | 1852px | 1130px | não | 1432 |
+| 1894×987 | 1852px | 1130px | não | 1414 |
+
+A página não rolava: quem rolava era o contêiner, e a barra dele ficava no fim
+das vinte linhas, abaixo da tela. A coluna Regras tinha 524px — o que a
+alargava era a tolerância da R05, e não a versão — e a coluna Catálogo tinha
+370px.
+
+**Decisões do usuário:**
+
+- a etiqueta de natureza do catálogo (D021) **saiu da linha**. Um ícone com
+  `title="Procedência não declarada"` fixo foi posto ao usuário e não entrou,
+  porque a etiqueta tem três rótulos — dados de demonstração, parcialmente
+  fictício, procedência não declarada —, e o fixo seria falso nos dois primeiros;
+- a tolerância da R05 (D023) **saiu da linha**; a coluna Regras mostra só a
+  versão do conjunto;
+- a área de rolagem ganhou altura máxima ligada à janela
+  (`max(320px, 100vh − 180px)`), com o cabeçalho preso no topo, para a barra
+  horizontal ficar à vista;
+- versão do catálogo, versão das regras e executor ganharam largura máxima com
+  reticências, e o texto inteiro no `title`; padding horizontal das células de
+  14px para 8px; as quatro contagens com `gap` de 4px.
+
+**O que isto desfaz, e o que não desfaz.** A D021 e a D023 levaram natureza e
+tolerância à tabela do histórico, e esta tabela deixou de escrevê-las.
+`RespostaDoHistorico` não mudou: continua exigindo as duas no construtor de cada
+linha, e a API continua mandando. O resultado da análise, aberto pela linha,
+continua mostrando a procedência e a tolerância.
+
+**Verificação**, com a mesma sonda depois da mudança, e a versão do catálogo e
+o executor propositalmente longos:
+
+| janela | tabela | área visível | barra horizontal em y | barra visível |
+|---|---|---|---|---|
+| 1340×675 | 1202px | 1115px | 577 | sim |
+| 1894×987 | 1202px | 1115px | 871 | sim |
+| 998×675 | 1202px | 918px | 577 | sim |
+
+Colunas no pior caso: Catálogo 196px (cortada), Regras 63px, Executada por
+266px. **Sabotagem acusada:** sem a altura máxima, a barra volta para y=1106
+numa janela de 675. **No pior caso a tabela ainda passa 87px da área**, e a
+barra aparece, agora à vista. Com nomes curtos (catálogo `exemplos-2026.10`,
+executor `Ana Ficticia (aficticia)`), a tabela mede 1115px em 1115px e não há
+barra. A sonda não é
+versionada; os testes do Maven não foram rodados, porque nenhum deles olha estes
+dois arquivos.
+
+---
+
+## D015 — A R07 segue o critério da R02, e o grupo de redução passa a ser lido
+
+**Data:** 03/10/2026 — correção pedida pelo usuário depois da revisão adversarial
+**Status:** Aceita
+
+> **Emenda a D004**, no ponto em que ela decidiu, para a R02, que "coluna
+> preenchida em branco é indistinguível de coluna que ninguém preencheu" e que
+> essa dúvida fica `NAO_AVALIADO`. A D004 não disse nada sobre a R07, e o código
+> da R07 fez o oposto. A partir daqui **a R07 segue o mesmo critério da R02**.
+>
+> **Não emenda:** D002, D003, D005, D006 e D008. A D002 só perde a contagem que
+> ela mesma dá dos argumentos de `ItemDocumento` — "quinze" passou a vinte e
+> um —, e a decisão continua: sem construtor abreviado e sem valor padrão. A versão da R07 sobe, e por isso a
+> D006 vale inteira: apontamento e tratativa da R07 `1.0.0` não se confundem com
+> os da `1.1.0`.
+
+### Contexto
+
+A revisão adversarial de 03/10/2026 encontrou o quarto defeito da família que o
+projeto já conhecia: **conclusão sem ter contra o que conferir**.
+
+- `RegraCamposObrigatoriosPreenchidos` (R07 `1.0.0`) respondia `CONFORME` quando
+  a lista `camposObrigatoriosCondicionados` do catálogo vinha vazia.
+- `LinhaCsv.lista` fazia da célula em branco uma lista vazia, e descartava em
+  silêncio o elemento vazio entre `|`.
+- No catálogo de `exemplos/catalogo`, **120 de 161 códigos** tinham a célula em
+  branco e caíam em `CONFORME`. Os outros 41 trazem nomes crus de indicador do
+  ERP, que o vocabulário `CampoDoItem` não reconhece, e caíam em `NAO_AVALIADO`.
+  Com esse catálogo, a R07 **não tinha como produzir apontamento**.
+- A nota do corpus de avaliação feita para a R07 saía, na conferência, "Sem
+  divergência identificada" nas sete regras, com o passo da R07 dizendo
+  "Campos exigidos pelo cClassTrib vieram preenchidos", enquanto o bloco de
+  tratamento da mesma resposta dizia que "a carga não lista campo que passe a
+  ser exigido".
+
+A D004 tinha resolvido essa mesma ambiguidade para a lista de CSTs da R02, no
+sentido oposto. Nenhum documento registrava por que a R07 ficou diferente: não
+foi decisão, foi lacuna.
+
+A revisão encontrou também um segundo defeito na mesma regra, mais fundo: **o
+grupo `gRed` do leiaute — `pRedAliq` e `pAliqEfet`, em `gIBSUF`, `gIBSMun` e
+`gCBS` — não era lido em lugar nenhum fora das classes geradas.** A R07 só sabe
+cobrar o que chega ao `ItemDocumento`, então uma nota sem o grupo de redução era
+indetectável **mesmo com um catálogo perfeito**: a regra nunca pôde produzir
+esse apontamento.
+
+### Decisão
+
+**A leitura do CSV distingue três estados**, no molde que a D2 já deu a
+`anexosAdmitidos`:
+
+| No arquivo | No domínio | R07 |
+|---|---|---|
+| coluna ausente | carga recusada, como sempre foi | — |
+| célula em branco | `Optional.empty()` — não declarado | `NAO_AVALIADO`, com motivo |
+| `NENHUM` | `Optional.of(List.of())` — declarou que não exige campo | `CONFORME` |
+| `nome1\|nome2` | `Optional.of(lista)` | confere cada campo |
+
+`NENHUM` misturado com nome, nome vazio entre `\|`, nome com espaço em volta e
+nome repetido **recusam a linha**, com arquivo, linha, coluna e valor, e a carga
+inteira cai, como na Etapa 12. A coluna deixou de passar por `LinhaCsv.lista`,
+que não foi alterado: os CSTs compatíveis continuam lidos como antes.
+
+**A R07 só conclui `CONFORME` quando o catálogo afirmou algo sobre aquele
+código** — uma lista de nomes, ou `NENHUM`. Silêncio da fonte é pendência.
+
+**`ClassificacaoTributaria.camposObrigatoriosCondicionados` passou de `List` a
+`Optional<List>`.** Os construtores antigos, que recebem `List`, continuam
+existindo e leem **lista vazia como "não declarado"** — decisão do usuário, por
+ser o lado seguro. Fixture de teste que queira dizer "nenhum campo exigido"
+passa a declarar isso pelo construtor canônico.
+
+**Persistência.** A tabela filha `classificacao_tributaria_campo_obrigatorio`
+não distingue os dois casos: célula em branco e `NENHUM` ficam, ambos, sem
+linha. A `V17` cria a coluna anulável `campos_obrigatorios_declarados`, sem
+INSERT nem UPDATE: `TRUE` é declaração, `FALSE` é célula em branco, `NULL` é
+carga anterior. Na leitura de carga anterior, lista com nomes é declaração; lista
+vazia fica "não declarado", porque ali branco e `NENHUM` eram a mesma coisa.
+
+**Exposição.** A tela escrevia "a carga não lista campo que passe a ser exigido
+por este cClassTrib" para os dois casos. Agora há dois motivos: um para
+`NENHUM` declarado, e outro dizendo que a célula veio em branco e que isso não é
+"nenhum campo exigido".
+
+#### O grupo `gRed` passa a chegar ao item
+
+A lista foi posta ao usuário antes de qualquer linha e confirmada por ele: os
+**seis campos folha do grupo `gRed`**, tirados do XSD versionado
+(`DFeTiposBasicos_v1.00.xsd`, tipo `TRed`, linhas 977 e 982), dentro dos três
+grupos de tributo de `TCIBS`. Dentro de um `gRed` presente as duas folhas são
+obrigatórias no XSD, então a presença de `pRedAliq` equivale à presença do grupo.
+
+| No leiaute | No `ItemDocumento` e no `CampoDoItem` |
+|---|---|
+| `gIBSUF/gRed/pRedAliq` e `pAliqEfet` | `reducaoAliquotaIbsUf`, `aliquotaEfetivaIbsUf` |
+| `gIBSMun/gRed/pRedAliq` e `pAliqEfet` | `reducaoAliquotaIbsMunicipal`, `aliquotaEfetivaIbsMunicipal` |
+| `gCBS/gRed/pRedAliq` e `pAliqEfet` | `reducaoAliquotaCbs`, `aliquotaEfetivaCbs` |
+
+- `NormalizadorDocumento` lê o grupo; grupo ausente é `Optional.empty()`, nunca
+  zero, e a escala declarada é preservada, como em todo valor (D002, D005).
+- `ItemDocumento` ganhou os seis componentes, e `CampoDoItem` os seis nomes. A
+  R07 **só os cobra quando o catálogo os lista** — que campos um código exige é
+  conteúdo normativo, e entra pela carga (seção 5). O sistema não deduz "redução
+  diferente de zero, logo `gRed` exigido": isso seria regra normativa escrita em
+  código.
+- `V18` cria as seis colunas em `item_documento`, `numeric` sem precisão e
+  anuláveis, sem INSERT nem UPDATE; `ItemDocumentoEntidade` e
+  `MapeadorDeDocumento` acompanham.
+- **Os seis campos ficam fora do `HashDoItem`**, por decisão do usuário: nenhum
+  hash já gravado muda, e nenhuma tratativa reabre por isso. O custo é que dois
+  itens que só diferem no `gRed` têm a mesma identidade de apontamento.
+
+**Fora desta decisão, de propósito:** o XSD tem outros grupos que ele mesmo diz
+serem "informados conforme indicador no cClassTrib" — `gEstornoCred`,
+`gCredPresOper`, `gCredPresIBSZFM` —, além de `gTribRegular`, `gIBSCBSMono`,
+`gDif` e `gDevTrib`. Os nomes crus do CSV de exemplos (`INDGTRIBREGULAR`,
+`INDCREDPRES`, `INDMONO`, `INDGESTORNOCRED`…) **parecem** corresponder a esses
+grupos, mas a correspondência é decisão de quem monta o catálogo, e a R07 ainda
+só sabe cobrar campo, não grupo. Fica registrado como próximo passo, não como
+ponto de extensão.
+
+#### Versões
+
+R07 `1.0.0` → `1.1.0`; `ConjuntoRegras.VERSAO_PADRAO` `2026.3` → `2026.4`, **num
+salto só** para os dois defeitos, por decisão do usuário. As outras seis regras
+não mudaram.
+
+### Consequência
+
+- **Com `exemplos/catalogo`, a R07 passa a dar `NAO_AVALIADO` nos 161 códigos.**
+  O arquivo de exemplos **não foi alterado**: marcar `NENHUM` nos 120 códigos em
+  branco seria afirmar, sobre a norma, que eles não exigem campo algum, e isso é
+  decisão de quem monta o CSV (CLAUDE.md, seção 5).
+- **Cargas gravadas antes da `V17`** ficam com a coluna nula. Os códigos que lá
+  tinham lista vazia passam a "não declarado"; só uma carga nova resolve, como
+  na `natureza`, na `tributacaoIntegral` e nos `anexosAdmitidos`.
+- **A nota do corpus feita para a R07 continua sem apontamento**, agora como
+  `NAO_AVALIADO` e não como `CONFORME`: o código dela tem a célula em branco no
+  catálogo de exemplos. Ela só gera apontamento quando a carga listar, para esse
+  código, os campos do grupo de redução.
+- **Teste obrigatório.** `CaminhoDaR07` enumera os nove caminhos da regra, cada
+  um dizendo se o catálogo afirmou algo e qual resultado deve dar.
+  `R07NaoConcluiSemDeclaracaoTest` percorre o enum e os três valores de
+  `ResultadoAvaliacao`; `R07SemDivergenciaSoComDeclaracaoTest` percorre os
+  quatro valores de `EstadoDeConferencia`. Os dois conferem também que todo
+  caminho foi exercitado e que os resultados possíveis aparecem — sem isso, um
+  caminho a menos passaria em silêncio.
+
+### Verificação
+
+- **Testes escritos antes da correção.** `R07NaoConcluiSemDeclaracaoTest` e
+  `R07SemDivergenciaSoComDeclaracaoTest`, rodados contra a R07 com o
+  comportamento antigo (`orElse(List.of())`): **5 de 7 vermelhos**. Os dois que
+  passaram são os que conferem a cobertura do próprio enum.
+- **Testes escritos antes da leitura do `gRed`.** `ReducaoDeAliquotaNoItemTest`,
+  contra o normalizador ainda sem ler o grupo: **2 de 4 vermelhos**. Os dois que
+  passaram afirmam ausência, que o normalizador provisório já cumpria.
+- **Suíte:** **1102 testes, nenhuma falha, nenhum erro, nenhum pulado**, com o
+  Docker de pé. Eram 1070 na revisão de 02/10/2026 e 1016 na Etapa 13. A
+  máquina tem pouca memória livre e a JVM do Maven caiu três vezes por falta de
+  memória nativa; as rodadas valem com `MAVEN_OPTS="-Xmx768m"`.
+- **Testes novos:** `CaminhoDaR07` (enum de apoio),
+  `R07NaoConcluiSemDeclaracaoTest`, `R07SemDivergenciaSoComDeclaracaoTest`,
+  `CamposObrigatoriosNoCsvTest`, `CamposObrigatoriosNoBancoTest`,
+  `MotivoDosCamposExpostoTest`, `ReducaoDeAliquotaNoItemTest` e
+  `ReducaoDeAliquotaNoBancoTest`, e a nota fictícia
+  `src/test/resources/documentos-reducao/nfe-reducao-distinta-por-tributo.xml`,
+  derivada de `nfe-item-completo-reducao-60.xml` com um valor diferente por
+  tributo. Ela fica fora de `documentos/` porque tem a mesma chave fictícia das
+  notas de lá, e os testes que leem aquela pasta inteira a contariam como
+  documento repetido.
+- **Testes que mudaram por causa da correção**, e só eles:
+  `RegraCamposObrigatoriosPreenchidosTest.deveDizerConformeQuandoOCatalogoNaoCondicionaCampoAlgum`
+  afirmava exatamente o defeito — virou `deveDizerConformeQuandoOCatalogoDeclaraQueNaoExigeCampoAlgum`,
+  com um teste novo para o caso não declarado; `QuatroCenariosDeConferenciaTest`
+  (duas fixtures) e `HistoricoPelaApiTest` (uma) passaram a declarar `NENHUM`
+  explicitamente; três ajustes de compilação sem mudança de intenção
+  (`RegistrosDoCatalogoTest`, `RegraTratamentoDeAnexoNaoAproveitadoTest`,
+  `ImportadorClassificacaoTributariaCsvTest`); e o literal de versão em
+  `ConjuntoRegrasTest`, `AcuraciaPelaApiTest`, `HistoricoPelaApiTest` e
+  `ComandoAvaliarAcuraciaTest`. Pelo `gRed`, os dez construtores de
+  `ItemDocumento` em teste ganharam os seis argumentos — `Optional.empty()`,
+  exceto o que monta "todos os campos" em `CampoAusenteNaoEZeroTest`, que
+  recebe o mesmo valor dos demais — e `ConstrutorDeItem` ganhou seis métodos.
+- **Sabotagens**, cada uma aplicada, rodada contra os mesmos 34 testes e
+  desfeita, com o arquivo conferido idêntico por resumo SHA-256:
+
+| Sabotagem | Resultado |
+|---|---|
+| controle: troca inofensiva de comentário | 0 de 34 |
+| R07 volta a concluir com campos não declarados | 6 de 34 falham |
+| importador lê célula em branco como `NENHUM` | 2 de 34 |
+| importador descarta nome vazio em silêncio | 2 de 34 |
+| mapeador lê toda lista gravada como declarada | 2 de 34 |
+| construtor antigo lê lista vazia como `NENHUM` | 1 de 34 |
+| API escreve o mesmo motivo para branco e `NENHUM` | 1 de 34 |
+
+  E do `gRed`, contra 19 testes (20 na segunda rodada):
+
+| Sabotagem | Resultado |
+|---|---|
+| controle: troca inofensiva de comentário | 0 de 19 |
+| normalizador lê a alíquota efetiva da CBS no grupo do IBS UF | 2 de 19 falham |
+| normalizador lê a **redução** da CBS no grupo do IBS UF | **0 de 19 — passou** |
+| normalizador grava zero quando o grupo não veio | 1 de 19 |
+| mapeador não grava a redução da CBS | 1 de 19 |
+| vocabulário da R07 aponta `reducaoAliquotaCbs` para a alíquota da CBS | 1 de 19 |
+
+  A que passou não era furo do código: a nota de teste declara `60.0000` nos
+  três grupos, e o teste não tinha como distinguir de que grupo o valor vinha. A
+  nota `nfe-reducao-distinta-por-tributo.xml` e o teste
+  `cadaTributoDeveSerLidoDoProprioGrupo` entraram por causa disso, e na segunda
+  rodada a mesma sabotagem foi acusada (1 de 20).
+
+- **Acurácia.** Jar do estado `2026.3` (guardado antes de empacotar) contra o
+  jar `2026.4`, cada um com o próprio banco descartável e `exemplos/catalogo`
+  importado pelo próprio importador:
+  - com `exemplos/gabarito-exemplo.csv` sobre `src/test/resources/documentos`,
+    as métricas por regra e consolidadas são **idênticas** — nenhum rótulo é da
+    R07;
+  - rotulando **todas** as células como `CONFORME`, para o harness classificar
+    cada uma: nos documentos de teste, 42 células, **nenhuma muda** (a R07 já
+    dava `NAO_AVALIADO` ali, porque os códigos fictícios não estão no catálogo);
+    no corpus de avaliação, 63 células, **8 mudam, todas da R07, de `CONFORME`
+    para `NAO_AVALIADO`**. As outras seis regras não mudam em célula nenhuma.
+  - com o jar final, já lendo o `gRed`, as métricas do gabarito de exemplo
+    continuam idênticas, e o corpus fica com 8 apontamentos, 43 conformes e 12
+    não avaliados. O grupo chega ao banco em 5 dos 9 itens do corpus — os que o
+    declaram.
+
+---
+
+## D016 — A R05 lê a cobertura das classificações antes de assumir "sem redução"
+
+**Data:** 03/10/2026 — correção pedida pelo usuário depois da revisão adversarial
+**Status:** Aceita
+
+> **Emenda a decisão D4** do usuário, registrada na revisão de 30/09 a
+> 02/10/2026 da D012, no trecho "código fora do catálogo: fator 1, como na
+> 1.0.0". Esse trecho continua valendo **dentro da cobertura declarada** da
+> tabela de classificações; fora dela, deixa de valer.
+>
+> **Aplica a D004**, sem emendá-la: silêncio do catálogo só é resposta dentro da
+> cobertura declarada da carga.
+
+### Contexto
+
+A R05 1.1.0 passou a ler a redução de alíquota na tabela de classificações.
+Quando o código não estava na tabela, ela seguia a D4 — "fator 1, como na
+1.0.0" — e recalculava o valor com a alíquota cheia. O construtor nem recebia a
+cobertura da tabela, então a regra não tinha como distinguir "o catálogo foi
+carregado para esta data e não traz o código" de "a tabela não cobre esta data".
+
+"Como na 1.0.0" não era neutro: a 1.0.0 **não lia** a classificação, e por isso
+não dependia dela. A 1.1.0 passou a depender, e transformava o silêncio da tabela
+em "redução zero" — a mesma dedução de ausência para zero que a revisão de
+30/09/2026 corrigiu na R04, aqui produzindo veredito nos dois sentidos.
+
+A revisão adversarial de 03/10/2026 demonstrou o efeito sobre o corpus de
+avaliação, com uma carga cuja tabela de classificações não cobria a data das
+notas e cuja tabela de alíquotas tinha as linhas de `exemplos/catalogo`: todas as
+outras regras responderam `NAO_AVALIADO`, e a R05 concluiu nas nove notas —
+**3 `CONFORME` e 6 `ACHADO` GRAVE**, com valor em risco calculado sobre notas
+corretas, inclusive a de controle (7,111).
+
+### Decisão
+
+**A R05 recebe a cobertura declarada da tabela de classificações**, e
+`ConjuntoRegras.padrao` entrega a ela a cobertura dessa tabela — não a de NCM nem
+a de itens de anexo.
+
+| Situação do item | R05 1.2.0 |
+|---|---|
+| não declarou `cClassTrib` | fator 1 (D4): a tabela não é consultada |
+| código **encontrado** na tabela, vigente na data | aplica a redução declarada, como na 1.1.0 — registro encontrado é declaração, e a cobertura só decide o que fazer com o silêncio |
+| código **ausente**, tabela **cobre** a data | fator 1 (D4): o catálogo foi carregado para a data e não traz o código |
+| código **ausente**, tabela **não cobre** a data | **`NAO_AVALIADO`**, com motivo que cita o código, o período coberto e a data de emissão |
+
+Redução em branco e CST de redução de base continuam como a D4 e a D5 decidiram.
+
+**Versões:** R05 `1.1.0` → `1.2.0`; `ConjuntoRegras.VERSAO_PADRAO` `2026.4` →
+`2026.5`. O veredito muda, e é para isso que a versão existe: pela D006, um
+apontamento da R05 `1.1.0` não se confunde com um da `1.2.0`, e tratativa dada
+contra o critério antigo não silencia o novo.
+
+### Consequência
+
+- Carga cuja tabela de classificações não cobre a data das notas não produz mais
+  veredito da R05 para código que ela não traz. Com `exemplos/catalogo`, que cobre
+  a partir de 2026-01-01, nada muda nas notas do corpus nem nas de teste.
+- O motivo da pendência diz qual período a tabela cobre e qual é a data da nota,
+  para quem lê saber que o que falta é carga, e não dado no documento.
+- Fica de pé o que a D4 decidiu para dentro da cobertura, e isso continua sendo
+  uma escolha: código que o catálogo não conhece é tratado como sem redução. A R01
+  aponta o mesmo item como código inexistente, e é ela que diz o que está errado.
+
+### Verificação
+
+- **Testes escritos antes da correção.** `R05ForaDaCoberturaTest`, contra a R05
+  já recebendo a cobertura mas ainda sem usá-la: **3 de 6 vermelhos**. Os três
+  que passaram afirmam o que não deveria mudar — a D4 dentro da cobertura, o
+  registro encontrado aplicando a redução, e o item sem `cClassTrib`.
+  O teste reproduz o cenário da revisão com nove notas fictícias — valores
+  reduzidos (a de controle), cheios e misturados — e exige `NAO_AVALIADO` em
+  todas, sem apontamento, e o motivo escrito.
+- `R05NoConjuntoPadraoTest` confere que o conjunto padrão entrega à R05 a
+  cobertura das classificações, com coberturas divergentes entre as tabelas para
+  uma troca aparecer.
+- **Testes de etapas anteriores alterados:** os construtores da R05 em
+  `RegraValorDeTributoConfereTest` (três) e em
+  `RegraValorDeTributoConfereComReducaoTest` (um) passaram a receber a cobertura
+  de `CenarioFicticio.coberturaTotal()`; e os literais de versão em
+  `ConjuntoRegrasTest`, `AcuraciaPelaApiTest`, `HistoricoPelaApiTest` e
+  `ComandoAvaliarAcuraciaTest`. Nenhum desfecho esperado mudou.
+- **Suíte:** **1110 testes, nenhuma falha, nenhum erro, nenhum pulado**, com o
+  Docker de pé e `MAVEN_OPTS="-Xmx768m"`.
+- **Sabotagens**, cada uma aplicada, rodada contra os mesmos 26 testes e
+  desfeita, com o arquivo conferido idêntico por SHA-256:
+
+| Sabotagem | Resultado |
+|---|---|
+| controle: troca inofensiva de comentário | 0 de 26 |
+| R05 volta a assumir redução zero fora da cobertura | 4 de 26 falham |
+| R05 inverte a cobertura | 7 de 26 |
+| R05 deixa pendente também item sem `cClassTrib` | 1 de 26 |
+| R05 deixa pendente também código encontrado fora da cobertura | 1 de 26 |
+| conjunto entrega à R05 a cobertura de NCM | 2 de 26 |
+
+- **O cenário da revisão, com o jar e o corpus de avaliação** — carga com a
+  tabela de classificações cobrindo a partir de 2030 e as alíquotas de
+  `exemplos/catalogo`:
+  - jar `2026.4`: R05 com 3 `CONFORME` e 6 `ACHADO` GRAVE, a nota de controle
+    entre eles, com valor em risco 7,111;
+  - jar `2026.5`: R05 com **9 `NAO_AVALIADO`** e nenhum apontamento; a auditoria
+    inteira fica em 63 de 63 não avaliadas, nenhuma conforme.
+- **Acurácia.** Jar `2026.4` contra `2026.5`, cada um com o próprio banco e
+  `exemplos/catalogo`: métricas do `gabarito-exemplo.csv` **idênticas** — os 6
+  rótulos da R05 dão VP1 FP2 FN0 VN0 NAv3 nos dois —; e, rotulando todas as
+  células, **nenhuma muda** nos documentos de teste (42) nem no corpus (63),
+  porque ali a tabela de classificações cobre a data.
+
+---
+
+## D017 — A redução de base sai do código e entra no catálogo
+
+**Data:** 03/10/2026 — correção pedida pelo usuário depois da revisão adversarial
+**Status:** Aceita
+
+> **Emenda as decisões D1 e D5** do usuário, registradas na revisão de 30/09 a
+> 02/10/2026 da D012. A D1 dizia que a redução de base "não é representada" no
+> catálogo e que "não foi criada coluna de incidência"; a D5 a reconhecia pelos
+> CST `222` e `210`. Os dois pontos mudam: a incidência passa a ser declarada pela
+> carga. O resto da D1 — as colunas de redução do catálogo são redução de
+> **alíquota** — continua, e é ele que decide o caso não declarado.
+
+### Contexto
+
+A R05 1.1.0 trazia, em `dominio/regras/RegraValorDeTributoConfere`, a lista
+`Set.of("210", "222")`: códigos de CST que a decisão D5 tratou como de redução de
+base. Isso contrariava a seção 5 do CLAUDE.md e a afirmação da emenda da Etapa 11
+de que nenhum código normativo foi escrito em código — e nenhum teste acusava.
+
+Além de estar no lugar errado, a lista estava errada nos dois sentidos. A própria
+D1 dizia que o CST `210` só é de redução de base **com o indicador
+`ind_RedutorBC`** do cClassTrib: a lista deixava pendente todo código que admitia
+o `210`, com ou sem o indicador, e não reconhecia redução de base em código que
+não estivesse nela. E consultava o CST declarado no item, que é assunto da R02.
+Sobre o que a redução incide é propriedade do **cClassTrib**, e o cClassTrib vem
+do catálogo.
+
+### Decisão
+
+**Coluna opcional `reducaoIncideSobre`** em `classificacao-tributaria.csv`, com
+`ALIQUOTA` ou `BASE`, proposta ao usuário e aprovada antes de ser criada:
+
+| Célula | R05 1.3.0 |
+|---|---|
+| `ALIQUOTA` | a redução declarada incide sobre a alíquota, como na 1.1.0 |
+| `BASE`, com redução diferente de zero | `NAO_AVALIADO`, com o motivo da D5: redução de base não suportada |
+| em branco, ou coluna ausente | **lida como alíquota**, pela D1 — decisão do usuário |
+| qualquer outro valor | linha recusada, com linha, coluna e valor |
+
+Com redução zero a coluna não é consultada. É uma coluna só para CBS e IBS, como
+a redução. A R05 deixou de consultar CST — do item e da lista de compatíveis.
+
+- No domínio, `IncidenciaDaReducao` (`ALIQUOTA`, `BASE`) é categoria, como
+  `TipoDeCodigoDoAnexo`, e não código da norma. `ClassificacaoTributaria` ganhou o
+  componente `Optional<IncidenciaDaReducao> reducaoIncideSobre`; o construtor da
+  aridade anterior o deixa não declarado.
+- `V19` cria `classificacao_tributaria.reducao_incide_sobre`, anulável, com
+  restrição de forma (`ALIQUOTA` ou `BASE`), sem INSERT nem UPDATE.
+- **Versões:** R05 `1.2.0` → `1.3.0`; conjunto `2026.5` → `2026.6`.
+
+**Não ficou exceção nenhuma em código.** E para a próxima não entrar em silêncio,
+`NenhumCodigoNormativoEmCodigoTest` varre `src/main/java` atrás de literal de
+texto só com dígitos no comprimento de CST (3), de cClassTrib (6) ou de NCM (8),
+descontados os comentários. O único literal permitido é o `"100"` da R05, que é a
+divisão por cem do percentual (D004), registrado no próprio teste com o motivo.
+Exceção futura que se prove inevitável entra ali, com o motivo, e numa ADR.
+
+### Consequência
+
+- **Nada muda com `exemplos/catalogo` nem com as cargas atuais**: sem a coluna,
+  a redução é lida como alíquota, e o único código de exemplos com CST `222` tem
+  redução zero — a lista antiga nunca disparava ali.
+- O que **deixa de existir** é a pendência automática por CST: uma carga antiga
+  com código de redução de base e redução diferente de zero, que a 1.2.0 deixava
+  pendente pelo CST, passa a ter a redução aplicada sobre a alíquota até a carga
+  declarar `BASE`. É o custo da decisão de ler o não declarado pela D1.
+- Quais códigos têm redução de base é decisão de quem monta o CSV, a partir da
+  norma. O sistema não preenche nada.
+
+### Verificação
+
+- **Guarda escrito antes da mudança:** `NenhumCodigoNormativoEmCodigoTest`
+  acusou exatamente `"210"` e `"222"` na R05, e nada mais em `src/main/java`.
+  Depois da mudança, verde. Tem dois testes de apoio: um exige que a varredura
+  encontre os arquivos de produção, e o outro, que o padrão acuse literal e cale
+  comentário.
+- **`R05IncidenciaDaReducaoTest`, escrito antes:** 1 de 4 vermelho contra a R05
+  1.2.0 — `BASE` declarada dava `CONFORME`. Os outros três afirmam o que não
+  muda: alíquota declarada, não declarado lido como alíquota, e redução zero.
+- **Testes de etapas anteriores alterados:** em
+  `RegraValorDeTributoConfereComReducaoTest`, o teste da D5 usava o CST `222` —
+  código real — no item e no catálogo; passou a declarar `BASE` no catálogo e
+  virou `naoDeveAvaliarReducaoDeBaseComReducaoDiferenteDeZero`. E os literais de
+  versão em `ConjuntoRegrasTest`, `AcuraciaPelaApiTest`, `HistoricoPelaApiTest` e
+  `ComandoAvaliarAcuraciaTest`.
+- Novos `ReducaoIncideSobreNoCsvTest` e `ReducaoIncideSobreNoBancoTest`.
+- **Suíte:** **1130 testes, nenhuma falha, nenhum erro, nenhum pulado**, com o
+  Docker de pé.
+- **Sabotagens**, contra os mesmos 21 testes, cada arquivo restaurado e conferido
+  por SHA-256: controle 0 de 21; R05 ignorando `BASE`, 2; R05 lendo não declarado
+  como `BASE`, 4; R05 voltando a trazer um CST em código, 1 (o guarda); importador
+  lendo branco como `ALIQUOTA`, 1; importador aceitando minúsculas, 1; mapeador
+  sem gravar a incidência, 1. Todas acusadas.
+- **Acurácia.** Jar `2026.5` contra `2026.6`, cada um com o próprio banco e
+  `exemplos/catalogo`: métricas do `gabarito-exemplo.csv` idênticas, e nenhuma
+  célula muda nos documentos de teste nem no corpus de avaliação.
+
+---
+
+## D018 — As falhas de leitura são gravadas junto da execução, e leitura não registrada não é zero
+
+**Data:** 04/10/2026 — correção pedida pelo usuário depois da revisão adversarial
+**Status:** Aceita
+
+> **Emenda a D006, a D007 e a D012.** A D006 dizia que o `auditar` grava
+> "documentos, itens, apontamentos e o recibo da execução"; passa a gravar também
+> os arquivos que não leu. A D007 definia três abas e a identificação da planilha;
+> passam a ser quatro abas, e a identificação ganha uma linha. A D012 dizia que o
+> arquivo ilegível "fica em `falha_de_leitura_da_execucao` (V7) e é contado à
+> parte" — isso só valia para a análise da interface, e a tabela vazia era lida
+> como zero.
+
+### Contexto
+
+Demonstrado na revisão, com três arquivos, dois corrompidos, auditados pelo
+comando `auditar`: a CLI imprimia "2 arquivo(s) não puderam ser lidos", a tabela
+`falha_de_leitura_da_execucao` ficava com 0 linhas, a API respondia
+`arquivosIlegiveis: 0` e "Nenhum arquivo deixou de ser lido", e a planilha dizia
+"Documentos auditados 1" sem mencionar os outros dois.
+
+Eram dois defeitos. O `ServicoDeAuditoria` não recebe as falhas, e o `auditar`
+só as imprimia: quem gravava a tabela era o `ServicoDeAnalise`, da interface. E o
+`MontadorDeRecibo` derivava o texto da tabela, sem distinguir "nenhuma linha
+porque nada falhou" de "nenhuma linha porque ninguém gravou".
+
+### Decisão
+
+1. **O `auditar` grava as falhas, pelo mesmo registro da interface.**
+   `ComandoAuditar` recebe `RegistroDoAcervoDaAnalise` e, logo depois da
+   auditoria, registra os arquivos que ela não leu, convertidos por
+   `OrigemDeArquivoIlegivel` — sem a pasta e sem o CNPJ no nome, como na
+   interface. A lista de itens vai vazia: a CLI continua sem gravar os itens
+   lidos, como antes. O registro de falhas da fonte da CLI é do processo, e o
+   comando registra só o trecho acrescentado pela própria auditoria.
+
+2. **Marca de leitura registrada (V20).** `leitura_da_execucao` guarda, por
+   execução, quantos arquivos falharam. É gravada na mesma transação das falhas,
+   pelo `AcervoDaAnaliseNoBanco`. A consulta passou a devolver
+   `Optional<List<ArquivoIlegivel>>`:
+
+   | Estado no banco | Resposta |
+   |---|---|
+   | marca, com tantas linhas quantas ela diz | a lista (vazia, se nada falhou) |
+   | marca que não bate com as linhas | recusa: o banco foi mexido por fora |
+   | sem marca, com item ou falha gravados | a lista — análise da interface anterior à V20, que gravava itens e falhas numa transação só |
+   | sem marca e sem linha nenhuma | **vazio: a leitura não foi registrada** |
+
+   A migration cria a tabela vazia, sem INSERT nem UPDATE. As execuções antigas
+   do `auditar` ficam "não registradas", que é o que elas são.
+
+3. **"Nenhum arquivo deixou de ser lido" só com a leitura registrada e a lista
+   vazia.** No recibo da API, `arquivosIlegiveis` passou de `int` para `Integer`:
+   sem a leitura registrada, ele e `arquivosQueNaoForamLidos` vêm `null`, com
+   `motivoDosArquivosIlegiveisAusentes` dizendo por quê — o par da D009, exigido
+   no construtor nas duas direções. O texto de `comoFoiALeitura` passou a ter os
+   casos "não registrada", que dizem o que não se sabe.
+
+4. **Planilha.** A identificação ganhou a linha "Arquivos que não puderam ser
+   lidos", logo abaixo de "Itens auditados", e a planilha ganhou a quarta aba,
+   **Não lidos**, com arquivo, tipo de erro e motivo. Sem a leitura registrada, as
+   duas escrevem "(não registrado: …)" em vez de zero. O papel de trabalho recebe
+   os arquivos por `ConsultaDosArquivosNaoLidos`, porta funcional nova em
+   `aplicacao/papeldetrabalho/`.
+
+5. **Tela.** O bloco de leitura e o resumo fixo escrevem o motivo quando a
+   contagem vem nula. Antes, `inteiro(null)` escreveria "0".
+
+**Arquivo ilegível continua nunca contado como nota sem divergência.** Nada
+disso o põe numa contagem de estado: a conferência conta produtos de
+`item_da_execucao`, e o ilegível não é produto.
+
+### Consequência
+
+- **Não muda nada no motor**, em `dominio/` nem nas versões de regra e de
+  conjunto. A acurácia da Etapa 7 não é afetada.
+- **A execução da CLI continua sem os itens lidos.** A conferência dela, aberta
+  pelo histórico, lista os ilegíveis e os documentos lidos, mas nenhum produto —
+  como antes desta decisão. Gravar os itens pela CLI gravaria também a descrição
+  do produto, e isso não foi pedido.
+- **A gravação das falhas pela CLI é uma transação depois da execução, não a
+  mesma.** Se ela falhar, o comando termina em erro e a execução fica sem marca —
+  "não registrada", e não "zero". A marca é o que torna essa falha honesta.
+- **A visão técnica não mostra os ilegíveis**: os quatro GET da Etapa 8 não os
+  expõem, como antes.
+
+### Verificação
+
+- **`FalhasDeLeituraNosPontosDeSaidaTest`, escrito antes da correção**, com o
+  cenário demonstrado: o `auditar` de verdade, por Spring e PostgreSQL em
+  contêiner, sobre uma nota boa e dois arquivos corrompidos, conferindo a CLI, a
+  tabela, a API e a planilha. Contra o código anterior, 3 de 3 vermelhos, pelos
+  motivos demonstrados: banco com 0 linhas, planilha sem a linha, e execução sem
+  registro respondendo `arquivosIlegiveis: 0`. Mais três casos: a segunda
+  auditoria no mesmo processo não herda as falhas da primeira; análise da
+  interface anterior à V20 continua com a lista; marca que não bate com as linhas
+  é recusada — seis ao todo. O lote limpo, único que diz "Nenhum arquivo deixou
+  de ser lido", é um dos três primeiros. *(Corrigido em 04/10/2026: este texto
+  dizia "mais quatro casos", contando o lote limpo duas vezes.)*
+- **Testes de etapas anteriores alterados:** `ExportadorXlsxTest` (as linhas
+  abaixo de "Itens auditados" desceram uma, e são quatro abas), as duas asserções
+  de `AcervoDaAnaliseNoBancoTest` sobre o tipo novo, e o argumento novo do
+  montador em `MontadorDePapelDeTrabalhoTest`, `MontadorDeRespostasTest` e
+  `NenhumIdentificadorEmTextoClaroNaExportacaoTest`.
+- **Sonda em Node** contra DOM mínimo, nos três casos (dois ilegíveis, zero, não
+  registrada): 7 de 7 com a tela nova; contra os dois módulos anteriores, 4
+  falhas, todas no caso não registrado — escreviam "0". A sonda não é versionada.
+- **Suíte:** **1137 testes, nenhuma falha, nenhum erro, nenhum pulado**, com o
+  Docker de pé.
+- **Sabotagens**, contra os mesmos 33 testes, cada arquivo restaurado e conferido
+  por SHA-256: controle 0 de 33; CLI sem registrar as falhas, 4; CLI registrando
+  as falhas do processo inteiro, 2; acervo sem gravar a marca, 4; acervo lendo
+  ausência de marca como zero, 1; acervo aceitando marca divergente, 1; acervo
+  sem reconhecer a análise anterior à V20, 1; recibo tratando não registrada como
+  zero, 1; planilha escrevendo 0 sem a leitura registrada, 2; montador da planilha
+  sem consultar os não lidos, 2. Todas acusadas.
+
+---
+
+## D019 — Documento repetido no lote: a cópia idêntica conta uma vez, e a divergente não entra
+
+**Data:** 04/10/2026 — correção pedida pelo usuário depois da revisão adversarial
+**Status:** Aceita
+
+> **Emenda a D005, a D006 e a D018.** A leitura do lote da D005 entregava um
+> documento por arquivo legível; passa a entregar um por chave de acesso. A D006
+> grava documento, item e apontamento pela identidade natural, e é por isso que
+> duas cópias no mesmo lote viravam uma linha no banco e duas no recibo. A D018
+> criou a marca de leitura; ela ganha a contagem dos repetidos.
+
+### Contexto
+
+O caso comum: o `-nfe.xml` e o `-procNFe.xml` da mesma nota no mesmo lote. O
+`LeitorLote` entregava os dois documentos, o motor avaliava os dois, e:
+
+- a CLI gravava o recibo com 2 documentos e 2 apontamentos GRAVE, e o banco
+  ficava com 1 documento e 1 apontamento, pela identidade natural da D006;
+- a exportação dessa execução caía com rastro de pilha, na conferência de
+  `PapelDeTrabalho` entre o recibo e as linhas;
+- com conteúdo diferente, o item do primeiro arquivo era sobrescrito em silêncio
+  por `RepositorioDaAuditoriaNoBanco`;
+- a web recusava o lote — demonstrado na revisão, pela restrição
+  `item_da_execucao_unico` —, com a mensagem
+  "outra pessoa mudou o mesmo dado ao mesmo tempo. Recarregue e tente de novo" —
+  falsa, e mandando repetir uma ação que nunca funcionaria.
+
+No cenário do teste apareceu ainda uma quarta forma: com uma avaliação não
+concluída no item, o `auditar` caía na restrição `avaliacao_nao_concluida_unica`.
+
+### Decisão
+
+1. **A leitura do lote resolve as cópias, antes do motor.**
+   `FonteDeLoteNoSistemaDeArquivos` agrupa os documentos pela chave de acesso, na
+   ordem de leitura. Para isso, `LeitorLote` ganhou `lerComOrigem`, que entrega
+   cada documento com o arquivo de onde veio (`DocumentoLido`); `ler` continua
+   igual. Os dois caminhos — CLI e interface — usam essa fonte, e a medição de
+   acurácia também.
+2. **Conteúdo igual é cópia.** "Igual" é o que o sistema leu: o `Documento`
+   normalizado e todos os itens, em ordem de número, comparados por valor — o
+   envelope de autorização não entra no que é lido. A cópia é descartada e
+   contada em `LoteDeDocumentos.documentosRepetidosDescartados`.
+3. **Conteúdo diferente é conflito, e nenhum dos arquivos entra.** Cada um é
+   registrado como falha, com o tipo `ChaveDeAcessoComConteudoDivergente` e o
+   motivo, e aparece onde aparecem os arquivos que ficaram de fora (D018): CLI,
+   `falha_de_leitura_da_execucao`, API, planilha e tela. Ficar com um seria
+   decidir qual é o verdadeiro. O motivo não cita os outros arquivos, porque o
+   nome deles pode trazer a chave e, dentro dela, o CNPJ do emitente.
+4. **Guarda estrutural.** `LoteDeDocumentos` recusa dois documentos com a mesma
+   chave, venha de qual fonte vier, com mensagem que não repete a chave.
+5. **A contagem dos repetidos é registrada e exposta.** Migration `V21`: coluna
+   anulável `leitura_da_execucao.documentos_duplicados`, sem INSERT nem UPDATE;
+   nula é "não registrado". `ResultadoDaAuditoria` a carrega,
+   `RegistroDoAcervoDaAnalise.registrar` a recebe, e ela aparece na CLI
+   ("repetidos descartados"), no recibo (`documentosRepetidosDescartados`, nulo
+   com `motivoDosRepetidosAusentes`), no texto de `comoFoiALeitura`, na planilha
+   (linha "Documentos repetidos descartados", abaixo dos arquivos não lidos) e no
+   bloco de leitura da tela.
+6. **A mensagem do banco diz a causa.** `CausaDaRecusaDoBanco`, nova, lê só a
+   primeira linha da mensagem do PostgreSQL — as seguintes trazem o valor gravado.
+   Violação de restrição nomeia a restrição e diz que repetir o pedido terá o
+   mesmo resultado; recusa de gatilho repassa o texto do gatilho, que é do
+   sistema; o que não se identifica diz isso. Só a concorrência de verdade
+   (`ConcurrencyFailureException`) manda recarregar e tentar de novo. Código HTTP
+   e código do erro não mudaram.
+7. **Exportação não termina em rastro de pilha.** `LinhaDeComando` passou a
+   tratar `PapelDeTrabalhoInvalido` como recusa com mensagem própria, código de
+   saída 2. A mensagem do desencontro entre recibo e linhas passou a dizer a causa
+   conhecida: execução gravada antes desta decisão a partir de lote com documento
+   repetido. A planilha dessa execução continua não sendo emitida, porque teria de
+   afirmar um dos dois números; auditar o lote de novo resolve.
+
+### Consequência
+
+- **Nada sob `dominio/` mudou**, nenhuma regra, nenhuma versão.
+- **Acurácia:** a deduplicação também vale para o `avaliar-acuracia`, que usa a
+  mesma fonte. O corpus de avaliação tem 9 notas e 9 chaves distintas, e
+  `exemplos/` não tem XML: nas duas, a deduplicação não altera nada, e as
+  métricas da Etapa 7 não mudam.
+- **Lote com o mesmo documento em versões diferentes** passa a ter os dois de
+  fora. Quem quiser auditar um deles precisa tirar o outro do lote: o sistema não
+  escolhe.
+- **Execuções gravadas antes desta decisão com cópia no lote** continuam
+  inconsistentes no banco: o recibo conta as cópias. A exportação delas é
+  recusada com a causa, e o histórico continua mostrando o recibo como foi
+  gravado.
+- **Entre lotes diferentes, nada mudou:** reprocessar uma nota com conteúdo novo
+  sobrescreve o item, como a D006 decidiu.
+
+### Verificação
+
+- **`DocumentoRepetidoNoLoteTest`, escrito antes da correção**, por Spring e
+  PostgreSQL em contêiner: duplicata idêntica pela CLI (contada uma vez, reportada
+  na CLI, no banco e na API), exportação da execução resultante (sai inteira, com
+  o total de apontamentos igual ao gravado), duplicata divergente (nenhuma versão
+  gravada, as duas listadas com o motivo na API e na planilha), o mesmo par num
+  `.zip` pela web (aceito), e exportação de execução inconsistente pela
+  `LinhaDeComando` (código 2, mensagem, sem exceção). Contra o código anterior,
+  5 de 5 vermelhos.
+- **`MensagemDoBancoDizACausaTest`**: restrição nomeada sem o detalhe, gatilho
+  repassado sem o contexto do PL/pgSQL, concorrência mandando tentar de novo.
+- **`LoteDeDocumentosSemChaveRepetidaTest`**: a guarda estrutural, inclusive que
+  a mensagem não repete a chave.
+- **Testes de etapas anteriores alterados:** `ExportadorXlsxTest` (as linhas
+  abaixo dos arquivos não lidos desceram mais uma, e um caso novo), as chamadas de
+  `registrar` em `AcervoDaAnaliseNoBancoTest`, e o argumento novo do montador em
+  `MontadorDePapelDeTrabalhoTest`, `MontadorDeRespostasTest` e
+  `NenhumIdentificadorEmTextoClaroNaExportacaoTest`.
+- **Suíte:** **1150 testes, nenhuma falha, nenhum erro, nenhum pulado**, com o
+  Docker de pé.
+- **Sabotagens:** doze, contra os mesmos 39 testes, cada arquivo restaurado e
+  conferido por SHA-256: controle 0 de 39; fonte tratando conteúdo divergente
+  como cópia (ficando com o primeiro), 1; fonte sem registrar o conflito, 1; fonte
+  sem contar as cópias, 3; fonte sem deduplicar, 11; lote aceitando chave
+  repetida, 2; serviço perdendo a contagem, 3; CLI registrando zero, 2; acervo
+  gravando zero, 3; recibo do histórico ignorando a contagem, 2; planilha
+  escrevendo 0 sem registro, 1; CLI deixando a recusa do papel de trabalho subir
+  com a pilha, 1; mensagem do banco voltando a mandar tentar de novo, 2. Todas
+  acusadas.
+- **Sonda em Node** da linha nova do bloco de leitura, nos três casos (1, 0 e
+  nulo com motivo): 3 de 3 com a tela nova, 3 falhas com o `pecas.js` anterior.
+
+---
+
+## D020 — Histórico: contagem não medida é "não registrado", e nenhum filtro a exclui
+
+**Data:** 04/10/2026 — correção pedida pelo usuário depois da revisão adversarial
+**Status:** Aceita
+
+> **Emenda a D014.** A D014 gravou, por execução, a contagem de produtos em cada
+> estado e filtrou o histórico por ela. Para a execução que não registrou os itens
+> lidos, a contagem gravada era quatro zeros — e zero não era a contagem: era a
+> ausência dela.
+
+### Contexto
+
+O resumo do histórico conta produtos, e a lista de produtos sai de
+`item_da_execucao`. O comando `auditar` não grava essa tabela. Para as execuções
+dele, `AcervoDoHistoricoNoBanco` gravava zeros, a tela escrevia "Possível
+divergência: 0", e o filtro `minimoDeDivergencias=1` excluiu, na demonstração do
+usuário, uma execução com 15 apontamentos.
+
+Havia duas saídas: calcular o resumo das execuções da CLI, ou mostrar "não
+registrado" e não excluí-las por filtro. A segunda foi proposta, com o motivo, e
+aprovada pelo usuário antes da implementação.
+
+### Decisão
+
+1. **Contagem medida.** A execução tem contagem medida quando gravou os itens que
+   leu, ou quando não leu item nenhum — zero produtos ali é medição. A regra é
+   uma expressão só, `AcervoDoHistoricoNoBanco.CONTAGEM_MEDIDA`, calculada na
+   consulta.
+2. **Sem medida, sem número.** A linha sai com a contagem e a situação nulas, e o
+   motivo `LinhaDoHistorico.CONTAGEM_NAO_REGISTRADA` ao lado (`motivoDaContagemAusente`,
+   `motivoDaSituacaoAusente`) — o par da D009. A tela escreve "não registrado", com
+   o motivo no `title` e no leitor de tela.
+3. **Nenhum filtro de situação ou de quantidade exclui a execução não medida**:
+   excluir por um valor que não foi medido esconde resultado real. Vale para
+   `situacaoMaisGrave`, `minimoDeDivergencias` e `maximoDeDivergencias`. A
+   extensão ao filtro de situação foi confirmada pelo usuário.
+4. **A tela diz por que elas estão ali.** A página traz
+   `execucoesNaoMedidasNoResultado` e `explicacaoDasNaoMedidas`; com filtro de
+   situação ou de quantidade ativo, a tela mostra quantas execuções não medidas
+   estão incluídas e por quê — sem isso o resultado parece não corresponder ao
+   filtro. Pedido do usuário.
+5. **O banco deixa de gravar zeros.** Migration `V22`: as cinco contagens de
+   `resumo_da_execucao` passam a aceitar nulo, sempre as cinco juntas, sem INSERT
+   nem UPDATE. O resumo de execução não medida é gravado com nulos. Os resumos já
+   gravados com zeros ficam no banco e não são lidos como contagem: a consulta
+   decide pela expressão do item 1, e não pela coluna. Um resumo gravado sem
+   contagem é substituído pelo medido se a execução passar a ter itens — o caso
+   da análise da web lida pelo histórico antes de registrar o que leu. Nessa mesma
+   janela, a linha medida ainda sem resumo sai com "contagem em cálculo", e não
+   com zero.
+
+### A assimetria entre web e CLI é escolha conhecida, não lacuna
+
+A análise da web tem contagem por produto; a execução da CLI não. **Gravar os
+itens lidos pela CLI ficou fora desta decisão, por escolha do usuário**, pelos
+motivos:
+
+- a segunda saída é necessária de qualquer forma: as execuções da CLI já gravadas
+  não têm a lista de itens, e nenhuma gravação nova a reconstrói;
+- gravar os itens arrasta a decisão sobre `xProd`, que tem controles próprios
+  (D012) e está pendente na D018 — são assuntos com riscos diferentes;
+- a CLI é o caminho da medição de acurácia, e estabilidade ali vale mais agora.
+
+**O que resolveria:** o `auditar` registrar os itens lidos em `item_da_execucao`,
+como a análise da web faz, com a decisão sobre a descrição do produto tomada
+antes. As execuções da CLI feitas depois disso passariam a ter contagem; as
+anteriores continuariam "não registrado".
+
+### Consequência
+
+- **Nada sob `dominio/` mudou**, nenhuma regra, nenhuma versão; acurácia intacta.
+- A tela de resultado de uma execução da CLI, aberta pelo histórico, continua
+  montando a conferência a partir de `item_da_execucao`, e mostra zero produtos.
+  Isso não foi tratado aqui.
+- Execução não medida aparece em todo filtro de situação e de quantidade. Quem
+  quiser só as medidas não tem filtro para isso; não foi pedido.
+
+### Verificação
+
+- **`HistoricoComContagemNaoMedidaTest`, escrito antes da correção**, por HTTP e
+  PostgreSQL em contêiner, com quatro execuções: web sem divergência, web com
+  divergência, a do caminho do `auditar` com apontamentos, e uma que não leu item
+  nenhum. Contra o código anterior, 6 de 7 vermelhos; o sétimo, do filtro
+  máximo, passava por acaso, porque o zero gravado fazia a execução entrar em
+  "máximo 0".
+- **Testes de etapas anteriores alterados:** só o construtor de
+  `PaginaDoHistorico` em `HistoricoSemSomaProibidaTest`. `HistoricoPelaApiTest`
+  passou sem mudança.
+- **Suíte:** **1157 testes, nenhuma falha, nenhum erro, nenhum pulado**, com o
+  Docker de pé, compilada do zero.
+- **Sabotagens:** oito, contra os mesmos 20 testes, cada arquivo restaurado e
+  conferido por SHA-256, com `target/classes` apagado a cada rodada: controle 0
+  de 20; toda execução tida como medida, 5; zero itens tido como não medido, 4;
+  filtro de situação excluindo a não medida, 1; filtro mínimo, 1; filtro máximo,
+  1; página dizendo zero não medidas, 3; leitura usando o resumo gravado em vez da
+  medida, 1; serviço gravando zeros para a não medida, 1. Todas acusadas.
+- **Sonda em Node** da tela do histórico: 7 de 7 com a tela nova — "não
+  registrado" e os motivos na linha não medida, os números na medida, o aviso com
+  filtro de situação e de mínimo, nenhum aviso sem filtro, página só de não
+  medidas. Com a tela anterior, as 7 falham. A primeira rodada acusou a linha
+  medida também na tela nova: era a sonda, que procurava os quatro números
+  colados, e o selo escreve o rótulo entre eles.
+- **Nota de método:** a primeira rodada destes testes deu 500 por "Unresolved
+  compilation problem". O compilador do editor tinha gravado em `target/classes`
+  uma classe com erro de sintaxe meu — um *text block* aberto com conteúdo na
+  mesma linha —, mais nova que o fonte, e o Maven a tomou por atualizada. Daqui
+  em diante, `target/classes` é apagado antes de cada rodada.
+
+---
+
+## D021 — A natureza do catálogo viaja até todo resultado, e a cobertura entra nela
+
+**Data:** 04/10/2026 — correção pedida pelo usuário depois da revisão adversarial
+**Status:** Aceita
+
+> **Emenda a D012 e a D007.** A D012 criou a natureza por tabela e a faixa de
+> procedência, exigida "em toda resposta de resultado" — o que valia para a
+> interface de conferência, e não para a visão técnica, o histórico, a acurácia
+> nem a planilha. E a D012 deixou o `cobertura.csv` sem natureza, de propósito: o
+> comentário de `LeitorDeCatalogoEmCsvTest` registrava que ele "diz período e
+> fonte, não conteúdo". Esta decisão reverte isso, a pedido do usuário. A D007
+> definiu o leiaute da planilha; toda aba ganha a faixa na primeira linha.
+
+### Contexto
+
+Demonstrado na revisão:
+
+- R01 e R06, de severidade CRÍTICA, citavam como fundamento "FONTE FICTICIA DE
+  EXEMPLO v0.0" — a fonte que o `cobertura.csv` declara — sob a faixa "Catálogo
+  normativo", sem aviso: as cinco tabelas de dados eram normativas, e a cobertura
+  não entrava na conta;
+- a planilha gerada com catálogo inteiramente fictício não tinha nenhuma
+  ocorrência de "fictício", "natureza" ou "procedência";
+- `RespostaDaExecucao` e `RespostaDeAchados`, da visão técnica, não carregavam a
+  natureza.
+
+### Decisão
+
+1. **A cobertura entra na natureza.** O `cobertura.csv` passa a exigir a coluna
+   `natureza`, com a mesma regra dos outros arquivos de dados: obrigatória, uma
+   natureza por arquivo, recusa com linha e motivo. `NaturezaDaCarga` ganhou a
+   tabela `COBERTURA`; a linha vai para `natureza_da_carga` como as outras, sem
+   migration — a coluna `tabela` já é texto livre. Na edição de carga, um
+   `cobertura.csv` novo traz a natureza dele.
+2. **Cobertura sem natureza não é normativa.** As cargas gravadas antes desta
+   decisão não têm a linha da cobertura. A cobertura sempre tem conteúdo, então
+   isso é procedência não declarada: havendo tabela fictícia, a situação continua
+   a fictícia; não havendo, deixa de ser "Catálogo normativo" e passa a
+   "Procedência não declarada", pedindo reimportação. A faixa e a planilha listam
+   as tabelas sem natureza declarada. Os textos das situações "inteiramente
+   fictício" e "não declarada" foram ajustados para continuar verdadeiros nesse
+   caso.
+3. **A faixa vai a todo resultado da API.** `RespostaDaExecucao`,
+   `RespostaDeAchados`, `RespostaDeNaoAvaliados`, cada `ExecucaoResumida` da
+   lista, cada linha de `RespostaDoHistorico` e `RespostaDaAcuracia` passaram a
+   trazer `natureza` (`FaixaDeNatureza`), exigida no construtor. A conferência já
+   trazia. `FaixaDeNatureza` ganhou `tabelasSemNaturezaDeclarada`.
+4. **A tela mostra.** As cinco telas da visão técnica desenham a faixa; o
+   histórico marca a natureza ao lado da versão do catálogo, quando há aviso; a
+   acurácia mostra a faixa no topo da medição; a faixa da conferência lista as
+   tabelas sem natureza declarada.
+5. **A planilha marca o catálogo fictício tão visivelmente quanto a tela.** Toda
+   aba abre com a faixa na primeira linha, mesclada, com a situação em
+   maiúsculas, a explicação, as tabelas fictícias, as sem natureza declarada e a
+   versão da carga; com aviso, fundo amarelo e borda grossa. A faixa e o
+   cabeçalho ficam fixos ao rolar. O Resumo traz "Natureza do catálogo" na
+   identificação e, quando há, "Tabelas fictícias" e "Tabelas sem natureza
+   declarada". Com catálogo normativo, nenhuma linha da planilha fala em fictício
+   ou em demonstração. O papel de trabalho lê a natureza pela mesma porta da
+   conferência.
+
+### Consequência
+
+- **Nada sob `dominio/` mudou**, nenhuma regra, nenhuma versão; acurácia intacta.
+- **Os `cobertura.csv` existentes param de importar até ganharem a coluna.** É o
+  mesmo custo que a D012 declarou para os outros quatro arquivos. O de
+  `exemplos/catalogo` ganhou `FICTICIO`: duas das três linhas citam fonte
+  fictícia, e um arquivo tem uma procedência só.
+- **Cargas já gravadas** perdem o rótulo "Catálogo normativo" e passam a
+  "Procedência não declarada", até serem reimportadas.
+- **Mudou o leiaute da planilha**: toda aba tem uma linha a mais no topo, e quem
+  lê a planilha por posição precisa saber disso.
+
+### Verificação
+
+- **`NaturezaNaPlanilhaTest`**: catálogo fictício marcado em toda aba, com
+  destaque; normativo sem nenhuma ocorrência de "fictíci" nem de "demonstração";
+  misto dizendo quais tabelas, inclusive a cobertura, e não listando as
+  normativas; cobertura sem natureza saindo "Procedência não declarada".
+- **`CoberturaNaNaturezaTest`**: cobertura fictícia com o resto normativo dá
+  "parcialmente fictício" com `COBERTURA`; cobertura normativa dá normativo;
+  `cobertura.csv` sem a coluna, ou com duas naturezas, é recusado; carga antiga
+  sem a natureza da cobertura não é normativa.
+- **`NaturezaNosPontosDeSaidaTest`**, por HTTP e PostgreSQL em contêiner, com o
+  cenário demonstrado — tabelas normativas e cobertura fictícia: a natureza da
+  cobertura gravada, e a faixa "parcialmente fictício" com `COBERTURA` na
+  conferência, na execução, nos apontamentos, nos não avaliados, na lista de
+  execuções, no histórico e na planilha.
+- Estes testes foram escritos junto com a mudança, e não antes: as assinaturas
+  novas não existiam. O vermelho foi verificado pelas sabotagens.
+- **Testes de etapas anteriores alterados:** `ExportadorXlsxTest` (as posições
+  desceram; um caso novo da faixa), `LeitorDeCatalogoEmCsvTest` (cinco tabelas
+  fictícias, não quatro, e o comentário emendado), o `cobertura.csv` escrito em
+  sete testes, e os construtores em `MontadorDePapelDeTrabalhoTest`,
+  `MontadorDeRespostasTest`, `NenhumIdentificadorEmTextoClaroNaExportacaoTest` e
+  `HistoricoSemSomaProibidaTest`.
+- **Suíte:** **1172 testes, nenhuma falha, nenhum erro, nenhum pulado**,
+  compilada do zero.
+- **Sabotagens:** onze, contra os mesmos 36 testes, cada arquivo restaurado e conferido
+  por SHA-256, com `target/classes` apagado a cada rodada: controle 0 de 36;
+  cobertura fora das tabelas declaradas, 8; carga sem natureza da cobertura
+  voltando a ser normativa, 2; leitor do CSV sem passar a natureza da cobertura,
+  2; leitor aceitando cobertura sem natureza, 2; banco sem ler a natureza da
+  cobertura, 4; visão técnica, histórico e planilha com natureza não declarada,
+  1 cada; faixa só no Resumo, 4; faixa sem destaque, 1; linha de tabelas
+  fictícias mesmo sem nenhuma, 9. Todas acusadas.
+- **Sonda em Node** da tela: 13 de 13 com a tela nova, e as 13 falham com a
+  anterior. Cinco delas — uma por tela técnica — conferem o código-fonte, e não o
+  desenho: que a tela importa e chama a faixa com a natureza da resposta.
+- **`exemplos/catalogo` importado pelo leitor real**: com a coluna nova, a carga de exemplo sai "parcialmente fictício" com `COBERTURA` listada; o `cobertura.csv` antigo, sem a coluna, é recusado com a mensagem de natureza obrigatória.
+
+---
+
+## D022 — Dispositivo e fonte sem nenhuma letra não identificam norma
+
+**Data:** 04/10/2026 — correção pedida pelo usuário depois da revisão adversarial
+**Status:** Aceita
+
+### Contexto
+
+No `exemplos/catalogo/classificacao-tributaria.csv`, o código `200025` trazia
+`dispositivoLegal_ibs = 0` e `fonteNormativa_ibs = 0`. O importador aceitava, e
+juntava os lados como "CBS: … | IBS: 0"; a tela mostrava um fundamento que não
+identifica norma nenhuma. O mesmo arquivo tem outros problemas que **são de dado,
+não de código**, e ficaram com o usuário: o cabeçalho declara a fonte como
+consulta ao ERP e o `indicadorDeBeneficio` como campo calculado, e todas as
+linhas, mesmo assim, declaram `NORMATIVO`; a redução do `200025` foi montada como
+"o maior dos dois" ao preparar o CSV — o importador não escolhe: com
+`reducao_cbs` e `reducao_ibs` diferentes, ele recusa a linha (revisão de
+14/09/2026 na D012).
+
+### Decisão
+
+**Dispositivo legal e fonte normativa sem nenhuma letra são recusados**, com
+linha, coluna e valor: `TextoQueIdentificaNorma`, nova, em
+`infraestrutura/catalogo/`. Vale para:
+
+- `dispositivoLegal` e `fonteNormativa` da classificação, na coluna única e em
+  cada lado da forma por tributo, antes de juntar os dois;
+- `fonteNormativa` de todos os outros arquivos — `registro-ncm.csv`,
+  `item-anexo.csv`, `aliquota-vigente.csv`, `cobertura.csv` e
+  `anexos-declarados.csv`.
+
+**O critério é só de forma.** O sistema não sabe qual norma é a certa (CLAUDE.md,
+seção 5) e não confere se um texto aceito corresponde a ela: "x" passa. O que ele
+recusa é o que não pode ser norma alguma — um número ou um sinal solto.
+
+### Consequência
+
+- **Nada sob `dominio/` mudou**, nenhuma regra, nenhuma versão.
+- **O `exemplos/catalogo` deixa de importar** até a linha 50 (`200025`) ser
+  corrigida: o leitor real recusa `fonteNormativa_ibs = 0`. A mesma linha tem
+  `dispositivoLegal_ibs = 0`, que não aparece na mensagem porque a linha para na
+  primeira recusa.
+- A correção do arquivo — natureza das linhas, separar `fonteNormativa` (a origem
+  real, tabela do ERP com data) de `dispositivoLegal` (o que essa origem afirma
+  sobre a norma), e a linha `200025` sem escolher por ela — é do usuário, à mão.
+
+### Verificação
+
+- **`ValorQueNaoIdentificaNormaTest`, escrito antes**, com valores fictícios:
+  contra o código anterior, 6 de 7 vermelhos, e o controle — catálogo com texto
+  em todos os campos — verde. O oitavo caso, a fonte dos anexos declarados,
+  entrou depois, quando se viu que a conferência também valia ali.
+- **Suíte:** **1180 testes, nenhuma falha, nenhum erro, nenhum pulado**,
+  compilada do zero.
+- **Sabotagens**, contra os mesmos 35 testes, cada arquivo restaurado e conferido
+  por SHA-256: controle 0 de 35; fonte dos arquivos sem conferência, 2; lado do
+  IBS sem conferência, 3; coluna única sem conferência, 1; anexos declarados sem
+  conferência, 1; critério recusando só o zero literal, 1. Todas acusadas.
+- **Leitor real sobre `exemplos/catalogo`:** uma recusa só, linha 50,
+  `fonteNormativa_ibs = 0`.
+
+## D023 — A tolerância da R05 é gravada com a execução, e o padrão é dito como padrão
+
+**Data:** 04/10/2026 — correção pedida pelo usuário depois da revisão adversarial
+**Status:** Aceita
+
+### Contexto
+
+A D006 decidiu que a tolerância de valor da R05 era configuração obrigatória,
+sem padrão. Em 21/09/2026 (`192c802`) o `application.properties` passou a dizer
+`auditoria.tolerancia-de-valor=${AUDITORIA_TOLERANCIA_DE_VALOR:0.01}`: um padrão
+dentro do placeholder, com o comentário logo acima ainda dizendo "NAO TEM
+PADRAO", e o README ainda dizendo que a aplicação parava na subida sem a
+variável. E nada — banco, planilha, API, tela, relatório de acurácia — registrava
+qual valor tinha valido numa execução. Duas execuções com tolerâncias diferentes
+dão resultados diferentes na R05, e não havia como ver isso sem investigar o
+ambiente de quem rodou.
+
+### Decisão
+
+**A tolerância usada é gravada junto da execução, com a origem**, e sai em toda
+saída que mostra resultado da R05.
+
+- **O padrão fica, e fica explícito.** O pedido admitia as duas saídas — voltar à
+  D006 ou manter o padrão — desde que, mantido, o padrão aparecesse na saída. A
+  tolerância é resolvida em `ConfiguracaoDaAuditoria.toleranciaDaExecucao`:
+  `auditoria.tolerancia-de-valor` preenchida é `CONFIGURADA`; em branco, vale
+  `auditoria.tolerancia-de-valor-padrao`, propriedade própria, e a origem é
+  `PADRAO`; sem as duas, a subida é recusada. O placeholder deixou de esconder
+  valor. `ToleranciaDaExecucao` (`aplicacao/auditoria/`) leva o valor e a
+  `OrigemDaTolerancia`, e o texto por extenso é "0.01 (padrão do sistema; a
+  instalação não configurou outra)" ou "… (configurada na instalação)".
+- **Migration `V23`:** `execucao_auditoria` ganha `tolerancia_de_valor` e
+  `origem_da_tolerancia`, anuláveis, nulas juntas, sem INSERT nem UPDATE.
+  **Nula é "não registrada"**, e toda saída escreve isso, nunca um valor —
+  execução anterior a esta decisão pode ter usado qualquer tolerância.
+- **Onde aparece:** a CLI do `auditar` ("tolerância R05"); a planilha, na linha
+  "Tolerância de valor (R05)" do Resumo, abaixo da versão das regras; o CSV de
+  acurácia, em comentário, e a medição pela API — as métricas da R05 dependem
+  dela; na API, o campo `toleranciaDeValor` (`ToleranciaExposta`: quantia como
+  texto, origem, texto, ou o motivo da ausência — o par da D009) no recibo da
+  análise, no detalhe do produto, na execução, na lista de execuções, nos
+  apontamentos, nos não avaliados, no histórico e na acurácia, exigido no
+  construtor de cada resposta; e nas telas correspondentes.
+- **Execução-a-execução, não regra-a-regra.** A tolerância é propriedade da
+  execução, e só a R05 a usa. Ela sai no cabeçalho de cada resultado, e não
+  dentro do passo da R05: a camada de conferência continua sem nenhum ramo por
+  identificador de regra (D012).
+
+### Consequência
+
+- **Nada sob `dominio/` mudou**, nenhuma regra, nenhuma versão. A acurácia da
+  Etapa 7 continua correspondendo ao código: a tolerância com que ela foi medida
+  não muda, e agora o relatório diz qual foi.
+- Execuções anteriores ficam com "não registrada" para sempre; não há como
+  reconstituir o valor.
+- **Mudou código de etapas anteriores, a pedido, com cláusula de emenda:**
+  `ServicoDeAuditoria` e `ResultadoDaAuditoria`, `ExecucaoAuditoriaEntidade` e
+  `RepositorioDaAuditoriaNoBanco`, `ComandoAuditar`, `ConfiguracaoDaAuditoria` e
+  o `application.properties` (Etapa 5); `PapelDeTrabalho`,
+  `MontadorDePapelDeTrabalho` e `ExportadorXlsx` (Etapa 6);
+  `ServicoDeAvaliacaoDeAcuracia`, `RelatorioDeAcuracia` e
+  `EscritorDeRelatorioDeAcuraciaCsv` (Etapa 7); `RespostaDaExecucao`,
+  `ExecucaoResumida`, `RespostaDeAchados`, `RespostaDeNaoAvaliados` e
+  `MontadorDeRespostas` (Etapa 8); `comum.js`, `api.js` e as telas técnicas
+  `achados`, `achado` e `naoavaliados` (Etapa 9); `ServicoDeAnalise`,
+  `ReciboDaAnalise`, `MontadorDeRecibo`, `RespostaDoDetalhe`,
+  `MontadorDaConferenciaExposta`, `conferencia/telas/resultado.js` e
+  `conferencia/telas/produto.js` (Etapa 11); `RespostaDoHistorico`,
+  `ControladorDoHistorico`, `RespostaDaAcuracia`, `ControladorDeAcuracia`,
+  `conferencia/telas/historico.js` e `conferencia/telas/acuracia.js` (Etapa 13).
+  Novos: `OrigemDaTolerancia`, `ToleranciaDaExecucao`,
+  `ConsultaDaToleranciaDaExecucao`, `ToleranciaDaExecucaoNoBanco`,
+  `ToleranciaExposta` e a `V23`.
+- Nos testes, só construtores e posições: `MontadorDePapelDeTrabalhoTest`,
+  `NenhumIdentificadorEmTextoClaroNaExportacaoTest`, `MontadorDeRespostasTest`,
+  `HistoricoSemSomaProibidaTest`, `NaturezaNaPlanilhaTest` e, em
+  `ExportadorXlsxTest`, as linhas do Resumo abaixo da versão das regras, que
+  desceram uma, mais um caso novo ali, o da tolerância não registrada. Novos:
+  `ToleranciaNosPontosDeSaidaTest`,
+  `ToleranciaComOrigemTest`, `ToleranciaNaMedicaoTest` e
+  `ToleranciaNoRelatorioDeAcuraciaTest`.
+- **A D006 foi emendada**, com o texto original preservado, e o README deixou de
+  afirmar "sem padrão" e "para na subida".
+
+### Verificação
+
+- **`ToleranciaNosPontosDeSaidaTest`, escrito antes**, com tolerância fictícia
+  `0.07` configurada: CLI, banco, API da conferência, da visão técnica e do
+  histórico, planilha, e a execução "antiga" com as colunas apagadas. Contra o
+  código anterior, os cinco primeiros casos vermelhos. O sexto — detalhe do
+  produto, apontamentos e não avaliados — entrou depois, quando a conferência
+  mostrou que o detalhe do produto, onde o passo da R05 aparece, não dizia a
+  tolerância.
+- **Sabotagens sem contêiner**, cada arquivo restaurado e conferido por SHA-256,
+  contra os mesmos 43 testes: controle 0; padrão dito como configurado, 2;
+  medição sem anexar a tolerância, 2; CSV com "0" no lugar de "não registrada",
+  1; CSV sem a origem, 1; planilha com valor no lugar de "não registrada", 1.
+  Todas acusadas.
+- **Interface**, por sonda em Node contra DOM mínimo: 16 conferências no código
+  novo; contra o anterior, exatamente as 8 desta rodada falham (linha da
+  tolerância, três telas técnicas, paginação, cabeçalho do produto). Uma
+  conferência da sonda devolvia promessa, que é verdadeira sempre, e foi
+  corrigida antes de valer.
+- **Suíte:** 1196 testes, nenhuma falha, **177 pulados por falta de Docker**.
+  **Ainda não rodaram**: os testes de contêiner, entre eles os seis de
+  `ToleranciaNosPontosDeSaidaTest`, e as sabotagens que dependem do banco e da
+  API — gravação, leitura, `ToleranciaExposta` e o detalhe do produto.
+
+## D024 — Arquivo de texto abre por um ponto só, em UTF-8 estrito
+
+**Data:** 04/10/2026 — correção pedida pelo usuário depois da revisão adversarial
+**Status:** Aceita
+
+### Contexto
+
+`FontesDoCatalogo` (D013) tinha dois caminhos de abertura que só pareciam
+iguais. A pasta, usada pelo `importar-catalogo`, abria com
+`Files.newBufferedReader(arquivo, UTF_8)`, que falha diante de byte inválido; o
+envio, usado pela tela de cargas, com `new InputStreamReader(bytes, UTF_8)`, que
+troca o byte inválido por U+FFFD em silêncio. O mesmo `registro-ncm.csv` em
+Windows-1252 era recusado pela CLI com `MalformedInputException: Input length =
+1`, sem dizer o que se esperava, e aceito pela web, gravado como "DESCRI?O
+FICT?CIA". Um dado que o arquivo não tinha entrava no catálogo. O gabarito tinha
+o defeito de mensagem: fora de UTF-8, saía como `UncheckedIOException`.
+
+### Decisão
+
+**Um ponto único de abertura: `infraestrutura/csv/AberturaEmUtf8`.** Ele lê o
+arquivo inteiro e o decodifica em UTF-8 com `REPORT` para entrada malformada e
+para caractere não mapeável. Decodificar tudo antes de entregar o `Reader` é o
+que permite dizer a linha exata: lendo aos pedaços, o erro aparece quando o
+buffer é preenchido, linhas antes do byte culpado. Fora de UTF-8, a recusa sai
+pelo `RecusaDeCsv` de quem chama — `ImportacaoDeCatalogoInvalida` no catálogo,
+`GabaritoInvalido` no gabarito — com o nome do arquivo, a linha, o byte e a
+frase "UTF-8, que é a codificação esperada". **Nunca há substituição.**
+
+- A pasta e o envio de `FontesDoCatalogo` passam por ele, e com isso a edição de
+  carga pela web também. Os cinco importadores, no `importar(Path)` que só os
+  testes usam, e o `LeitorDeGabaritoCsv` também.
+- No catálogo, a recusa entra nas `RecusasDaCarga`, como qualquer outro
+  problema do arquivo: a carga é recusada inteira, com a lista, e os outros
+  arquivos continuam conferidos. O `anexos-declarados.csv`, que é aberto também
+  só para saber se veio, conta como vindo.
+- **Não se tenta adivinhar a codificação** nem aceitar outra: um arquivo
+  Windows-1252 composto só de ASCII é UTF-8 válido e entra; um com acento é
+  recusado, e quem o montou salva de novo. Aceitar Windows-1252 seria escolher
+  uma interpretação do dado pelo usuário.
+- O BOM continua como estava: é UTF-8 válido, e a tolerância a ele ficou fora
+  por decisão do usuário (revisão de 14/09/2026 na D012).
+
+### Consequência
+
+- **Nada sob `dominio/` mudou.**
+- `AberturaUnicaDeTextoTest` varre `src/main/java` e quebra o build se aparecer
+  `InputStreamReader` ou `newBufferedReader` fora de comentário e literal, com
+  autoverificação do padrão e de que a varredura olhou os arquivos certos. Fora
+  dele ficam o arquivo do sal (`Files.readString`, que já é estrito e não é dado
+  do usuário) e o XML, cuja codificação é a declarada no próprio documento.
+- **Mudou código de etapas anteriores, a pedido, com cláusula de emenda:**
+  `FontesDoCatalogo` e `LeitorDeCatalogoEmCsv` (Etapa 12),
+  `ImportadorClassificacaoTributariaCsv`, `ImportadorRegistroNcmCsv`,
+  `ImportadorItemAnexoCsv`, `ImportadorAliquotaVigenteCsv` e
+  `ImportadorAnexosDeclaradosCsv` (Etapa 2 e revisões) e `LeitorDeGabaritoCsv`
+  (Etapa 7). Nenhum teste existente mudou.
+
+### Verificação
+
+- **Testes escritos antes**, com valores fictícios. Contra o código anterior,
+  `CodificacaoInesperadaNoCatalogoTest` deu 5 de 6 vermelhos — a pasta com
+  `MalformedInputException`, o envio e a edição sem exceção nenhuma — e o
+  controle em UTF-8 verde; `CodificacaoInesperadaNoGabaritoTest`, 1 de 2, com o
+  controle verde. O sétimo caso do catálogo, o `anexos-declarados.csv`, entrou
+  depois, para cobrir a abertura que só confere presença.
+- **Leitor real, pelos dois caminhos**, sobre o mesmo catálogo com o
+  `registro-ncm.csv` em Windows-1252: a mesma mensagem, palavra por palavra —
+  "O arquivo "registro-ncm.csv" não está em UTF-8, que é a codificação
+  esperada: a linha 2 tem o byte 0xC7…" —, e 0xC7 é o "Ç" em Windows-1252.
+- **Sabotagens**, cada arquivo restaurado e conferido por SHA-256, contra os
+  mesmos 38 testes: controle 0; o envio voltando ao `InputStreamReader`, 6 (o
+  guarda entre eles); a abertura trocando o byte em vez de recusar, 7; a linha
+  contada a partir de zero, 4; a recusa não registrada na carga, 5; a presença
+  do arquivo sem tratar a codificação, 1; o gabarito voltando ao
+  `newBufferedReader`, 2. Todas acusadas.
+- **Suíte:** 1210 testes, nenhuma falha, **179 pulados por falta de Docker**.
+  **Ainda não rodou** o `CodificacaoPelaCliEPelaWebTest`, que compara a saída do
+  `importar-catalogo` com a resposta do `POST /api/cargas` e confere que nada foi
+  gravado.
+
+## D025 — Planilha, evidência, resumo e lista: o que faltava ser dito
+
+**Data:** 04/10/2026 — correções pedidas pelo usuário depois da revisão adversarial
+**Status:** Aceita
+
+### Contexto
+
+A revisão de 04/10/2026 apontou cinco defeitos de código e cinco textos que
+afirmavam coisa falsa sobre o sistema atual. O pedido era um commit por item.
+**Não houve commit, por decisão do usuário:** desde o `fb613ed` havia 126 arquivos
+modificados e 170 não rastreados — Etapas 12 e 13 e D013 a D024 —, e vários dos
+arquivos destes itens já tinham mudança pendente, que iria junto do primeiro
+commit que os tocasse.
+
+### Decisão
+
+**1. Valor em risco na escala declarada.** `Celulas.valorEmRisco` recebia o
+`BigDecimal` e o convertia em `double` sem conferir, com o formato fixo
+`#,##0.00`: `7,11100` aparecia `7,11`. A planilha é gravada em streaming (SXSSF),
+e nesse modo o POI só grava número como `double`; o Excel também só guarda
+`double`. Decisão do usuário: **número com a escala**. O `BigDecimal` chega até a
+célula; o estilo é escolhido pela escala dele (`EstilosDaPlanilha.monetario(int)`,
+um estilo por escala, criado uma vez); e, quando o `double` lido de volta não é o
+mesmo número, o valor vai como **texto exato** (`toPlainString`), para a planilha
+nunca arredondar em silêncio. Duas colunas, e texto sempre, foram consideradas e
+recusadas.
+
+**2. Ausência de tratativa escrita.** "Justificativa" e "Tratado em" saíam em
+branco no apontamento sem tratativa, contra a D007. Hoje dizem "(sem tratativa)
+ninguém registrou decisão sobre este apontamento nesta versão da regra" — "nesta
+versão" porque `ABERTO` também é o apontamento reaberto pela mudança de versão.
+
+**3. Evidência do lado da tabela em R01 e R06.** As duas regras montavam o lado da
+tabela com valor encontrado vazio. Pelo contrato de `Evidencia`, vazio quer dizer
+"o campo não veio na nota", e a planilha escrevia "(não informado)" sobre o código
+que a nota informou. Não dava para corrigir só pela origem da evidência: a R07
+também usa evidência de tabela com o encontrado vazio, e ali o vazio quer dizer
+mesmo que o campo não veio. Decisão do usuário: **corrigir a regra, sem mudar a
+versão**. R01 e R06 escrevem `Evidencia.NENHUM_REGISTRO_NA_TABELA` ("nenhum
+registro com este código na tabela carregada"), como a R03 já escrevia "nenhum
+anexo". O critério, a severidade e o desfecho não mudam; nenhuma tratativa reabre.
+
+As execuções antigas têm o lado vazio no banco. A planilha as relê sem reconhecer
+regra nenhuma: evidência de tabela com o encontrado vazio, **cujo campo a nota
+informou** numa evidência do documento ao lado, recebe o mesmo texto. O caso da
+R07 — campo que a nota não trouxe — continua vazio, e continua "(não informado)".
+A API não relê: execução antiga continua saindo com `valorEncontrado` nulo no
+lado da tabela.
+
+**4. Resumo da importação.** `ResumoDaImportacao` contava quatro tabelas desde que
+os anexos declarados viraram a quinta (revisão de 30/09 a 02/10/2026 na D012).
+Passou a contá-los e a somá-los no total, na CLI ("anexos declarados: N") e na
+resposta do `POST /api/cargas`. O detalhe da carga na tela (`EstadoDaCarga`,
+`CargaExposta.ContagemExposta`) tem a mesma omissão e **não foi tocado**: conta
+pelo banco, por outro caminho, e não estava no pedido.
+
+**5. Elemento vazio na lista.** `LinhaCsv.lista` descartava em silêncio o elemento
+vazio de `AAA||BBB`, `AAA|` ou `|AAA`, e a classificação aceitava menos CSTs do
+que a pessoa escreveu. Hoje recusa a linha com a coluna e o valor, como as outras
+colunas de lista já faziam desde a D015. Espaço em volta continua sendo tirado, e
+célula em branco continua lista vazia. No catálogo de exemplos, nenhuma das 161
+linhas tem elemento vazio.
+
+**Textos.** Cada um com o original preservado e emenda datada:
+
+- README, "Como usar": sem argumento a aplicação sobe o `servir` com o perfil
+  `api` desde 21/09/2026 (`192c802`), e não lista os comandos; a lista sai com
+  nome de comando não reconhecido. A "configuração obrigatória acima" já não para
+  a subida por falta: o sal se resolve sozinho (D011), usuário, senha e tolerância
+  têm padrão.
+- README, "Banco de dados", e o comentário do `application.properties`: "sem valor
+  padrão para usuário e senha" e "nunca do repositório" deixaram de valer em
+  21/09/2026 (`192c802`), quando entrou `auditoria`/`auditoria` no placeholder. Os
+  padrões não foram removidos: a emenda corrige o que o texto afirma.
+- README, `servir`, e INTERFACE-WEB, "O que ela faz": tratar achado e importar
+  catálogo existem pela web desde a Etapa 12, com autenticação (D013). No README,
+  as seções "Como usar" e "API" já tinham emenda; a do `servir` tinha ficado para
+  trás.
+- INTERFACE-WEB, revisão de 12/09/2026: `comum.js` mudou em 27/09 e em 04/10,
+  `telas/acuracia.js` em 27/09, e `api.js` em 04/10. `css/base.css`, `dom.js`,
+  `roteador.js` e `decimal.js` não mudaram desde o `192c802`; antes dele não há
+  histórico para conferir.
+- README, "Dados de exemplo": existe `exemplos/` desde 03/09/2026, fora do Git, e
+  cinco dos seis arquivos do catálogo de lá declaram `NORMATIVO`.
+- `exemplos/catalogo/aliquota-vigente.csv`: o cabeçalho diz que os percentuais
+  não são referência normativa, e as três linhas declaram `NORMATIVO`. **Não foi
+  tocado**: qual dos dois é verdade é do usuário, e a correção é dele, à mão, como
+  na D022.
+
+### Consequência
+
+- **Sob `dominio/` mudaram** `Evidencia` (a constante), `RegraClassificacaoTributariaExiste`
+  e `RegraNcmExiste`, com cláusula de emenda e sem `import` de framework. As
+  versões das regras e do conjunto não mudaram, e a acurácia da Etapa 7 não muda:
+  ela mede desfecho, e o desfecho de R01 e R06 é o mesmo.
+- **Mudou código de etapas anteriores, a pedido, com cláusula de emenda:**
+  `Celulas`, `EstilosDaPlanilha`, `ExportadorXlsx` e `MontadorDePapelDeTrabalho`
+  (Etapa 6), `ServicoDeImportacaoDeCatalogo` e `ComandoImportarCatalogo` (Etapa
+  5), `ControladorDeCargas` (Etapa 12) e `LinhaCsv` (Etapas 2 e 7).
+- Nenhum teste existente mudou. Novos: `ValorEmRiscoComEscalaTest`,
+  `TratativaAusenteEscritaTest`, `EvidenciaDoLadoDaTabelaTest`,
+  `EvidenciaDeTabelaGravadaVaziaTest`, `ResumoComAnexosDeclaradosTest`,
+  `ElementoVazioNaListaTest` e o auxiliar `PlanilhaDeAchadosDeTeste`.
+
+### Verificação
+
+- **Testes escritos antes**, com valores fictícios, e vistos vermelhos pelo motivo
+  certo contra o código anterior: o formato `#,##0.00` e `0.123` exibido `0.12`;
+  justificativa e "Tratado em" em branco; o lado da tabela de R01 e R06 vazio, e o
+  da execução antiga também; a lista sem exceção nenhuma. Os controles — achado
+  tratado, campo que a nota não trouxe, versões de R01 e R06, lista bem formada —
+  verdes antes e depois. Duas falhas da primeira rodada eram do teste, que passava
+  um apontamento a um papel cuja execução conta dois (guarda da D019), e foram
+  corrigidas no teste.
+- **Sabotagens**, cada arquivo restaurado e conferido por SHA-256, contra os
+  mesmos 61 testes: controle 0; valor sempre como `double`, 1; escala fixa em duas
+  casas, 2; justificativa ausente em branco, 2; "Tratado em" ausente em branco, 2;
+  R01 com o lado da tabela vazio, 1; R06 idem, 1; planilha sem reler a evidência
+  antiga, 1; planilha relendo sem conferir o campo, 1 (o caso da R07); total sem
+  os anexos, 2; CLI sem a linha dos anexos, 1; lista descartando vazio de novo, 3.
+  Todas acusadas.
+- **Suíte:** 1227 testes, nenhuma falha, **179 pulados por falta de Docker**,
+  compilada do zero. Nenhum dos testes desta decisão depende de contêiner; os
+  pulados são os mesmos de antes, entre eles os de ponta a ponta de D023 e D024.

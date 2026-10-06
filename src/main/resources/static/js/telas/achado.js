@@ -1,28 +1,12 @@
-/* ---------------------------------------------------------------------------
-   Tela 4 - Detalhe do achado.
-
-   COMO A TELA ACHA O APONTAMENTO
-
-   A API nao tem GET /api/achados/{id}: os apontamentos vem paginados dentro da
-   execucao. Entao o detalhe recarrega as paginas e localiza o identificador.
-   Custa uma volta a mais e mantem o endereco compartilhavel - alguem pode colar
-   o link do achado para um colega e ele abre.
-
-   AS DUAS AUSENCIAS DA EVIDENCIA NAO SAO A MESMA COISA
-
-   valorEncontrado vazio e campo que o contribuinte nao declarou. valorEsperado
-   vazio e regra sem valor de referencia a opor. As duas viriam em branco numa
-   tabela comum, e a tela escreve as duas, cada uma com a sua frase.
-   --------------------------------------------------------------------------- */
-
 import { el, trocar } from '../dom.js';
 import {
   inteiro, severidade, data, dataHora, ausente, documentoCurto, rotuloDaRegra,
 } from '../formato.js';
 import { comoQuantia } from '../decimal.js';
-import { navegacaoDaExecucao, falha } from '../comum.js';
+import { faixaDeNatureza, linhaDaTolerancia, navegacaoDaExecucao, falha } from '../comum.js';
 import { endereco } from '../roteador.js';
 import * as api from '../api.js';
+import { escrever, ler, quemEsta } from '../sessao.js';
 
 export async function desenhar(tela, parametros, rota) {
   const voltar = el('a', {
@@ -57,6 +41,8 @@ export async function desenhar(tela, parametros, rota) {
 
   trocar(tela, [
     voltar,
+    faixaDeNatureza(carregado.natureza),
+    linhaDaTolerancia(carregado.toleranciaDeValor),
     navegacaoDaExecucao(rota.execucaoId, 'achados'),
     el('div', { classe: 'cabecalho-achado' }, [
       rotuloDaRegra(achado),
@@ -85,6 +71,7 @@ export async function desenhar(tela, parametros, rota) {
     el('div', { classe: 'bloco' }, [
       el('h3', { texto: 'tratativa' }),
       tratativa(achado),
+      await historicoEFormulario(achado, () => desenhar(tela, parametros, rota)),
     ]),
     el('p', {
       classe: 'nota',
@@ -114,7 +101,6 @@ function documento(doc, numeroItem) {
   ]);
 }
 
-/** De onde a evidencia veio, por extenso. */
 function origem(o) {
   if (o.tipo === 'DO_DOCUMENTO') {
     return 'do documento' + (o.localizacao ? ' (' + o.localizacao + ')' : '');
@@ -189,7 +175,7 @@ function tratativa(achado) {
     return el('p', {
       classe: 'nota',
       texto: 'Sem decisao registrada: o apontamento esta ' + achado.statusDeTratativa
-        + '. Registrar tratativa e ato de uma pessoa identificada, e continua na CLI.',
+        + '. Registrar tratativa e ato de uma pessoa identificada, e grava quem decidiu e quando.',
     });
   }
   const t = achado.tratativa;
@@ -205,4 +191,78 @@ function tratativa(achado) {
         : ausente(t.motivoDaJustificativaOmitida),
     ]),
   ]);
+}
+
+async function historicoEFormulario(achado, redesenhar) {
+  const [historico, usuario] = await Promise.all([
+    ler('/api/achados/' + encodeURIComponent(achado.id) + '/tratativas'),
+    quemEsta(),
+  ]);
+
+  const linhas = historico.map((registro) => el('tr', {}, [
+    el('td', { texto: dataHora(registro.registradoEm) }),
+    el('td', { texto: registro.decisao }),
+    el('td', {}, [
+      registro.autor !== null
+        ? document.createTextNode(registro.autor.nome + ' (' + registro.autor.login + ')'
+          + (registro.autor.ativo ? '' : ', desativado'))
+        : ausente(registro.motivoDoAutorAusente),
+    ]),
+    el('td', {}, [
+      registro.justificativa !== null
+        ? document.createTextNode(registro.justificativa)
+        : ausente(registro.motivoDaJustificativaOmitida),
+    ]),
+  ]));
+
+  const partes = [
+    el('h3', { texto: 'historico de decisoes' }),
+    historico.length === 0
+      ? el('p', { classe: 'nota', texto: 'Nenhuma decisao registrada para esta regra nesta versao.' })
+      : el('div', { classe: 'rolagem' }, [el('table', {}, [
+        el('thead', {}, [el('tr', {}, [
+          el('th', { texto: 'quando' }), el('th', { texto: 'decisao' }),
+          el('th', { texto: 'quem decidiu' }), el('th', { texto: 'justificativa' }),
+        ])]),
+        el('tbody', {}, linhas),
+      ])]),
+  ];
+
+  if (usuario && usuario.permissoes.registrarTratativa) {
+    partes.push(formularioDeTratativa(achado, redesenhar));
+  }
+  return el('div', {}, partes);
+}
+
+function formularioDeTratativa(achado, redesenhar) {
+  const resultado = el('div', {});
+  const decisao = el('select', { id: 'decisao' }, [
+    el('option', { value: 'ACEITO', texto: 'ACEITO - a incoerencia procede' }),
+    el('option', { value: 'REFUTADO', texto: 'REFUTADO - o documento esta correto' }),
+  ]);
+  const justificativa = el('textarea', { id: 'justificativa', rows: '3' });
+
+  const formulario = el('form', { classe: 'formulario' }, [
+    el('label', { for: 'decisao', texto: 'Decisao' }), decisao,
+    el('label', { for: 'justificativa', texto: 'Justificativa (obrigatoria)' }), justificativa,
+    el('p', {
+      classe: 'nota',
+      texto: 'A justificativa e texto livre e pode acabar trazendo CNPJ ou nome. Ela nao sai na '
+        + 'API nem na planilha a menos que a instalacao ligue a exposicao.',
+    }),
+    el('div', { classe: 'acoes' }, [el('button', { type: 'submit', classe: 'botao principal', texto: 'Registrar' })]),
+    resultado,
+  ]);
+  formulario.addEventListener('submit', async (evento) => {
+    evento.preventDefault();
+    try {
+      await escrever('POST', '/api/achados/' + encodeURIComponent(achado.id) + '/tratativas', {
+        decisao: decisao.value, justificativa: justificativa.value,
+      });
+      await redesenhar();
+    } catch (recusa) {
+      trocar(resultado, [el('div', { classe: 'aviso erro', texto: recusa.message })]);
+    }
+  });
+  return formulario;
 }

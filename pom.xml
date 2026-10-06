@@ -133,6 +133,22 @@
         </dependency>
 
         <!--
+            Autenticacao e autorizacao (Etapa 12, D013). Usado somente por
+            infraestrutura/seguranca e pelo codificador de senha: o dominio e a
+            aplicacao nao conhecem Spring Security. A aplicacao declara a porta
+            CodificadorDeSenha e a regra do ultimo administrador; a
+            infraestrutura implementa com BCrypt e aplica a matriz de permissao
+            no filtro, antes de qualquer controlador.
+
+            Sem este starter, a verificacao por perfil so poderia existir no
+            navegador, e esconder botao nao e controle de acesso.
+        -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-security</artifactId>
+        </dependency>
+
+        <!--
             Escrita do papel de trabalho em xlsx. Usado somente por
             infraestrutura/exportacao: o formato do arquivo e detalhe de saida, e
             nem o dominio nem a aplicacao conhecem POI.
@@ -160,6 +176,15 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!--
+            Apoio de teste do Spring Security (Etapa 12). So em teste.
+        -->
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
 

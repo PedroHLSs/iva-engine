@@ -50,7 +50,7 @@ class RepositorioDaAuditoriaNoBanco implements RepositorioDaAuditoria {
     @Transactional
     public void persistir(ResultadoDaAuditoria resultado) {
         ExecucaoAuditoria execucao = resultado.execucao();
-        gravarExecucao(execucao);
+        gravarExecucao(execucao, resultado);
 
         for (DocumentoComItens documento : resultado.documentos()) {
             gravarDocumento(documento, execucao.dataHora());
@@ -82,9 +82,9 @@ class RepositorioDaAuditoriaNoBanco implements RepositorioDaAuditoria {
         naoConcluidas.saveAll(linhas);
     }
 
-    // Método auxiliar que grava o recibo da execução.
-    private void gravarExecucao(ExecucaoAuditoria execucao) {
-        execucoes.save(new ExecucaoAuditoriaEntidade(
+    // Método auxiliar que grava o recibo da execução. Emenda de 04/10/2026 (D023): grava junto a tolerância de valor da R05 que a auditoria usou, e a origem dela; resultado sem tolerância deixa as duas colunas nulas, "não registrada".
+    private void gravarExecucao(ExecucaoAuditoria execucao, ResultadoDaAuditoria resultado) {
+        ExecucaoAuditoriaEntidade entidade = new ExecucaoAuditoriaEntidade(
                 execucao.id(),
                 execucao.dataHora(),
                 execucao.hashEntrada(),
@@ -93,7 +93,10 @@ class RepositorioDaAuditoriaNoBanco implements RepositorioDaAuditoria {
                 execucao.quantidadeDocumentos(),
                 execucao.quantidadeItens(),
                 execucao.achadosPorSeveridade(),
-                execucao.achadosPorRegra()));
+                execucao.achadosPorRegra());
+        resultado.tolerancia().ifPresent(tolerancia ->
+                entidade.registrarTolerancia(tolerancia.valor().quantia(), tolerancia.origem().name()));
+        execucoes.save(entidade);
     }
 
     // Método auxiliar que grava o documento e os itens, atualizando as linhas que já existem.

@@ -35,6 +35,11 @@ class LeitorDeCatalogoEmCsvTest {
      * Os quatro arquivos de dados declaram natureza; cobertura.csv nao. Ela diz
      * periodo e fonte, nao conteudo -- e a de aliquota nao teria onde ser
      * declarada, porque aliquota nao tem linha de cobertura.
+     *
+     * Emenda de 04/10/2026 (D021): o paragrafo acima valeu ate essa data. A
+     * fonte que o cobertura.csv declara e citada como fundamento dos
+     * apontamentos, e fonte ficticia saia sob a faixa "Catalogo normativo". O
+     * cobertura.csv passou a declarar natureza, com a mesma regra dos outros.
      */
     private static final String CABECALHO_DE_DADOS = CABECALHO_COMUM + ";natureza";
     private static final String LINHA_FICTICIA = VIGENCIA_FICTICIA + ";FICTICIO";
@@ -45,10 +50,10 @@ class LeitorDeCatalogoEmCsvTest {
     @BeforeEach
     void escreverCatalogoCompleto() throws IOException {
         escrever("cobertura.csv", """
-                tabela;%s
-                CLASSIFICACAO_TRIBUTARIA;%s
-                NCM;%s
-                ITEM_ANEXO;%s
+                tabela;%s;natureza
+                CLASSIFICACAO_TRIBUTARIA;%s;FICTICIO
+                NCM;%s;FICTICIO
+                ITEM_ANEXO;%s;FICTICIO
                 """.formatted(CABECALHO_COMUM,
                         VIGENCIA_FICTICIA, VIGENCIA_FICTICIA, VIGENCIA_FICTICIA));
 
@@ -126,7 +131,8 @@ class LeitorDeCatalogoEmCsvTest {
 
         assertThat(carga.natureza().situacao())
                 .isEqualTo(SituacaoDaNatureza.INTEIRAMENTE_FICTICIO);
-        assertThat(carga.natureza().tabelasFicticias()).hasSize(4);
+        // D021 (04/10/2026): cinco, com a cobertura, que passou a declarar natureza. Até essa data eram quatro.
+        assertThat(carga.natureza().tabelasFicticias()).hasSize(5);
     }
 
     /**
@@ -222,9 +228,9 @@ class LeitorDeCatalogoEmCsvTest {
     @Test
     void deveRecusarCoberturaIncompleta() throws IOException {
         escrever("cobertura.csv", """
-                tabela;%s
-                CLASSIFICACAO_TRIBUTARIA;%s
-                NCM;%s
+                tabela;%s;natureza
+                CLASSIFICACAO_TRIBUTARIA;%s;FICTICIO
+                NCM;%s;FICTICIO
                 """.formatted(CABECALHO_COMUM, VIGENCIA_FICTICIA, VIGENCIA_FICTICIA));
 
         assertThatThrownBy(() -> LeitorDeCatalogoEmCsv.ler(diretorio, "carga-ficticia"))
@@ -235,11 +241,11 @@ class LeitorDeCatalogoEmCsvTest {
     @Test
     void deveRecusarTabelaDesconhecidaNaCobertura() throws IOException {
         escrever("cobertura.csv", """
-                tabela;%s
-                CLASSIFICACAO_TRIBUTARIA;%s
-                NCM;%s
-                ITEM_ANEXO;%s
-                TABELA_INVENTADA;%s
+                tabela;%s;natureza
+                CLASSIFICACAO_TRIBUTARIA;%s;FICTICIO
+                NCM;%s;FICTICIO
+                ITEM_ANEXO;%s;FICTICIO
+                TABELA_INVENTADA;%s;FICTICIO
                 """.formatted(CABECALHO_COMUM, VIGENCIA_FICTICIA, VIGENCIA_FICTICIA,
                         VIGENCIA_FICTICIA, VIGENCIA_FICTICIA));
 

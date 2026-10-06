@@ -1,10 +1,11 @@
 package br.edu.tcc.auditoria.infraestrutura.api;
 
 import br.edu.tcc.auditoria.aplicacao.conferencia.GrupoDeProdutos;
+import br.edu.tcc.auditoria.aplicacao.conferencia.RegraDeColapso;
 
 import java.util.List;
 
-// Representa um grupo da tela do lote: NCM, cClassTrib e situação, com quantos produtos e notas ele alcança. O valor vai com o rótulo junto, porque é a soma dos itens envolvidos, e não o tamanho do erro; NCM ou cClassTrib que faltou vem null com o motivo.
+// Emenda da Etapa 13: ganhou recolhidoPorPadrao, verdadeiro só quando todas as verificações do grupo estão sem divergência; um grupo com uma pendência dentro nasce aberto. Representa um grupo da tela do lote: NCM, cClassTrib e situação, com quantos produtos e notas ele alcança. O valor vai com o rótulo junto, porque é a soma dos itens envolvidos, e não o tamanho do erro; NCM ou cClassTrib que faltou vem null com o motivo.
 public record GrupoExposto(
         String ncm,
         String motivoDoNcmAusente,
@@ -20,7 +21,8 @@ public record GrupoExposto(
         String valorDosProdutos,
         String rotuloDoValorDosProdutos,
         List<EstadoContado> verificacoesPorEstado,
-        int produtosComAlgumaVerificacaoNaoConcluida) {
+        int produtosComAlgumaVerificacaoNaoConcluida,
+        boolean recolhidoPorPadrao) {
 
     // Motivos escritos quando a nota não declarou NCM ou cClassTrib para os itens do grupo.
     static final String NCM_NAO_DECLARADO =
@@ -75,6 +77,11 @@ public record GrupoExposto(
                     "A contagem de produtos com pendência não pode passar do total do grupo.");
         }
         verificacoesPorEstado = List.copyOf(verificacoesPorEstado);
+        // Etapa 13: grupo só nasce recolhido se a situação dele for sem divergência; recolher uma pendência seria escondê-la.
+        if (recolhidoPorPadrao && !"SEM_DIVERGENCIA_IDENTIFICADA".equals(situacao)) {
+            throw new RespostaInvalida(
+                    "O grupo na situação %s não pode nascer recolhido.".formatted(situacao));
+        }
     }
 
     // Método estático que converte o grupo da aplicação para a resposta.
@@ -94,6 +101,7 @@ public record GrupoExposto(
                 grupo.valorDosProdutos().toPlainString(),
                 GrupoDeProdutos.ROTULO_DO_VALOR,
                 EstadoContado.de(grupo.resumo().verificacoesPorEstado()),
-                grupo.resumo().produtosComAlgumaNaoConcluida());
+                grupo.resumo().produtosComAlgumaNaoConcluida(),
+                RegraDeColapso.agrupamentoNasceRecolhido(grupo.resumo().verificacoesPorEstado()));
     }
 }

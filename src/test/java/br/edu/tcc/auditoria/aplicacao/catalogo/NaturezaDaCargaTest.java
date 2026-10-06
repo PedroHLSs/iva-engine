@@ -24,7 +24,8 @@ class NaturezaDaCargaTest {
 
         assertThat(natureza.situacao()).isEqualTo(SituacaoDaNatureza.INTEIRAMENTE_FICTICIO);
         assertThat(natureza.situacao().exigeAviso()).isTrue();
-        assertThat(natureza.tabelasFicticias()).hasSize(4);
+        // D021 (04/10/2026): a cobertura entrou na natureza, e o atalho de uma só procedência a declara. Até essa data eram quatro.
+        assertThat(natureza.tabelasFicticias()).hasSize(5);
     }
 
     @Test
@@ -94,8 +95,9 @@ class NaturezaDaCargaTest {
         assertThat(natureza.registrosDeNcm())
                 .describedAs("arquivo só com cabeçalho não tem linha onde declarar procedência")
                 .isEmpty();
+        // D021 (04/10/2026): a cobertura entrou na natureza, e o atalho de uma só procedência a declara.
         assertThat(natureza.declaradas())
-                .containsOnlyKeys(NaturezaDaCarga.CLASSIFICACOES_TRIBUTARIAS);
+                .containsOnlyKeys(NaturezaDaCarga.CLASSIFICACOES_TRIBUTARIAS, NaturezaDaCarga.COBERTURA);
         assertThat(natureza.situacao()).isEqualTo(SituacaoDaNatureza.INTEIRAMENTE_FICTICIO);
     }
 

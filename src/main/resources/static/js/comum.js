@@ -1,48 +1,62 @@
-/* ---------------------------------------------------------------------------
-   Pecas repetidas entre telas: identificacao da execucao, barra de navegacao
-   da execucao, painel da planilha e apresentacao de falha.
-   --------------------------------------------------------------------------- */
-
 import { el } from './dom.js';
 import { dataHora, inteiro } from './formato.js';
 import { endereco } from './roteador.js';
 
-/**
- * A identificacao da rodada, inteira e visivel.
- *
- * O hash de entrada sai por extenso, e nao truncado com reticencias: e ele que
- * responde "esta e a mesma entrada de ontem?", e um resumo cortado nao responde
- * isso. Catalogo e conjunto de regras estao ao lado pelo mesmo motivo - um
- * apontamento que hoje nao procede mais, porque a tabela mudou, e
- * indistinguivel de erro do sistema quando o relatorio nao diz contra o que foi
- * produzido.
- */
 export function identificacao(execucao) {
-  return el('dl', { classe: 'identificacao' }, [
-    el('dt', { texto: 'rodou em' }),
-    el('dd', { texto: dataHora(execucao.dataHora) }),
-    el('dt', { texto: 'catalogo' }),
-    el('dd', { texto: execucao.versaoCatalogo }),
-    el('dt', { texto: 'conjunto de regras' }),
-    el('dd', { texto: execucao.versaoConjuntoRegras }),
-    el('dt', { texto: 'hash de entrada' }),
-    el('dd', { texto: execucao.hashEntrada }),
-    el('dt', { texto: 'acervo' }),
-    el('dd', {
-      texto: inteiro(execucao.quantidadeDocumentos) + ' documento(s), '
-        + inteiro(execucao.quantidadeItens) + ' item(ns)',
+  const par = (chave, valor, extras = {}) => el('div', { classe: 'meta-par' }, [
+    el('dt', { texto: chave }),
+    el('dd', Object.assign({ texto: valor }, extras)),
+  ]);
+  return el('dl', { classe: 'metadados' }, [
+    par('rodou em', dataHora(execucao.dataHora)),
+    par('catalogo', execucao.versaoCatalogo),
+    par('conjunto de regras', execucao.versaoConjuntoRegras),
+    par('tolerancia R05', textoDaTolerancia(execucao.toleranciaDeValor)),
+    par('hash de entrada', execucao.hashEntrada, {
+      classe: 'hash', title: execucao.hashEntrada, tabindex: 0,
     }),
+    par('acervo', inteiro(execucao.quantidadeDocumentos) + ' documento(s), '
+      + inteiro(execucao.quantidadeItens) + ' item(ns)'),
   ]);
 }
 
-/** Os atalhos entre as telas de uma mesma execucao. */
+export function textoDaTolerancia(tolerancia) {
+  return (tolerancia && tolerancia.texto) || (tolerancia && tolerancia.motivoDaAusencia)
+    || 'a resposta nao trouxe a tolerancia';
+}
+
+export function linhaDaTolerancia(tolerancia) {
+  return el('p', {
+    classe: 'sub linha-da-tolerancia',
+    texto: 'Tolerancia de valor da R05 nesta execucao: ' + textoDaTolerancia(tolerancia),
+  });
+}
+
+export function faixaDeNatureza(natureza) {
+  if (!natureza) {
+    return el('p', { classe: 'faixa-tecnica avisa', texto: 'A resposta nao trouxe a procedencia do catalogo.' });
+  }
+  const ficticias = natureza.tabelasFicticias || [];
+  const semNatureza = natureza.tabelasSemNaturezaDeclarada || [];
+  return el('div', { classe: 'faixa-tecnica' + (natureza.exigeAviso ? ' avisa' : ''), role: 'note' }, [
+    el('strong', { texto: natureza.rotulo }),
+    el('p', { texto: natureza.explicacao }),
+    ficticias.length ? el('p', { texto: 'Tabelas ficticias: ' + ficticias.join(', ') + '.' }) : null,
+    semNatureza.length
+      ? el('p', { texto: 'Tabelas sem natureza declarada: ' + semNatureza.join(', ') + '.' })
+      : null,
+    el('p', { classe: 'faixa-versao', texto: 'Carga de catalogo: ' + natureza.versaoDoCatalogo }),
+  ]);
+}
+
 export function navegacaoDaExecucao(execucaoId, telaAtual) {
   const atalho = (nome, rotulo) => el('a', {
-    classe: 'botao' + (telaAtual === nome ? ' principal' : ''),
+    classe: 'aba-da-execucao',
     href: endereco(nome, execucaoId),
+    'aria-current': telaAtual === nome ? 'page' : null,
     texto: rotulo,
   });
-  return el('div', { classe: 'acoes' }, [
+  return el('nav', { classe: 'abas-da-execucao', 'aria-label': 'Telas desta execucao' }, [
     atalho('panorama', 'Panorama'),
     atalho('achados', 'Achados'),
     atalho('naoAvaliados', 'Nao avaliados'),
@@ -51,15 +65,6 @@ export function navegacaoDaExecucao(execucaoId, telaAtual) {
 
 const NOME_DO_JAR = 'auditoria-ibs-cbs-<versao>.jar';
 
-/**
- * O papel de trabalho, oferecido em toda tela de execucao.
- *
- * NAO e um link de download, e a diferenca e deliberada: a API da Etapa 8 tem
- * quatro GET e nenhum serve arquivo. A planilha e do comando "exportar", na
- * CLI. Um botao que parecesse baixar e devolvesse 404 seria pior que a
- * instrucao honesta, entao aqui vai a invocacao exata, com o identificador
- * desta execucao ja preenchido, pronta para copiar.
- */
 export function painelDaPlanilha(execucaoId) {
   const comando = 'java -jar ' + NOME_DO_JAR + ' exportar \\n'
     + '  --arquivo=papel-de-trabalho.xlsx \\n'
@@ -104,7 +109,6 @@ export function painelDaPlanilha(execucaoId) {
   return { botao, painel };
 }
 
-/** Uma falha de leitura, dita por inteiro. */
 export function falha(erro) {
   const partes = [
     el('strong', { texto: 'Nao foi possivel ler. ' }),
@@ -116,7 +120,6 @@ export function falha(erro) {
   return el('div', { classe: 'aviso erro' }, partes);
 }
 
-/** Aviso simples, para o que a resposta deixou de dizer. */
 export function nota(texto) {
   return el('p', { classe: 'nota', texto });
 }

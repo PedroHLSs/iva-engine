@@ -48,6 +48,9 @@ class NaturezaDaCargaNoBanco implements ConsultaDaNaturezaDaCarga {
                 Optional.ofNullable(porTabela.get(NaturezaDaCarga.CLASSIFICACOES_TRIBUTARIAS)),
                 Optional.ofNullable(porTabela.get(NaturezaDaCarga.REGISTROS_DE_NCM)),
                 Optional.ofNullable(porTabela.get(NaturezaDaCarga.ITENS_DE_ANEXO)),
-                Optional.ofNullable(porTabela.get(NaturezaDaCarga.ALIQUOTAS)));
+                Optional.ofNullable(porTabela.get(NaturezaDaCarga.ALIQUOTAS)),
+                Optional.ofNullable(porTabela.get(NaturezaDaCarga.ANEXOS_DECLARADOS)),
+                // D021: carga gravada antes de 04/10/2026 não tem esta linha, e a cobertura dela fica não declarada.
+                Optional.ofNullable(porTabela.get(NaturezaDaCarga.COBERTURA)));
     }
 }

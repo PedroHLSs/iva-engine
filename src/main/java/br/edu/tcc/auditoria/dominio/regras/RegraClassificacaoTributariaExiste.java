@@ -2,6 +2,7 @@ package br.edu.tcc.auditoria.dominio.regras;
 
 import br.edu.tcc.auditoria.dominio.CodigoClassificacaoTributaria;
 import br.edu.tcc.auditoria.dominio.Documento;
+import br.edu.tcc.auditoria.dominio.Evidencia;
 import br.edu.tcc.auditoria.dominio.ItemDocumento;
 import br.edu.tcc.auditoria.dominio.Severidade;
 import br.edu.tcc.auditoria.dominio.ValorEmRisco;
@@ -61,11 +62,12 @@ public final class RegraClassificacaoTributariaExiste extends RegraDeItem {
                 documento,
                 List.of(
                         doDocumento("cClassTrib", item, codigo.get().valor()),
+                        // Emenda de 04/10/2026 (D025): o lado da tabela diz que não há registro. Até essa data vinha vazio, o que pelo contrato de Evidencia é "o campo não veio na nota". O critério e a versão não mudaram.
                         daTabela(
                                 "cClassTrib",
                                 TABELA,
                                 cobertura.fonteNormativa(),
-                                Optional.empty(),
+                                Optional.of(Evidencia.NENHUM_REGISTRO_NA_TABELA),
                                 Optional.empty())),
                 cobertura.fonteNormativa(),
                 cobertura.vigencia(),

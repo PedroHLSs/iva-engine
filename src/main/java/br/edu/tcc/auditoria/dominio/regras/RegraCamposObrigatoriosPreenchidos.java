@@ -14,10 +14,11 @@ import java.util.List;
 import java.util.Optional;
 
 // Regra R07: os campos que o catálogo exige para esse cClassTrib vieram preenchidos? Gravidade: crítica. Campo com zero conta como preenchido; só falta quando o campo não veio.
+// Versão 1.1.0 (03/10/2026, D015): só conclui CONFORME quando o catálogo declarou os campos exigidos — uma lista de nomes, ou NENHUM. Na 1.0.0 a lista vazia valia como "nenhum campo exigido", e a célula em branco do CSV virava conformidade sem nada ter sido conferido. Agora a R07 segue o critério que a D004 deu à R02: coluna em branco é indistinguível de coluna que ninguém preencheu, e fica NAO_AVALIADO.
 public final class RegraCamposObrigatoriosPreenchidos extends RegraDeItem {
 
     public static final String ID = "R07";
-    public static final String VERSAO = "1.0.0";
+    public static final String VERSAO = "1.1.0";
 
     @Override
     public String id() {
@@ -51,8 +52,16 @@ public final class RegraCamposObrigatoriosPreenchidos extends RegraDeItem {
         }
 
         ClassificacaoTributaria classificacao = registro.get();
-        List<String> exigidos = classificacao.camposObrigatoriosCondicionados();
+        Optional<List<String>> declarados = classificacao.camposObrigatoriosCondicionados();
+        if (declarados.isEmpty()) {
+            return naoAvaliada(item, documento,
+                    ("O catálogo não declara os campos exigidos pelo cClassTrib \"%s\" (camposObrigatoriosCondicionados "
+                            + "em branco). Célula em branco não é \"nenhum campo exigido\": para declarar isso, a "
+                            + "carga usa NENHUM.").formatted(codigo.get().valor()));
+        }
+        List<String> exigidos = declarados.get();
         if (exigidos.isEmpty()) {
+            // NENHUM: o catálogo declarou que este código não exige campo condicionado.
             return conforme(item, documento);
         }
 

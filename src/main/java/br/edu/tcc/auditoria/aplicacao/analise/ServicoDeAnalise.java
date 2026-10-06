@@ -5,7 +5,9 @@ import br.edu.tcc.auditoria.aplicacao.auditoria.MotorAuditoria;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ProvedorDeCatalogo;
 import br.edu.tcc.auditoria.aplicacao.auditoria.RepositorioDaAuditoria;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ResultadoDaAuditoria;
+import br.edu.tcc.auditoria.aplicacao.auditoria.OrigemDaTolerancia;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ServicoDeAuditoria;
+import br.edu.tcc.auditoria.aplicacao.auditoria.ToleranciaDaExecucao;
 import br.edu.tcc.auditoria.dominio.ItemDocumento;
 import br.edu.tcc.auditoria.dominio.regras.ToleranciaDeValor;
 import br.edu.tcc.auditoria.dominio.tratativa.HashDoItem;
@@ -22,16 +24,31 @@ public final class ServicoDeAnalise {
     private final ProvedorDeCatalogo provedorDeCatalogo;
     private final RepositorioDaAuditoria repositorio;
     private final MotorAuditoria motor;
-    private final ToleranciaDeValor tolerancia;
+    private final ToleranciaDaExecucao tolerancia;
     private final Clock relogio;
     private final RegistroDoAcervoDaAnalise acervo;
 
+    // Construtor na forma anterior à D023: a tolerância informada por quem chama é registrada como configurada.
     public ServicoDeAnalise(
             FabricaDeLeituraDeLote leituras,
             ProvedorDeCatalogo provedorDeCatalogo,
             RepositorioDaAuditoria repositorio,
             MotorAuditoria motor,
             ToleranciaDeValor tolerancia,
+            Clock relogio,
+            RegistroDoAcervoDaAnalise acervo) {
+        this(leituras, provedorDeCatalogo, repositorio, motor,
+                tolerancia == null ? null : new ToleranciaDaExecucao(tolerancia, OrigemDaTolerancia.CONFIGURADA),
+                relogio, acervo);
+    }
+
+    // Construtor do serviço. Emenda de 04/10/2026 (D023): a tolerância vem com a origem, que a execução grava.
+    public ServicoDeAnalise(
+            FabricaDeLeituraDeLote leituras,
+            ProvedorDeCatalogo provedorDeCatalogo,
+            RepositorioDaAuditoria repositorio,
+            MotorAuditoria motor,
+            ToleranciaDaExecucao tolerancia,
             Clock relogio,
             RegistroDoAcervoDaAnalise acervo) {
 
@@ -61,7 +78,8 @@ public final class ServicoDeAnalise {
         ResultadoDaAuditoria resultado = auditoria.auditar(origem);
         List<ArquivoIlegivel> ilegiveis = leitura.arquivosIlegiveis();
 
-        acervo.registrar(resultado.execucao().id(), itensLidos(resultado, leitura), ilegiveis);
+        acervo.registrar(resultado.execucao().id(), itensLidos(resultado, leitura), ilegiveis,
+                resultado.documentosRepetidosDescartados());
 
         return new ResultadoDaAnalise(resultado, ilegiveis);
     }

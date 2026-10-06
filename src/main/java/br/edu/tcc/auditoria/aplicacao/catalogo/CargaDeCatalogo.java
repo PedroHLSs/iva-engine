@@ -1,7 +1,9 @@
 package br.edu.tcc.auditoria.aplicacao.catalogo;
 
 import br.edu.tcc.auditoria.dominio.catalogo.AliquotaVigente;
+import br.edu.tcc.auditoria.dominio.catalogo.AnexoDeclarado;
 import br.edu.tcc.auditoria.dominio.catalogo.ClassificacaoTributaria;
+import br.edu.tcc.auditoria.dominio.catalogo.IdentificadorAnexo;
 import br.edu.tcc.auditoria.dominio.catalogo.ItemAnexo;
 import br.edu.tcc.auditoria.dominio.catalogo.RegistroNcm;
 import br.edu.tcc.auditoria.dominio.catalogo.RegistroNormativo;
@@ -16,8 +18,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
-// Representa um catálogo normativo completo, pronto para ser gravado, com a cobertura e a natureza declaradas por quem o importou.
+// Representa um catálogo normativo completo, pronto para ser gravado, com a cobertura e a natureza declaradas por quem o importou. Desde 01/10/2026 recusa anexo admitido que a carga não declara (decisão D9), em qualquer caminho: importação ou edição.
 public record CargaDeCatalogo(
         String versao,
         CoberturaDoCatalogo cobertura,
@@ -57,6 +61,8 @@ public record CargaDeCatalogo(
         casar(natureza.registrosDeNcm(), registrosDeNcm, NaturezaDaCarga.REGISTROS_DE_NCM);
         casar(natureza.itensDeAnexo(), itensDeAnexo, NaturezaDaCarga.ITENS_DE_ANEXO);
         casar(natureza.aliquotas(), aliquotas, NaturezaDaCarga.ALIQUOTAS);
+        casar(natureza.anexosDeclarados(), cobertura.anexosDeclarados(), NaturezaDaCarga.ANEXOS_DECLARADOS);
+        exigirAnexosAdmitidosDeclarados(classificacoesTributarias, cobertura.anexosDeclarados());
 
         if (classificacoesTributarias.isEmpty()
                 && registrosDeNcm.isEmpty()
@@ -74,6 +80,28 @@ public record CargaDeCatalogo(
                 + registrosDeNcm.size()
                 + itensDeAnexo.size()
                 + aliquotas.size();
+    }
+
+    // Método auxiliar que recusa a carga quando algum código admite anexo que a lista de anexos declarados não traz; sem lista, qualquer anexo citado é recusado (D9).
+    private static void exigirAnexosAdmitidosDeclarados(
+            List<ClassificacaoTributaria> classificacoes, List<AnexoDeclarado> declarados) {
+        Set<IdentificadorAnexo> validos = declarados.stream()
+                .map(AnexoDeclarado::identificador)
+                .collect(Collectors.toSet());
+        List<String> foraDaLista = new ArrayList<>();
+        for (ClassificacaoTributaria classificacao : classificacoes) {
+            classificacao.anexosAdmitidos().orElse(Set.of()).stream()
+                    .filter(anexo -> !validos.contains(anexo))
+                    .map(anexo -> "\"%s\" admite \"%s\"".formatted(classificacao.codigo().valor(), anexo.valor()))
+                    .sorted()
+                    .forEach(foraDaLista::add);
+        }
+        if (!foraDaLista.isEmpty()) {
+            throw new CatalogoInvalido(
+                    ("A carga cita anexo que a lista de anexos declarados (anexos-declarados.csv) não traz: %s. "
+                            + "A lista é a dos anexos válidos; declare o anexo ou corrija anexosAdmitidos.")
+                            .formatted(String.join("; ", foraDaLista)));
+        }
     }
 
     // Método auxiliar para garantir que a tabela tenha natureza declarada exatamente quando tem registros.

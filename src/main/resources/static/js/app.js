@@ -1,12 +1,3 @@
-/* ---------------------------------------------------------------------------
-   Ponto de entrada.
-
-   Um unico modulo carregado por index.html; as telas sao modulos irmaos. Sem
-   empacotador, sem npm, sem etapa de build: o navegador resolve os imports
-   sozinho, e o Spring serve os arquivos como estao em
-   src/main/resources/static.
-   --------------------------------------------------------------------------- */
-
 import { el, trocar } from './dom.js';
 import { rotaAtual, aoTrocarDeRota, endereco } from './roteador.js';
 import { falha } from './comum.js';
@@ -27,7 +18,6 @@ const TELAS = {
   acuracia: telaDeAcuracia,
 };
 
-/** Marca o item de menu correspondente a rota atual. */
 function marcarNavegacao(nome) {
   const atual = nome === 'acuracia' ? 'acuracia' : 'execucoes';
   for (const atalho of document.querySelectorAll('.navegacao a')) {
@@ -42,6 +32,7 @@ function marcarNavegacao(nome) {
 async function desenhar() {
   const tela = document.getElementById('tela');
   const rota = rotaAtual();
+  document.body.classList.toggle('visual-painel', ['execucoes', 'panorama', 'acuracia'].includes(rota.nome));
   marcarNavegacao(rota.nome);
   window.scrollTo(0, 0);
 

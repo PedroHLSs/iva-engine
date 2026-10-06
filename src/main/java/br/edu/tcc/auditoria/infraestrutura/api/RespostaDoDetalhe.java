@@ -13,7 +13,10 @@ public record RespostaDoDetalhe(
         ComparacaoExposta comparacao,
         List<PassoExposto> passos,
         FaixaDeNatureza natureza,
-        String aviso) {
+        String aviso,
+        ToleranciaExposta toleranciaDeValor) {
+
+    // Emenda de 04/10/2026 (D023): traz a tolerância de valor da R05 que a execução usou, com a origem, porque o passo da R05 aparece aqui.
 
     // Valida que o detalhe tenha todos os blocos, um passo para cada verificação, a faixa de procedência e o aviso de uso.
     public RespostaDoDetalhe {
@@ -44,6 +47,11 @@ public record RespostaDoDetalhe(
         if (aviso == null || aviso.isBlank()) {
             throw new RespostaInvalida(
                     "Toda resposta de resultado sai com o aviso de uso. Ele não é opcional por tela.");
+        }
+        if (toleranciaDeValor == null) {
+            throw new RespostaInvalida(
+                    "Toda resposta com resultado da R05 sai com a tolerância de valor usada, ou com o motivo "
+                            + "de ela não ter sido registrada (D023).");
         }
         passos = List.copyOf(passos);
     }

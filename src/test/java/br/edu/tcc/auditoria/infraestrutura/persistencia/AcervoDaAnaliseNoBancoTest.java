@@ -128,7 +128,7 @@ class AcervoDaAnaliseNoBancoTest {
         ResultadoDaAuditoria resultado = auditoria.auditar(lote);
         UUID execucaoId = resultado.execucao().id();
 
-        registro.registrar(execucaoId, itensDe(resultado), List.of());
+        registro.registrar(execucaoId, itensDe(resultado), List.of(), 0);
 
         List<ItemDaAnalise> lidos = consulta.itensDaExecucao(execucaoId);
         assertThat(lidos)
@@ -148,9 +148,9 @@ class AcervoDaAnaliseNoBancoTest {
 
         registro.registrar(execucaoId, List.of(), List.of(
                 new ArquivoIlegivel("primeiro.xml", "DocumentoFiscalIlegivel", "motivo ficticio 1"),
-                new ArquivoIlegivel("segundo.xml", "DocumentoFiscalIlegivel", "motivo ficticio 2")));
+                new ArquivoIlegivel("segundo.xml", "DocumentoFiscalIlegivel", "motivo ficticio 2")), 0);
 
-        assertThat(consulta.arquivosIlegiveis(execucaoId))
+        assertThat(consulta.arquivosIlegiveis(execucaoId).orElseThrow())
                 .extracting(ArquivoIlegivel::origem)
                 .containsExactly("primeiro.xml", "segundo.xml");
     }
@@ -158,11 +158,12 @@ class AcervoDaAnaliseNoBancoTest {
     @Test
     void deveDevolverListaVaziaQuandoNadaFalhou() {
         UUID execucaoId = auditoria.auditar(lote).execucao().id();
-        registro.registrar(execucaoId, List.of(), List.of());
+        registro.registrar(execucaoId, List.of(), List.of(), 0);
 
+        // D018: com a leitura registrada, a resposta é a lista vazia; Optional vazio é "não registrada".
         assertThat(consulta.arquivosIlegiveis(execucaoId))
                 .describedAs("vazio é resposta; nulo obrigaria quem lê a adivinhar")
-                .isEmpty();
+                .hasValue(List.of());
     }
 
     /**
@@ -186,7 +187,7 @@ class AcervoDaAnaliseNoBancoTest {
     void deveGuardarOResumoQueAAnaliseLeuParaDenunciarReprocessamentoPosterior() {
         ResultadoDaAuditoria resultado = auditoria.auditar(lote);
         UUID execucaoId = resultado.execucao().id();
-        registro.registrar(execucaoId, itensDe(resultado), List.of());
+        registro.registrar(execucaoId, itensDe(resultado), List.of(), 0);
 
         ItemDaAnalise lido = consulta.itensDaExecucao(execucaoId).get(0);
         String hashGravadoNoItem = jdbc.queryForObject(
@@ -209,7 +210,7 @@ class AcervoDaAnaliseNoBancoTest {
         ResultadoDaAuditoria resultado = auditoria.auditar(lote);
         UUID execucaoId = resultado.execucao().id();
         registro.registrar(execucaoId, itensDe(resultado), List.of(
-                new ArquivoIlegivel("ilegivel.xml", "Tipo", "motivo ficticio")));
+                new ArquivoIlegivel("ilegivel.xml", "Tipo", "motivo ficticio")), 0);
 
         assertThat(contar("item_da_execucao")).isPositive();
         assertThat(contar("falha_de_leitura_da_execucao")).isPositive();
@@ -223,7 +224,7 @@ class AcervoDaAnaliseNoBancoTest {
 
     @Test
     void deveRecusarRegistroSemExecucao() {
-        assertThatThrownBy(() -> registro.registrar(null, List.of(), List.of()))
+        assertThatThrownBy(() -> registro.registrar(null, List.of(), List.of(), 0))
                 .isInstanceOf(RuntimeException.class);
     }
 

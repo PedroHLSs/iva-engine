@@ -22,7 +22,14 @@ public enum CampoDoItem {
     ALIQUOTA_CBS("aliquotaCbs", ItemDocumento::aliquotaCbs),
     VALOR_IBS_UF("valorIbsUf", ItemDocumento::valorIbsUf),
     VALOR_IBS_MUNICIPAL("valorIbsMunicipal", ItemDocumento::valorIbsMunicipal),
-    VALOR_CBS("valorCbs", ItemDocumento::valorCbs);
+    VALOR_CBS("valorCbs", ItemDocumento::valorCbs),
+    // Os seis do grupo gRed, acrescentados em 03/10/2026 (D015). A R07 só os cobra quando o catálogo os lista; quem decide isso é a carga.
+    REDUCAO_ALIQUOTA_IBS_UF("reducaoAliquotaIbsUf", ItemDocumento::reducaoAliquotaIbsUf),
+    ALIQUOTA_EFETIVA_IBS_UF("aliquotaEfetivaIbsUf", ItemDocumento::aliquotaEfetivaIbsUf),
+    REDUCAO_ALIQUOTA_IBS_MUNICIPAL("reducaoAliquotaIbsMunicipal", ItemDocumento::reducaoAliquotaIbsMunicipal),
+    ALIQUOTA_EFETIVA_IBS_MUNICIPAL("aliquotaEfetivaIbsMunicipal", ItemDocumento::aliquotaEfetivaIbsMunicipal),
+    REDUCAO_ALIQUOTA_CBS("reducaoAliquotaCbs", ItemDocumento::reducaoAliquotaCbs),
+    ALIQUOTA_EFETIVA_CBS("aliquotaEfetivaCbs", ItemDocumento::aliquotaEfetivaCbs);
 
     private final String nomeNoCatalogo;
     private final Function<ItemDocumento, Optional<?>> leitura;

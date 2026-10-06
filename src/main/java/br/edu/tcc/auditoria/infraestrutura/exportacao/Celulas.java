@@ -63,21 +63,32 @@ final class Celulas {
     }
 
     // Método estático que escreve o valor em risco como número, ou o motivo de não haver valor como texto; nunca deixa a célula vazia.
+    // Emenda de 04/10/2026 (D025): o BigDecimal chega até aqui, e a célula sai na escala declarada, com um estilo por escala. A planilha é gravada em streaming, e nesse modo o número só entra como double; por isso o valor só vira número quando o double o representa exatamente, e, quando não, vai como texto com o valor exato — a planilha nunca arredonda em silêncio. Até essa data o valor era convertido em double sem conferência e exibido com duas casas fixas: 7,11100 aparecia 7,11.
     static void valorEmRisco(
             Row linha,
             int coluna,
             Optional<BigDecimal> valor,
             Optional<String> motivoDaAusencia,
-            CellStyle estiloMonetario,
-            CellStyle estiloDeTexto) {
+            EstilosDaPlanilha estilos) {
 
-        if (valor.isPresent()) {
-            Cell celula = linha.createCell(coluna);
-            celula.setCellValue(valor.get().doubleValue());
-            celula.setCellStyle(estiloMonetario);
+        if (valor.isEmpty()) {
+            texto(linha, coluna, motivoDaAusencia.orElse(SEM_REFERENCIA), estilos.textoLongo());
             return;
         }
-        texto(linha, coluna, motivoDaAusencia.orElse(SEM_REFERENCIA), estiloDeTexto);
+        BigDecimal exato = valor.get();
+        if (!cabeExatoNumDouble(exato)) {
+            texto(linha, coluna, exato.toPlainString(), estilos.texto());
+            return;
+        }
+        Cell celula = linha.createCell(coluna);
+        celula.setCellValue(exato.doubleValue());
+        celula.setCellStyle(estilos.monetario(exato.scale()));
+    }
+
+    // Método auxiliar que diz se o double do valor, lido de volta, é o mesmo número, sem contar zeros à direita.
+    private static boolean cabeExatoNumDouble(BigDecimal valor) {
+        double comoDouble = valor.doubleValue();
+        return Double.isFinite(comoDouble) && new BigDecimal(Double.toString(comoDouble)).compareTo(valor) == 0;
     }
 
     // Método estático que junta as evidências numa célula, uma por linha, na mesma ordem nas três colunas de evidência.

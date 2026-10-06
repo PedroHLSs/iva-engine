@@ -1,0 +1,95 @@
+body.na-entrada{
+  --entrada-fundo:#f4f7f9;
+  --entrada-cartao:#ffffff;
+  --entrada-destaque:#1a365d;
+  --entrada-destaque-forte:#122a4a;
+  --entrada-texto:#0f1f33;
+  --entrada-texto2:#475569;
+  --entrada-texto3:#64748b;
+  --entrada-discreto:#556070;
+  --entrada-borda:#cbd5e1;
+
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background:var(--entrada-fundo);
+  color:var(--entrada-texto);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+.na-entrada .folha{
+  flex:1 0 auto; width:100%;
+  padding:40px 16px 48px;
+}
+.cartao-de-entrada{
+  max-width:420px; margin:0 auto;
+  background:var(--entrada-cartao);
+  border:1px solid #e3e8ee;
+  border-radius:12px;
+  padding:40px 36px 32px;
+  box-shadow:0 1px 2px rgba(15,31,51,.06), 0 10px 28px rgba(15,31,51,.08);
+}
+.cartao-de-entrada h1{
+  font-size:26px; font-weight:680; text-align:center; color:var(--entrada-texto);
+  margin:0 0 8px;
+}
+.cartao-de-entrada .sub{
+  font-size:14px; line-height:1.55; text-align:center; color:var(--entrada-texto2);
+  margin:0 auto 4px; max-width:none;
+}
+
+.cartao-de-entrada .formulario{ max-width:none; margin:24px 0 0; gap:6px; }
+.cartao-de-entrada .formulario label{
+  font-size:13.5px; font-weight:600; color:var(--entrada-texto2); margin-top:12px;
+}
+.cartao-de-entrada .formulario label:first-child{ margin-top:0; }
+.cartao-de-entrada .formulario input[type=text],
+.cartao-de-entrada .formulario input[type=password]{
+  font-family:inherit; font-size:15px; line-height:1.4;
+  padding:12px 14px;
+  border:1px solid var(--entrada-borda);
+  border-radius:8px;
+  background:#ffffff;
+  color:var(--entrada-texto);
+  transition:border-color .15s ease, box-shadow .15s ease;
+}
+.cartao-de-entrada .formulario input:hover{ border-color:#94a3b8; }
+.cartao-de-entrada .formulario input:focus,
+.cartao-de-entrada .formulario input:focus-visible{
+  outline:none;
+  border-color:var(--entrada-destaque);
+  box-shadow:0 0 0 1px var(--entrada-destaque), 0 0 0 4px rgba(26,54,93,.18);
+}
+
+.cartao-de-entrada .formulario .acoes{ margin-top:22px; }
+.cartao-de-entrada .botao.principal{
+  width:100%;
+  font-family:inherit; font-size:15px; font-weight:600; line-height:1.4;
+  padding:12px 16px;
+  border:0; border-radius:8px;
+  background:var(--entrada-destaque);
+  color:#ffffff;
+  cursor:pointer;
+  transition:background-color .15s ease, box-shadow .15s ease, transform .1s ease;
+}
+.cartao-de-entrada .botao.principal:hover{
+  background:var(--entrada-destaque-forte);
+  box-shadow:0 4px 12px rgba(26,54,93,.25);
+}
+.cartao-de-entrada .botao.principal:active{ transform:translateY(1px); box-shadow:none; }
+.cartao-de-entrada .botao.principal:disabled{ opacity:.65; cursor:progress; box-shadow:none; }
+
+.cartao-de-entrada .aviso{ margin:18px 0 0; max-width:none; }
+
+.cartao-de-entrada .nota{
+  font-size:13px; color:var(--entrada-texto3); text-align:center;
+  background:none; margin:18px auto 0; max-width:none;
+}
+
+@media (max-width:480px){
+  .na-entrada .folha{ padding:24px 16px 32px; }
+  .cartao-de-entrada{ padding:28px 20px 24px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .na-entrada *{ transition:none !important; }
+}

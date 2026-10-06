@@ -1,13 +1,3 @@
-/* ---------------------------------------------------------------------------
-   Roteamento por fragmento (#/...).
-
-   Por fragmento, e nao por caminho, para que o servidor nao precise de nenhuma
-   regra de reescrita: o navegador nunca pede "/execucao/<id>", so pede "/" e
-   troca o que vem depois do "#". Nenhum arquivo Java precisou existir para esta
-   tela funcionar, que e a condicao da etapa.
-   --------------------------------------------------------------------------- */
-
-/** Interpreta o fragmento atual. */
 export function rotaAtual() {
   const bruto = window.location.hash.replace(/^#/, '');
   const [caminho, consulta] = bruto.split('?');
@@ -38,7 +28,6 @@ export function rotaAtual() {
   return { nome: 'desconhecida', caminho, parametros };
 }
 
-/** Monta um endereco de tela, para usar em href. */
 export function endereco(nome, execucaoId, parametros = {}) {
   const consulta = new URLSearchParams();
   for (const [chave, valor] of Object.entries(parametros)) {
@@ -59,18 +48,15 @@ export function endereco(nome, execucaoId, parametros = {}) {
   }
 }
 
-/** Endereco do detalhe de um achado. */
 export function enderecoDoAchado(execucaoId, achadoId) {
   return '#/execucao/' + encodeURIComponent(execucaoId) + '/achado/'
     + encodeURIComponent(achadoId);
 }
 
-/** Troca o fragmento sem recarregar a pagina. */
 export function irPara(destino) {
   window.location.hash = destino.replace(/^#/, '');
 }
 
-/** Chama o ouvinte agora e a cada troca de fragmento. */
 export function aoTrocarDeRota(ouvinte) {
   window.addEventListener('hashchange', ouvinte);
   ouvinte();

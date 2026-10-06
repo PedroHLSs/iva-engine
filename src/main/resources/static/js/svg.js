@@ -1,22 +1,3 @@
-/* ---------------------------------------------------------------------------
-   Graficos em SVG escrito a mao. Sem biblioteca, sem CDN.
-
-   DUAS REGRAS QUE ATRAVESSAM TODO GRAFICO DESTE ARQUIVO
-
-   1. NAO_AVALIADO tem faixa propria, hachura propria e rotulo proprio. Ele
-      nunca e somado a CONFORME e nunca sai por subtracao. Um lote com 4
-      apontamentos e 7 nao avaliados nao pode desenhar como lote quase limpo.
-
-   2. Cor nunca e a unica codificacao. Cada faixa recebe hachura diferente
-      (45 graus, 135 graus, pontilhado) e o numero vem escrito ao lado. A figura
-      continua legivel impressa em preto e branco e para quem nao distingue as
-      cores.
-
-   Valor zero desenha barra de comprimento zero E escreve "0" - o numero e que
-   informa. Valor ausente nao desenha barra nenhuma e escreve o motivo: barra de
-   altura zero para metrica indefinida seria dizer "zero", que e falso.
-   --------------------------------------------------------------------------- */
-
 const NS = 'http://www.w3.org/2000/svg';
 
 let sequencia = 0;
@@ -37,7 +18,6 @@ function textoSvg(x, y, conteudo, atributos = {}) {
   return no;
 }
 
-/** As tres hachuras, criadas uma vez por figura com identificadores proprios. */
 function definirHachuras(svg, prefixo) {
   const defs = noSvg('defs');
 
@@ -77,14 +57,6 @@ function definirHachuras(svg, prefixo) {
   };
 }
 
-/**
- * Barra empilhada dos tres desfechos da execucao inteira.
- *
- * conforme null significa que a derivacao nao fechou. Nesse caso a faixa de
- * conforme NAO e desenhada e o rotulo diz que nao e derivavel - desenhar zero
- * ali afirmaria que nenhum item esta conforme, que e afirmacao sobre o acervo,
- * e o problema esta no banco.
- */
 export function barraDeDesfechos({ achado, naoAvaliado, conforme }) {
   sequencia += 1;
   const prefixo = 'hachura' + sequencia;
@@ -143,22 +115,6 @@ export function barraDeDesfechos({ achado, naoAvaliado, conforme }) {
   return svg;
 }
 
-/**
- * Uma linha por regra, com apontamentos e nao avaliados lado a lado.
- *
- * A escala e o maior (achado + naoAvaliado) entre as regras, e nao o total de
- * itens: em escala de acervo as duas categorias que interessam viram um fio de
- * cabelo e a figura deixa de informar. Conforme aparece escrito, na coluna da
- * direita, e nao desenhado - nao esta omitido, esta em outra forma.
- *
- * Regra que nao apontou nada E nao deixou nada por avaliar recebe um traco
- * curto no lugar da barra, e nao o vazio: assim ela se distingue, na figura, da
- * regra que so nao apontou.
- *
- * Depois da Etapa 11 cada linha ganhou uma faixa de texto acima da barra, com o
- * codigo e o nome da regra por extenso. O nome nao cabia a esquerda da barra, e
- * SVG nao quebra linha; sem nome, a faixa escreve o motivo que a resposta trouxe.
- */
 export function barrasPorRegra(porRegra) {
   sequencia += 1;
   const prefixo = 'hachura' + sequencia;
@@ -242,16 +198,6 @@ export function barrasPorRegra(porRegra) {
   return svg;
 }
 
-/**
- * Cobertura por regra: avaliados, nao avaliados e sem avaliacao, em 100%.
- *
- * Aqui a barra e proporcional ao total da propria regra, porque cobertura e uma
- * proporcao: o que interessa e a fatia que de fato foi medida.
- *
- * Regra com total zero NAO ganha barra de comprimento zero: ganha um traco
- * tracejado e a frase "total = 0". Barra vazia seria lida como "cobertura zero",
- * e cobertura zero e um numero; aqui nao ha numero nenhum.
- */
 export function barrasDeCobertura(porRegra) {
   sequencia += 1;
   const prefixo = 'cobertura' + sequencia;

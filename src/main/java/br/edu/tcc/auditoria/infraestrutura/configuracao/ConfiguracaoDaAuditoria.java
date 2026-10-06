@@ -15,9 +15,13 @@ import br.edu.tcc.auditoria.aplicacao.auditoria.MotorAuditoria;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ProvedorDeCatalogo;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ProvedorDeCatalogoPorVersao;
 import br.edu.tcc.auditoria.aplicacao.auditoria.RepositorioDaAuditoria;
+import br.edu.tcc.auditoria.aplicacao.auditoria.OrigemDaTolerancia;
 import br.edu.tcc.auditoria.aplicacao.auditoria.ServicoDeAuditoria;
+import br.edu.tcc.auditoria.aplicacao.auditoria.ToleranciaDaExecucao;
+import br.edu.tcc.auditoria.aplicacao.catalogo.ConsultaDaNaturezaDaCarga;
 import br.edu.tcc.auditoria.aplicacao.catalogo.RepositorioDeCargaDeCatalogo;
 import br.edu.tcc.auditoria.aplicacao.catalogo.ServicoDeImportacaoDeCatalogo;
+import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDaToleranciaDaExecucao;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeAchados;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeAchadosDaExecucao;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeDocumentos;
@@ -59,6 +63,9 @@ public class ConfiguracaoDaAuditoria {
     // Nome da propriedade da tolerância de valor da regra R05.
     static final String PROPRIEDADE_DA_TOLERANCIA = "auditoria.tolerancia-de-valor";
 
+    // D023: nome da propriedade com o padrão usado quando a instalação não configura a tolerância.
+    static final String PROPRIEDADE_DA_TOLERANCIA_PADRAO = "auditoria.tolerancia-de-valor-padrao";
+
     // Relógio em UTC usado para registrar data e hora.
     @Bean
     Clock relogio() {
@@ -80,24 +87,40 @@ public class ConfiguracaoDaAuditoria {
         return resolvido.sal();
     }
 
-    // Lê a tolerância de valor da regra R05. Não tem valor padrão: quanta diferença vira apontamento é escolha de quem audita, e zero exige igualdade exata.
+    // Lê a tolerância de valor da regra R05 e a origem dela. Emenda de 04/10/2026 (D023): até essa data este comentário dizia que não havia valor padrão, e o application.properties trazia 0.01 como padrão escondido no placeholder. Hoje a tolerância configurada vale como CONFIGURADA; sem ela, vale o padrão declarado em auditoria.tolerancia-de-valor-padrao, como PADRAO, e a execução grava qual foi. Sem nenhuma das duas, a subida é recusada.
     @Bean
-    ToleranciaDeValor toleranciaDeValor(Environment ambiente) {
+    ToleranciaDaExecucao toleranciaDaExecucao(Environment ambiente) {
         String configurada = ambiente.getProperty(PROPRIEDADE_DA_TOLERANCIA);
-        if (configurada == null || configurada.isBlank()) {
-            throw new ConfiguracaoInvalida(
-                    ("Não há tolerância de valor configurada. Defina \"%s\" com a diferença máxima que "
-                            + "não deve virar apontamento — por exemplo \"0.01\" para um centavo, ou "
-                            + "\"0\" para exigir igualdade exata. O sistema não escolhe por você: essa "
-                            + "escolha decide quanta divergência some do relatório.")
-                            .formatted(PROPRIEDADE_DA_TOLERANCIA));
+        if (configurada != null && !configurada.isBlank()) {
+            return new ToleranciaDaExecucao(tolerancia(PROPRIEDADE_DA_TOLERANCIA, configurada),
+                    OrigemDaTolerancia.CONFIGURADA);
         }
+        String padrao = ambiente.getProperty(PROPRIEDADE_DA_TOLERANCIA_PADRAO);
+        if (padrao == null || padrao.isBlank()) {
+            throw new ConfiguracaoInvalida(
+                    ("Não há tolerância de valor configurada nem padrão declarado. Defina \"%s\" com a "
+                            + "diferença máxima que não deve virar apontamento — por exemplo \"0.01\" para um "
+                            + "centavo, ou \"0\" para exigir igualdade exata —, ou declare o padrão em \"%s\". "
+                            + "Essa escolha decide quanta divergência some do relatório.")
+                            .formatted(PROPRIEDADE_DA_TOLERANCIA, PROPRIEDADE_DA_TOLERANCIA_PADRAO));
+        }
+        return new ToleranciaDaExecucao(tolerancia(PROPRIEDADE_DA_TOLERANCIA_PADRAO, padrao),
+                OrigemDaTolerancia.PADRAO);
+    }
+
+    // Entrega só o valor da tolerância, para quem aplica a R05 sem gravar execução.
+    @Bean
+    ToleranciaDeValor toleranciaDeValor(ToleranciaDaExecucao tolerancia) {
+        return tolerancia.valor();
+    }
+
+    // Método auxiliar que converte o texto da propriedade em tolerância; recusa o que não é número.
+    private static ToleranciaDeValor tolerancia(String propriedade, String texto) {
         try {
-            return ToleranciaDeValor.de(new BigDecimal(configurada.strip()));
+            return ToleranciaDeValor.de(new BigDecimal(texto.strip()));
         } catch (NumberFormatException naoENumero) {
             throw new ConfiguracaoInvalida(
-                    "A propriedade \"%s\" não é um número: \"%s\".".formatted(
-                            PROPRIEDADE_DA_TOLERANCIA, configurada),
+                    "A propriedade \"%s\" não é um número: \"%s\".".formatted(propriedade, texto),
                     naoENumero);
         }
     }
@@ -150,8 +173,9 @@ public class ConfiguracaoDaAuditoria {
             ProvedorDeCatalogo provedorDeCatalogo,
             RepositorioDaAuditoria repositorio,
             MotorAuditoria motor,
-            ToleranciaDeValor tolerancia,
+            ToleranciaDaExecucao tolerancia,
             Clock relogio) {
+        // D023: a tolerância vai com a origem, que a execução grava.
         return new ServicoDeAuditoria(fonte, provedorDeCatalogo, repositorio, motor, tolerancia, relogio);
     }
 
@@ -162,7 +186,7 @@ public class ConfiguracaoDaAuditoria {
             ProvedorDeCatalogo provedorDeCatalogo,
             RepositorioDaAuditoria repositorio,
             MotorAuditoria motor,
-            ToleranciaDeValor tolerancia,
+            ToleranciaDaExecucao tolerancia,
             Clock relogio,
             RegistroDoAcervoDaAnalise acervo) {
         return new ServicoDeAnalise(
@@ -204,14 +228,20 @@ public class ConfiguracaoDaAuditoria {
         return new ServicoDeTratativa(consulta, repositorio, relogio);
     }
 
-    // Cria o montador do papel de trabalho.
+    // Cria o montador do papel de trabalho. Emenda de 04/10/2026 (D018): recebe o acervo da análise, de onde lê os arquivos que a execução não leu.
     @Bean
     MontadorDePapelDeTrabalho montadorDePapelDeTrabalho(
             ConsultaDeAchadosDaExecucao achados,
             ConsultaDeNaoAvaliadas naoAvaliadas,
             ConsultaDeDocumentos documentos,
-            PseudonimizadorDeChave pseudonimizador) {
-        return new MontadorDePapelDeTrabalho(achados, naoAvaliadas, documentos, pseudonimizador);
+            PseudonimizadorDeChave pseudonimizador,
+            ConsultaDoAcervoDaAnalise acervo,
+            ConsultaDaNaturezaDaCarga naturezas,
+            ConsultaDaToleranciaDaExecucao tolerancias) {
+        // D021: e a natureza do catálogo, para a planilha marcar catálogo fictício.
+        return new MontadorDePapelDeTrabalho(
+                achados, naoAvaliadas, documentos, pseudonimizador, acervo::arquivosIlegiveis,
+                acervo::documentosRepetidosDescartados, naturezas, tolerancias);
     }
 
     // Cria o serviço de exportação da planilha.
@@ -238,7 +268,7 @@ public class ConfiguracaoDaAuditoria {
             MotorAuditoria motor,
             ComparadorDeGabarito comparador,
             EscritorDeRelatorioDeAcuracia escritor,
-            ToleranciaDeValor tolerancia) {
+            ToleranciaDaExecucao tolerancia) {
         return new ServicoDeAvaliacaoDeAcuracia(
                 fonte, provedorDeCatalogo, fonteDeGabarito, motor, comparador, escritor, tolerancia);
     }

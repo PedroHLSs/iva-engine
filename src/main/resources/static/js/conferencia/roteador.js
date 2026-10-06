@@ -1,15 +1,3 @@
-/* ---------------------------------------------------------------------------
-   Roteamento por fragmento da interface de conferencia.
-
-   Proprio, e nao o da Etapa 9, porque as rotas sao outras e as duas interfaces
-   sao paginas separadas: esta em index.html, aquela em tecnica.html. Compartilhar
-   um roteador so faria uma tabela de rotas em que metade nunca resolve.
-
-   Por fragmento pelo mesmo motivo de la: o servidor nao precisa de regra de
-   reescrita, porque o navegador so pede "/" e troca o que vem depois do "#".
-   --------------------------------------------------------------------------- */
-
-/** Interpreta o fragmento atual. */
 export function rotaAtual() {
   const bruto = window.location.hash.replace(/^#/, '');
   const [caminho, consulta] = bruto.split('?');
@@ -24,6 +12,24 @@ export function rotaAtual() {
   }
   if (partes[0] === 'historico') {
     return { nome: 'historico', parametros };
+  }
+  if (partes[0] === 'entrar') {
+    return { nome: 'entrar', parametros };
+  }
+  if (partes[0] === 'senha') {
+    return { nome: 'senha', parametros };
+  }
+  if (partes[0] === 'usuarios') {
+    return { nome: 'usuarios', parametros };
+  }
+  if (partes[0] === 'acuracia') {
+    return { nome: 'acuracia', parametros };
+  }
+  if (partes[0] === 'cargas') {
+    return { nome: 'cargas', parametros };
+  }
+  if (partes[0] === 'carga' && partes[1]) {
+    return { nome: 'carga', versao: decodeURIComponent(partes[1]), parametros };
   }
   if (partes[0] === 'analise' && partes[1]) {
     const analiseId = decodeURIComponent(partes[1]);
@@ -50,29 +56,19 @@ function cauda(parametros) {
   return consulta.toString() ? '?' + consulta.toString() : '';
 }
 
-/** Endereco da tela de envio. */
 export function enderecoDeEnvio() {
   return '#/';
 }
 
-/** Endereco do resultado de uma analise. */
 export function enderecoDoResultado(analiseId, parametros) {
   return '#/analise/' + encodeURIComponent(analiseId) + cauda(parametros);
 }
 
-/** Endereco do detalhe de um produto. */
 export function enderecoDoProduto(analiseId, endereco) {
   return '#/analise/' + encodeURIComponent(analiseId)
     + '/produto/' + encodeURIComponent(endereco);
 }
 
-/**
- * Endereco dos produtos de um grupo.
- *
- * Os tres componentes da chave vao na consulta, e nao num codigo sintetico: a
- * URL diz o que esta sendo olhado, e componente ausente se escreve omitindo o
- * parametro — que e a mesma ausencia que o agrupamento registrou.
- */
 export function enderecoDoGrupo(analiseId, grupo) {
   return '#/analise/' + encodeURIComponent(analiseId) + '/grupo' + cauda({
     ncm: grupo.ncm,
@@ -81,22 +77,26 @@ export function enderecoDoGrupo(analiseId, grupo) {
   });
 }
 
-/** Endereco da base tributaria numa data. */
 export function enderecoDaBase(parametros) {
   return '#/base' + cauda(parametros);
 }
 
-/** Endereco do historico. */
 export function enderecoDoHistorico() {
   return '#/historico';
 }
 
-/** Troca o fragmento sem recarregar a pagina. */
+export function enderecoDasCargas() {
+  return '#/cargas';
+}
+
+export function enderecoDaCarga(versao) {
+  return '#/carga/' + encodeURIComponent(versao);
+}
+
 export function irPara(destino) {
   window.location.hash = destino.replace(/^#/, '');
 }
 
-/** Chama o ouvinte agora e a cada troca de fragmento. */
 export function aoTrocarDeRota(ouvinte) {
   window.addEventListener('hashchange', ouvinte);
   ouvinte();

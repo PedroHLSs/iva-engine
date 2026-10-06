@@ -15,6 +15,7 @@ import br.edu.tcc.auditoria.infraestrutura.xml.gerado.TCIBS;
 import br.edu.tcc.auditoria.infraestrutura.xml.gerado.TEndereco;
 import br.edu.tcc.auditoria.infraestrutura.xml.gerado.TEnderEmi;
 import br.edu.tcc.auditoria.infraestrutura.xml.gerado.TNFe;
+import br.edu.tcc.auditoria.infraestrutura.xml.gerado.TRed;
 import br.edu.tcc.auditoria.infraestrutura.xml.gerado.TTribNFe;
 import br.edu.tcc.auditoria.infraestrutura.xml.gerado.TUf;
 import jakarta.xml.bind.JAXBElement;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 
 // Classe que converte o que o LeitorDocumentoFiscal leu no modelo de domínio; daqui para dentro não há classe do JAXB, null nem CNPJ ou CPF em texto claro. Campo que não veio vira Optional vazio, e 0 continua zero; o CST, o cClassTrib e a base, que o XML declara uma vez só, são repetidos para IBS e CBS.
+// Emenda de 03/10/2026 (D015): passou a ler o grupo gRed (pRedAliq e pAliqEfet) de gIBSUF, gIBSMun e gCBS. Até essa data ele não era lido em lugar nenhum, e a R07 não tinha como cobrar o grupo de redução, nem com o catálogo exigindo.
 public final class NormalizadorDocumento {
 
     private static final String PREFIXO_DO_IDENTIFICADOR_NA_CHAVE = "NFe";
@@ -113,6 +115,9 @@ public final class NormalizadorDocumento {
         Optional<TCIBS.GIBSUF> ibsEstadual = valores.map(TCIBS::getGIBSUF);
         Optional<TCIBS.GIBSMun> ibsMunicipal = valores.map(TCIBS::getGIBSMun);
         Optional<TCIBS.GCBS> cbs = valores.map(TCIBS::getGCBS);
+        Optional<TRed> reducaoIbsUf = ibsEstadual.map(TCIBS.GIBSUF::getGRed);
+        Optional<TRed> reducaoIbsMunicipal = ibsMunicipal.map(TCIBS.GIBSMun::getGRed);
+        Optional<TRed> reducaoCbs = cbs.map(TCIBS.GCBS::getGRed);
 
         return new ItemDocumento(
                 numeroDoItem(detalhamento),
@@ -132,7 +137,14 @@ public final class NormalizadorDocumento {
                 cbs.flatMap(declarado -> decimal(declarado.getPCBS())),
                 ibsEstadual.flatMap(declarado -> decimal(declarado.getVIBSUF())),
                 ibsMunicipal.flatMap(declarado -> decimal(declarado.getVIBSMun())),
-                cbs.flatMap(declarado -> decimal(declarado.getVCBS())));
+                cbs.flatMap(declarado -> decimal(declarado.getVCBS())),
+                // Grupo gRed de cada tributo (D015, 03/10/2026): grupo ausente é Optional vazio, nunca zero.
+                reducaoIbsUf.flatMap(reducao -> decimal(reducao.getPRedAliq())),
+                reducaoIbsUf.flatMap(reducao -> decimal(reducao.getPAliqEfet())),
+                reducaoIbsMunicipal.flatMap(reducao -> decimal(reducao.getPRedAliq())),
+                reducaoIbsMunicipal.flatMap(reducao -> decimal(reducao.getPAliqEfet())),
+                reducaoCbs.flatMap(reducao -> decimal(reducao.getPRedAliq())),
+                reducaoCbs.flatMap(reducao -> decimal(reducao.getPAliqEfet())));
     }
 
     // Método auxiliar que acha o grupo IBSCBS entre os tributos do item, pelo nome e pelo tipo.

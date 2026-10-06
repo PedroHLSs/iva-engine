@@ -1,5 +1,7 @@
 package br.edu.tcc.auditoria.infraestrutura.api;
 
+import br.edu.tcc.auditoria.aplicacao.identidade.Perfil;
+import br.edu.tcc.auditoria.aplicacao.identidade.ServicoDeUsuarios;
 import br.edu.tcc.auditoria.aplicacao.catalogo.CargaDeCatalogo;
 import br.edu.tcc.auditoria.aplicacao.catalogo.Natureza;
 import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
@@ -53,13 +55,16 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Os quatro desfechos da conferência, cada um de ponta a ponta.
  *
- * <h2>Uma nota só, quatro cargas</h2>
+ * <h2>Uma nota nos cenários sem redução, outra no cenário com redução</h2>
  *
- * <p>O documento é o mesmo nos quatro cenários. O que muda é o catálogo — e é
- * esse o ponto. A situação de um produto não é propriedade do XML: ela é o
- * resultado de confrontar o XML com uma base normativa carregada, numa data. Um
- * teste que trocasse o documento a cada cenário provaria menos, porque deixaria
- * em aberto qual dos dois lados produziu a diferença.</p>
+ * <p>O documento é o mesmo nos cenários sem redução. O que muda é o catálogo —
+ * e é esse o ponto. A situação de um produto não é propriedade do XML: ela é o
+ * resultado de confrontar o XML com uma base normativa carregada, numa data.</p>
+ *
+ * <p>O cenário com redução usa nota própria, porque a redução muda o valor
+ * esperado: desde a R05 1.1.0 (30/09/2026) a redução declarada pelo catálogo
+ * entra na conta, e a nota sem redução deixaria de fechar. Até a 1.0.0 a R05
+ * ignorava a redução, e por isso uma nota só servia aos quatro cenários.</p>
  *
  * <h2>Como cada carga produz o desfecho dela</h2>
  *
@@ -68,11 +73,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  *       cClassTrib existe e admite o CST declarado, e os valores fecham com as
  *       alíquotas. As sete regras concluem sem violação.</li>
  *   <li><strong>Tratamento diferenciado</strong> — o NCM consta de anexo, e o
- *       cClassTrib declara redução: o tratamento foi aproveitado, e R04 nada tem
+ *       carga declara o cClassTrib como não integral (desde a R04 1.1.0, a
+ *       redução deixou de ser o critério): o tratamento foi aproveitado, e R04 nada tem
  *       a relatar. O desfecho é o mesmo do anterior, e a diferença aparece na
  *       fundamentação, que é onde ela deve aparecer.</li>
  *   <li><strong>Requer conferência</strong> — o NCM consta de anexo e o
- *       cClassTrib é de tributação integral: há tratamento possivelmente não
+ *       carga declara o cClassTrib como de tributação integral: há tratamento possivelmente não
  *       aproveitado. R04 é INFORMATIVA, e informativa não é divergência.</li>
  *   <li><strong>Sem dados suficientes</strong> — a carga não traz alíquota
  *       nenhuma, e R05 não tem contra o que conferir valor. Não vira conforme.</li>
@@ -105,6 +111,7 @@ class QuatroCenariosDeConferenciaTest {
 
     private static final String CAMINHO = "/api/analises";
     private static final String DOCUMENTO = "/documentos/nfe-item-completo.xml";
+    private static final String DOCUMENTO_COM_REDUCAO = "/documentos/nfe-item-completo-reducao-60.xml";
 
     private static final String FONTE = "FONTE FICTICIA PARA TESTE v0.0";
     private static final String NCM_DECLARADO = "00000000";
@@ -133,6 +140,10 @@ class QuatroCenariosDeConferenciaTest {
             "classificacao_tributaria", "registro_ncm", "item_anexo", "aliquota_vigente",
             "cobertura_catalogo", "natureza_da_carga", "carga_catalogo");
 
+    // Etapa 12: toda chamada à API exige sessão; o teste entra como administrador, que alcança todos os endpoints lidos aqui.
+    @Autowired
+    private ServicoDeUsuarios usuariosDaSessao;
+
     @Autowired
     private TestRestTemplate rest;
 
@@ -153,6 +164,7 @@ class QuatroCenariosDeConferenciaTest {
     @BeforeEach
     void limparTudo() {
         jdbc.execute("truncate table " + TABELAS + " cascade");
+        SessaoDeTeste.entrarComo(rest, usuariosDaSessao, Perfil.ADMINISTRADOR);
     }
 
     /* --- 1. tratamento normal ------------------------------------------------ */
@@ -185,7 +197,7 @@ class QuatroCenariosDeConferenciaTest {
         importacaoDeCatalogo.importar(carga("carga-tratamento-diferenciado",
                 List.of(anexo()), comReducao()));
 
-        String detalhe = analisarEAbrirODetalhe();
+        String detalhe = analisarEAbrirODetalhe(DOCUMENTO_COM_REDUCAO);
 
         assertThat(situacaoDoProduto(detalhe))
                 .describedAs("o tratamento do anexo foi aproveitado: R04 nada tem a relatar")
@@ -196,15 +208,17 @@ class QuatroCenariosDeConferenciaTest {
                 .contains(TRATAMENTO_DO_ANEXO);
         assertThat(detalhe)
                 .describedAs("a redução declarada sai como valor, e não como ausência")
-                .contains("\"percentualReducao\":\"99.99\"")
+                .contains("\"percentualReducao\":\"60\"")
                 .contains("\"motivoSemReducao\":null");
     }
 
     /**
      * O mesmo documento, duas cargas, dois enquadramentos diferentes.
      *
-     * <p>É a prova de que o tratamento exibido vem do catálogo, e não do XML: o
-     * arquivo enviado é byte a byte o mesmo dos outros cenários.</p>
+     * <p>É a prova de que o enquadramento vem do catálogo, e não do XML: os mesmos
+     * bytes produzem resultados diferentes sob catálogos diferentes. Sem anexo e
+     * com o código integral, nada diverge; com anexo e redução declarada, a R05
+     * 1.1.0 espera o valor reduzido, e a nota, que traz o valor cheio, diverge.</p>
      */
     @Test
     void oMesmoDocumentoDeveMostrarEnquadramentosDiferentesEmCargasDiferentes()
@@ -218,7 +232,16 @@ class QuatroCenariosDeConferenciaTest {
 
         assertThat(semAnexo).doesNotContain(ANEXO);
         assertThat(comAnexo).contains(ANEXO);
-        assertThat(situacaoDoProduto(semAnexo)).isEqualTo(situacaoDoProduto(comAnexo));
+        assertThat(situacaoDoProduto(semAnexo)).isEqualTo("SEM_DIVERGENCIA_IDENTIFICADA");
+        assertThat(situacaoDoProduto(comAnexo)).isEqualTo("POSSIVEL_DIVERGENCIA");
+        assertThat(quantidadeDoEstado(comAnexo, "POSSIVEL_DIVERGENCIA"))
+                .describedAs("uma regra só diverge")
+                .isEqualTo(1);
+        assertThat(Pattern.compile(
+                        "\\{\"regraId\":\"R05\"[^{}]*\"estado\":\"POSSIVEL_DIVERGENCIA\"")
+                .matcher(comAnexo).find())
+                .describedAs("e a regra que diverge é a R05")
+                .isTrue();
     }
 
     /* --- 3. requer conferência ----------------------------------------------- */
@@ -276,7 +299,7 @@ class QuatroCenariosDeConferenciaTest {
     void osQuatroDesfechosDevemSerDistintos() throws IOException {
         String normal = comCarga("cenario-normal", List.of(), integral(), aliquotas());
         String diferenciado = comCarga("cenario-diferenciado", List.of(anexo()), comReducao(),
-                aliquotas());
+                aliquotas(), DOCUMENTO_COM_REDUCAO);
         String conferencia = comCarga("cenario-conferencia", List.of(anexo()), integral(),
                 aliquotas());
         String semDados = comCarga("cenario-sem-dados", List.of(), integral(), List.of());
@@ -300,15 +323,29 @@ class QuatroCenariosDeConferenciaTest {
             List<ItemAnexo> anexos,
             ClassificacaoTributaria classificacao,
             List<AliquotaVigente> aliquotas) throws IOException {
+        return comCarga(versao, anexos, classificacao, aliquotas, DOCUMENTO);
+    }
+
+    private String comCarga(
+            String versao,
+            List<ItemAnexo> anexos,
+            ClassificacaoTributaria classificacao,
+            List<AliquotaVigente> aliquotas,
+            String documento) throws IOException {
 
         jdbc.execute("truncate table " + TABELAS + " cascade");
         importacaoDeCatalogo.importar(carga(versao, anexos, classificacao, aliquotas));
-        return analisarEAbrirODetalhe();
+        return analisarEAbrirODetalhe(documento);
     }
 
     /** Envia o documento e devolve o corpo do detalhe do primeiro produto. */
     private String analisarEAbrirODetalhe() throws IOException {
-        ResponseEntity<String> criada = enviar();
+        return analisarEAbrirODetalhe(DOCUMENTO);
+    }
+
+    /** Envia o documento informado e devolve o corpo do detalhe do primeiro produto. */
+    private String analisarEAbrirODetalhe(String documento) throws IOException {
+        ResponseEntity<String> criada = enviar(documento);
         assertThat(criada.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         String id = campoDeTexto(criada.getBody(), "id");
@@ -323,9 +360,9 @@ class QuatroCenariosDeConferenciaTest {
         return detalhe;
     }
 
-    private ResponseEntity<String> enviar() throws IOException {
+    private ResponseEntity<String> enviar(String documento) throws IOException {
         MultiValueMap<String, Object> corpo = new LinkedMultiValueMap<>();
-        corpo.add(ControladorDeAnalises.CAMPO_DO_ARQUIVO, new ByteArrayResource(recurso()) {
+        corpo.add(ControladorDeAnalises.CAMPO_DO_ARQUIVO, new ByteArrayResource(recurso(documento)) {
             @Override
             public String getFilename() {
                 return "nota.xml";
@@ -336,10 +373,10 @@ class QuatroCenariosDeConferenciaTest {
         return rest.postForEntity(CAMINHO, new HttpEntity<>(corpo, cabecalhos), String.class);
     }
 
-    private byte[] recurso() throws IOException {
-        try (InputStream conteudo = getClass().getResourceAsStream(DOCUMENTO)) {
+    private byte[] recurso(String documento) throws IOException {
+        try (InputStream conteudo = getClass().getResourceAsStream(documento)) {
             if (conteudo == null) {
-                throw new IllegalStateException("Fixture não encontrada: " + DOCUMENTO);
+                throw new IllegalStateException("Fixture não encontrada: " + documento);
             }
             return conteudo.readAllBytes();
         }
@@ -380,27 +417,33 @@ class QuatroCenariosDeConferenciaTest {
         return ProcedenciaNormativa.aPartirDe(LocalDate.of(1900, 1, 1), FONTE);
     }
 
-    /** Código de tributação integral: sem benefício e sem redução declarada. */
+    /** Código de tributação integral: sem benefício, sem redução, e declarado integral (R04 1.1.0). */
     private static ClassificacaoTributaria integral() {
         return new ClassificacaoTributaria(
                 new CodigoClassificacaoTributaria(CODIGO_DECLARADO),
                 Set.of(new CodigoCst(CST_DECLARADO)),
                 "DISPOSITIVO FICTICIO PARA TESTE",
                 false,
+                Optional.of(BigDecimal.ZERO),
+                Optional.of(true),
                 Optional.empty(),
-                List.of(),
+                // D015: NENHUM declarado. Lista vazia passou a ser "não declarado", e a R07 não concluiria.
+                Optional.of(List.of()),
                 procedencia());
     }
 
-    /** O mesmo código, agora com redução declarada: o tratamento foi aplicado. */
+    /** O mesmo código, agora com redução de 60 declarada e declarado não integral (R04 1.1.0): o tratamento foi aplicado. */
     private static ClassificacaoTributaria comReducao() {
         return new ClassificacaoTributaria(
                 new CodigoClassificacaoTributaria(CODIGO_DECLARADO),
                 Set.of(new CodigoCst(CST_DECLARADO)),
                 "DISPOSITIVO FICTICIO PARA TESTE",
                 false,
-                Optional.of(new BigDecimal("99.99")),
-                List.of(),
+                Optional.of(new BigDecimal("60")),
+                Optional.of(false),
+                Optional.empty(),
+                // D015: NENHUM declarado. Lista vazia passou a ser "não declarado", e a R07 não concluiria.
+                Optional.of(List.of()),
                 procedencia());
     }
 

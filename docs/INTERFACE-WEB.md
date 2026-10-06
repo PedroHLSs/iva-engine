@@ -25,6 +25,92 @@ Depois, no navegador: <http://127.0.0.1:8080/>
 **Duplo clique em `index.html` não funciona**, e não é defeito: o `file://`
 bloqueia `import` entre módulos ES, e do outro lado não haveria API nenhuma.
 
+## Abas, colapso e acessibilidade (Etapa 13)
+
+O resultado de uma análise tem um **resumo fixo** acima das abas — os quatro
+estados dos produtos com os zeros, a pendência, os ilegíveis e as versões — e
+cinco abas: Resumo, Produtos, Não concluídos (com a contagem no rótulo),
+Agrupamentos (só no lote) e Detalhes técnicos. A aba escolhida vai no endereço
+(`#/analise/{id}?aba=produtos`). As abas andam pelas setas, Home e End.
+
+**Ilegível desconhecido não é zero (D018, 04/10/2026).** Quando a leitura da
+análise não foi registrada — execução do `auditar` anterior a 04/10/2026 —, a
+contagem de ilegíveis vem nula com o motivo no campo irmão, e o resumo fixo e o
+bloco de leitura escrevem o motivo. Até essa data a tela recebia 0 e escrevia 0.
+
+**A tolerância da R05 aparece onde o resultado da R05 aparece (D023,
+04/10/2026).** O resumo fixo, o cabeçalho do detalhe do produto, o histórico e a
+acurácia escrevem "tolerancia R05" com o valor e a origem, vindos do servidor no
+campo `toleranciaDeValor`; o padrão sai escrito como padrão. Na visão técnica,
+a identificação da execução (panorama e execuções) e uma linha própria nas telas
+de achados, do achado e de não avaliados. Execução anterior ao registro vem com
+o motivo, e a tela o escreve.
+
+**Só a explicação do que não tem divergência nasce recolhida.** Quem decide é o
+servidor, no campo `recolhidaPorPadrao` / `recolhidoPorPadrao`; a tela obedece
+por `js/colapso.js`, o único módulo que cria `<details>`. Verificação não
+concluída, divergência e grupo com pendência dentro nascem abertos. O selo do
+estado fica visível mesmo no bloco recolhido.
+
+O histórico (`#/historico`) filtra e pagina no servidor. Execução sem contagem
+medida — a do comando `auditar`, que não grava os itens lidos — sai com
+"não registrado" na situação, nos quatro estados e na pendência, com o motivo no
+`title`; nenhum filtro de situação ou de quantidade a exclui, e com um deles
+ativo a tela avisa quantas estão incluídas e por quê (D020). A acurácia
+(`#/acuracia`) recebe as notas e o gabarito e avisa, antes do botão, qual carga
+será usada e selada. A tela antiga, que lê o CSV de resultado do comando,
+continua na visão técnica.
+
+`css/acessibilidade.css`, carregado por último nas duas páginas, corrige o
+contraste para WCAG AA (os valores medidos estão no cabeçalho do arquivo), põe
+foco visível em tudo o que recebe foco, e abre todas as abas na impressão.
+
+## Entrar (Etapa 12)
+
+Desde a Etapa 12 as duas interfaces exigem login. Sem sessão, qualquer tela leva
+a `#/entrar`, e depois de entrar a pessoa volta para onde estava. O primeiro
+usuário nasce pelo comando `criar-administrador`; não há usuário nem senha
+padrão. Decisão em **D013**.
+
+| Endereço | Tela | Quem vê |
+|---|---|---|
+| `#/entrar` | login e senha | qualquer um |
+| `#/senha` | trocar a própria senha | todos os perfis |
+| `#/usuarios` | criar, alterar perfil, desativar, redefinir senha, excluir | administrador |
+| `#/cargas` | cargas de catálogo; importar carga nova | todos leem; só administrador importa |
+| `#/carga/{versao}` | estado, prévia da edição, editar por CSV, excluir | todos leem; só administrador edita |
+
+No detalhe do apontamento da visão técnica há o histórico de decisões, com quem
+decidiu e quando, e o formulário de tratativa para fiscal e administrador. No
+resultado da análise há o envio da correção, que gera análise nova ligada a ela.
+
+**A tela esconde o que o perfil não pode fazer, e isso não é controle de
+acesso.** O menu de usuários some para quem não é administrador, o formulário de
+tratativa some para consulta — por conveniência. Quem recusa é o servidor, e cada
+endpoint tem teste chamando direto com cada perfil.
+
+**A tela de carga diz o efeito antes do botão.** "Esta carga é usada por N
+análise(s); salvar criará a versão X" aparece acima do campo de arquivo, e o botão
+diz "Salvar criando a versão X" ou "Salvar alterando o rascunho". A frase vem do
+servidor. Se o efeito mudou enquanto a pessoa editava, o servidor recusa sem
+gravar, e a tela mostra o efeito novo e espera outra confirmação.
+
+A recusa de importação aparece em tabela: arquivo, linha, coluna, valor e motivo,
+todas de uma vez.
+
+**A tela de cargas diz a origem antes do botão** (emenda de 04/10/2026, D026).
+Depois da primeira carga, importar aceita parte dos arquivos, e as tabelas que
+não vierem são copiadas da carga mais recente. Depois de escolhidos os arquivos,
+a tela escreve acima do botão qual é ela, quais tabelas serão substituídas e
+quais virão dela, e o botão diz "Importar criando V a partir de X". O pedido leva a versão e os dois instantes
+exatamente como o `GET /api/cargas` os devolveu. Se a mais recente mudou — outra
+carga, a mesma alterada, ou excluída e importada de novo com o mesmo nome —, o
+servidor recusa sem gravar, e a tela troca a origem mostrada e espera outra
+confirmação. Com o acervo vazio e arquivos faltando, a tela diz que ainda não há
+carga de onde herdá-los; com os cinco escolhidos, diz que nada será herdado, nem o
+`anexos-declarados.csv`, que numa importação completa nunca é herdado. As duas
+telas passaram a aceitar o `anexos-declarados.csv`, que até essa data recusavam.
+
 ---
 
 # Parte 1 — Conferência de enquadramento (Etapa 11)
@@ -160,6 +246,13 @@ exibido: a situação de um produto foi produzida contra aquela carga, e as tela
 que as pessoas mais olham são justamente as que não mostram uma linha da tabela.
 No caso parcialmente fictício ela **lista quais tabelas** são de demonstração.
 
+**Desde 04/10/2026 (D021)** a faixa também vai à visão técnica — execuções,
+panorama, achados, detalhe do achado e não avaliados —, ao histórico (ao lado da
+versão do catálogo, quando há aviso) e à medição de acurácia. A cobertura entrou
+na natureza, e a faixa lista também as tabelas sem natureza declarada — a
+cobertura das cargas anteriores a essa data. A planilha abre toda aba com a
+mesma faixa.
+
 ## A base tributária abre pedindo a data
 
 Sem valor padrão. É o caso de uso que a D003 previu — "o que vale hoje" como caso
@@ -217,6 +310,14 @@ as figuras do TCC e a tela precisam usar a mesma cor para o mesmo estado.
 > `dom.js`, `api.js`, `roteador.js`, `decimal.js`, `comum.js` e
 > `telas/acuracia.js` continuam como a Etapa 9 os deixou.
 
+> **Revisão de 04/10/2026.** A última frase da revisão acima deixou de valer para
+> três dos módulos. `comum.js` mudou em 27/09/2026 (o visual de painel, revisão de
+> 27/09/2026 na D010) e em 04/10/2026 (a faixa de procedência, D021, e a
+> tolerância da R05, D023); `telas/acuracia.js` mudou em 27/09/2026; `api.js` mudou
+> em 04/10/2026 (D021 e D023). `css/base.css`, `dom.js`, `roteador.js` e
+> `decimal.js` não mudaram desde que entraram no Git, no commit `192c802`, de
+> 21/09/2026; antes disso não há histórico para conferir.
+
 ---
 
 # Parte 2 — Visão técnica (Etapa 9)
@@ -259,6 +360,12 @@ três continuam na CLI, porque auditar tem efeito colateral gravado, importar
 catálogo decide o que o sistema afirma sobre a norma, e tratar achado é ato de
 uma pessoa identificada — e não há autenticação aqui.
 
+> **Emenda de 04/10/2026:** o parágrafo acima valeu até a Etapa 10. Auditar pela
+> web existe desde a Etapa 11 (`POST /api/analises`, D012), e importar catálogo e
+> tratar achado desde a Etapa 12, com login e três perfis (D013) — os três na
+> interface de conferência, `index.html`, e não aqui. A visão técnica continua só
+> lendo, e os GET que ela consome passaram a exigir sessão.
+
 ## As telas
 
 Os endereços abaixo são relativos a `tecnica.html`.
@@ -282,10 +389,16 @@ Os endereços abaixo são relativos a `tecnica.html`.
    zero; o selo escreve "avaliou tudo" ou "nem tudo foi avaliado"; o gráfico
    desenha hachura própria para não avaliado e um traço curto para a regra que
    não apontou nem deixou pendência; e os motivos aparecem logo abaixo.
+   *(Emenda de 27/09/2026: no panorama o gráfico por regra saiu, e a distinção
+   ficou em três lugares — o número de não avaliados, a situação por extenso com
+   marca própria, e os motivos. Ver a revisão de 27/09/2026 na D010.)*
 3. **Métrica indefinida é `(indefinida)`**, nunca 0, nunca 1, e sem barra
    desenhada — barra de altura zero diria "zero", e zero é um número.
 4. **Cor nunca é a única codificação.** Todo desfecho tem símbolo, toda
    severidade tem triângulos, toda faixa de gráfico tem hachura e número escrito.
+   *(Emenda de 27/09/2026: na tela de execuções, a barra é plana, com marca de
+   forma em cada fatia e na legenda, e as severidades são pílulas com o nome
+   escrito. Ver a revisão de 27/09/2026 na D010.)*
 5. **Achados repetidos são agrupados por (NCM + cClassTrib + regra)**, com a
    contagem. Erro de parametrização é sistemático: corrige-se um cadastro, não
    oitocentas notas.

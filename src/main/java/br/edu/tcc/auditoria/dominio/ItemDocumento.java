@@ -6,6 +6,7 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 // Representa um item da nota com os campos de IBS/CBS como vieram. Campo que não veio é Optional vazio, e isso é diferente de zero. Valores são BigDecimal, com as casas decimais mantidas, e não são validados contra faixa.
+// Emenda de 03/10/2026 (D015): ganhou os seis campos do grupo gRed — pRedAliq e pAliqEfet de gIBSUF, gIBSMun e gCBS —, que até essa data não eram lidos, e por isso a R07 não tinha como cobrar o grupo de redução. Eles ficam fora do HashDoItem, por decisão do usuário: nenhuma identidade de apontamento nem tratativa muda.
 public record ItemDocumento(
         int numeroItem,
         Optional<Ncm> ncm,
@@ -21,7 +22,13 @@ public record ItemDocumento(
         Optional<BigDecimal> aliquotaCbs,
         Optional<BigDecimal> valorIbsUf,
         Optional<BigDecimal> valorIbsMunicipal,
-        Optional<BigDecimal> valorCbs) {
+        Optional<BigDecimal> valorCbs,
+        Optional<BigDecimal> reducaoAliquotaIbsUf,
+        Optional<BigDecimal> aliquotaEfetivaIbsUf,
+        Optional<BigDecimal> reducaoAliquotaIbsMunicipal,
+        Optional<BigDecimal> aliquotaEfetivaIbsMunicipal,
+        Optional<BigDecimal> reducaoAliquotaCbs,
+        Optional<BigDecimal> aliquotaEfetivaCbs) {
 
     // Valida que o número do item seja pelo menos 1, que o valor do item exista e que nenhum campo opcional venha nulo.
     public ItemDocumento {
@@ -46,6 +53,12 @@ public record ItemDocumento(
         exigirOptional(valorIbsUf, "valorIbsUf");
         exigirOptional(valorIbsMunicipal, "valorIbsMunicipal");
         exigirOptional(valorCbs, "valorCbs");
+        exigirOptional(reducaoAliquotaIbsUf, "reducaoAliquotaIbsUf");
+        exigirOptional(aliquotaEfetivaIbsUf, "aliquotaEfetivaIbsUf");
+        exigirOptional(reducaoAliquotaIbsMunicipal, "reducaoAliquotaIbsMunicipal");
+        exigirOptional(aliquotaEfetivaIbsMunicipal, "aliquotaEfetivaIbsMunicipal");
+        exigirOptional(reducaoAliquotaCbs, "reducaoAliquotaCbs");
+        exigirOptional(aliquotaEfetivaCbs, "aliquotaEfetivaCbs");
     }
 
     // Indica se o item não trouxe nenhum campo de IBS/CBS, o que é diferente de trazer tudo zerado. Ainda não é usado em produção.
@@ -60,7 +73,13 @@ public record ItemDocumento(
                 && aliquotaCbs.isEmpty()
                 && valorIbsUf.isEmpty()
                 && valorIbsMunicipal.isEmpty()
-                && valorCbs.isEmpty();
+                && valorCbs.isEmpty()
+                && reducaoAliquotaIbsUf.isEmpty()
+                && aliquotaEfetivaIbsUf.isEmpty()
+                && reducaoAliquotaIbsMunicipal.isEmpty()
+                && aliquotaEfetivaIbsMunicipal.isEmpty()
+                && reducaoAliquotaCbs.isEmpty()
+                && aliquotaEfetivaCbs.isEmpty();
     }
 
     // Método auxiliar para verificar se um campo opcional é nulo e lançar uma exceção.

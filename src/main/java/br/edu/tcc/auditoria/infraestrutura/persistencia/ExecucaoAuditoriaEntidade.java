@@ -13,6 +13,7 @@ import jakarta.persistence.MapKeyColumn;
 import jakarta.persistence.MapKeyEnumerated;
 import jakarta.persistence.Table;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -63,8 +64,21 @@ class ExecucaoAuditoriaEntidade {
     @Column(name = "quantidade", nullable = false)
     private Map<String, Integer> achadosPorRegra = new LinkedHashMap<>();
 
+    // V23 (D023): a tolerância de valor da R05 e a origem dela; nulas juntas em execução anterior à V23.
+    @Column(name = "tolerancia_de_valor")
+    private BigDecimal toleranciaDeValor;
+
+    @Column(name = "origem_da_tolerancia")
+    private String origemDaTolerancia;
+
     // Construtor vazio exigido pelo JPA.
     protected ExecucaoAuditoriaEntidade() {
+    }
+
+    // D023: registra a tolerância usada; chamado na gravação, antes de salvar.
+    void registrarTolerancia(BigDecimal quantia, String origem) {
+        this.toleranciaDeValor = quantia;
+        this.origemDaTolerancia = origem;
     }
 
     // Construtor que recebe todos os campos do recibo, com as duas contagens.

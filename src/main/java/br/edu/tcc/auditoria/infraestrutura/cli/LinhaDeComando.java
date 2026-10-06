@@ -1,6 +1,7 @@
 package br.edu.tcc.auditoria.infraestrutura.cli;
 
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaInvalida;
+import br.edu.tcc.auditoria.aplicacao.papeldetrabalho.PapelDeTrabalhoInvalido;
 import br.edu.tcc.auditoria.dominio.excecao.ExcecaoDeDominio;
 import br.edu.tcc.auditoria.infraestrutura.catalogo.ImportacaoDeCatalogoInvalida;
 import br.edu.tcc.auditoria.infraestrutura.lote.OrigemDeLoteInexistente;
@@ -14,6 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 // Classe que roda o comando pedido na linha de comando e define o código de saída. Erro de uso ou recusa com mensagem própria mostra só a mensagem e sai com código 2; só falha inesperada sobe com a pilha inteira.
+// Emenda de 04/10/2026 (D019): a recusa do papel de trabalho passou a ser recusa com mensagem própria. Até essa data subia com a pilha, inclusive "nenhuma auditoria rodou ainda".
 @Component
 class LinhaDeComando implements CommandLineRunner, ExitCodeGenerator {
 
@@ -61,6 +63,7 @@ class LinhaDeComando implements CommandLineRunner, ExitCodeGenerator {
         } catch (OrigemDeLoteInexistente
                  | ImportacaoDeCatalogoInvalida
                  | ConsultaInvalida
+                 | PapelDeTrabalhoInvalido
                  | ExcecaoDeDominio recusa) {
             // Recusas com mensagem própria: o texto basta, e a pilha só esconderia a explicação.
             saida.linha(recusa.getMessage());

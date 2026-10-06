@@ -1,0 +1,75 @@
+body:has(.tela-acuracia-conf){ background:#f4f7f9; }
+
+.tela-acuracia-conf{
+  --ac-cartao:#ffffff;
+  --ac-borda:#e2e8f0;
+  --ac-azul:#2563eb;
+  --ac-texto:#0f1f33;
+  --ac-texto2:#475569;
+  --ac-discreto:#64748b;
+
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color:var(--ac-texto);
+}
+
+.tela-acuracia-conf .ac-cabecalho{ margin:0 0 18px; }
+.tela-acuracia-conf .ac-titulo{ display:flex; align-items:center; gap:10px; }
+.tela-acuracia-conf .ac-titulo h1{ font-size:26px; font-weight:680; margin:0; }
+.tela-acuracia-conf .botao-info{
+  width:20px; height:20px; padding:0; border-radius:50%; flex:none;
+  border:1px solid #cbd5e1; background:#ffffff; cursor:pointer;
+  font:italic 700 11.5px/1 Georgia, "Times New Roman", serif; color:var(--ac-texto2);
+}
+.tela-acuracia-conf .botao-info:hover,
+.tela-acuracia-conf .botao-info[aria-expanded="true"]{ border-color:var(--ac-azul); color:var(--ac-azul); }
+.tela-acuracia-conf .botao-info:focus-visible{ outline:2px solid var(--ac-azul); outline-offset:2px; }
+.tela-acuracia-conf .balao-info{
+  margin:10px 0 0; padding:10px 12px; border-radius:8px; max-width:640px;
+  background:#ffffff; border:1px solid var(--ac-borda); box-shadow:0 4px 12px rgba(15,31,51,.08);
+  font-size:13px; line-height:1.5; color:var(--ac-texto2);
+}
+.tela-acuracia-conf .balao-info[hidden]{ display:none; }
+.tela-acuracia-conf .balao-info p{ margin:0; }
+
+.tela-acuracia-conf .ac-aviso{
+  display:flex; align-items:flex-start; gap:10px;
+  max-width:600px; margin:0 auto 16px; box-sizing:border-box;
+  padding:12px 14px; border-radius:6px; background:#fef3c7; color:#92400e;
+  font-size:13.5px; line-height:1.5;
+}
+.tela-acuracia-conf .ac-aviso-icone{ flex:none; font-size:15px; line-height:1.35; }
+.tela-acuracia-conf .ac-aviso-texto strong{ color:#78350f; }
+
+.tela-acuracia-conf .ac-nota{ max-width:600px; margin:0 auto; font-size:12.5px; color:var(--ac-discreto); }
+
+.tela-acuracia-conf .ac-cartao{
+  max-width:600px; margin:0 auto 24px; box-sizing:border-box;
+  background:var(--ac-cartao); border:1px solid var(--ac-borda); border-radius:12px;
+  box-shadow:0 1px 2px rgba(15,31,51,.04);
+  padding:22px 24px;
+}
+.tela-acuracia-conf .ac-campo{ display:flex; flex-direction:column; gap:6px; margin:0 0 20px; }
+.tela-acuracia-conf .ac-rotulo{ font-size:14px; font-weight:600; color:var(--ac-texto); }
+.tela-acuracia-conf .ac-seletor{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.tela-acuracia-conf .ac-escolhido{ font-size:12.5px; color:var(--ac-discreto); overflow-wrap:anywhere; }
+.tela-acuracia-conf .ac-ajuda{ font-size:12px; line-height:1.45; color:var(--ac-discreto); margin:-2px 0 0; }
+
+.tela-acuracia-conf .ac-arquivo-nativo{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+.tela-acuracia-conf .ac-arquivo-nativo:focus-visible + .ac-botao{ outline:2px solid var(--ac-azul); outline-offset:2px; }
+
+.tela-acuracia-conf .ac-botao{
+  display:inline-block; white-space:nowrap; cursor:pointer;
+  font-family:inherit; font-size:12.5px; font-weight:600; line-height:1.4;
+  padding:8px 16px; border-radius:6px;
+  border:1px solid #d5dde6; background:transparent; color:#334155; text-decoration:none;
+  transition:background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.tela-acuracia-conf .ac-botao:hover{ background:#eef2f7; border-color:#94a3b8; color:#1a365d; }
+.tela-acuracia-conf .ac-botao:focus-visible{ outline:2px solid var(--ac-azul); outline-offset:2px; }
+.tela-acuracia-conf .ac-botao[disabled]{ opacity:.5; cursor:progress; background:transparent; }
+.tela-acuracia-conf .ac-acoes{
+  display:flex; justify-content:flex-end; padding-top:16px; border-top:1px solid var(--ac-borda);
+}

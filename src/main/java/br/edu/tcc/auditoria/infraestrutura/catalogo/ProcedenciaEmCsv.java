@@ -19,9 +19,10 @@ final class ProcedenciaEmCsv {
     private ProcedenciaEmCsv() {
     }
 
-    // Método estático que lê a vigência e a fonte da coluna fonteNormativa.
+    // Método estático que lê a vigência e a fonte da coluna fonteNormativa. Emenda de 04/10/2026 (D022): fonte sem nenhuma letra, como "0", é recusada.
     static ProcedenciaNormativa ler(LinhaCsv linha) {
-        return ler(linha, lida -> lida.textoObrigatorio(COLUNA_FONTE_NORMATIVA));
+        return ler(linha, lida -> TextoQueIdentificaNorma.exigir(
+                lida, COLUNA_FONTE_NORMATIVA, lida.textoObrigatorio(COLUNA_FONTE_NORMATIVA)));
     }
 
     // Método estático que lê a vigência e usa a leitura da fonte que o importador passar. Existe desde 14/09/2026, porque a classificação pode trazer a fonte separada por tributo.

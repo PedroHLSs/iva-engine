@@ -16,11 +16,12 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-// Regra R04: o NCM está em algum anexo, mas a nota foi emitida com cClassTrib de tributação integral (sem benefício)? Gravidade: informativa, porque o sistema só aponta e não aconselha; uma pessoa precisa olhar.
+// Regra R04: o NCM está em algum anexo, mas a nota foi emitida com cClassTrib de tributação integral? Gravidade: informativa, porque o sistema só aponta e não aconselha; uma pessoa precisa olhar.
+// Versão 1.1.0 (30/09/2026): "integral" passou a ser o que o catálogo declara na coluna tributacaoIntegral. Na 1.0.0 era deduzido de "sem benefício e sem redução informada", e um código com redução zero escrita no CSV deixava de ser integral, de modo que a regra respondia conforme justamente no caso que ela existe para apontar.
 public final class RegraTratamentoDeAnexoNaoAproveitado extends RegraDeItem {
 
     public static final String ID = "R04";
-    public static final String VERSAO = "1.0.0";
+    public static final String VERSAO = "1.1.0";
 
     private final ProcedenciaNormativa cobertura;
 
@@ -83,8 +84,15 @@ public final class RegraTratamentoDeAnexoNaoAproveitado extends RegraDeItem {
                             .formatted(ncm.get().valor(), codigo.get().valor()));
         }
 
-        ClassificacaoTributaria classificacao = registro.get();
-        if (!ehTributacaoIntegral(classificacao)) {
+        Optional<Boolean> integral = registro.get().tributacaoIntegral();
+        if (integral.isEmpty()) {
+            return naoAvaliada(item, documento,
+                    ("O NCM %s consta de anexo no catálogo, mas a carga não declara se o cClassTrib \"%s\" é "
+                            + "de tributação integral (coluna tributacaoIntegral em branco ou ausente); não há "
+                            + "como saber se o tratamento foi aproveitado.")
+                            .formatted(ncm.get().valor(), codigo.get().valor()));
+        }
+        if (!integral.get()) {
             return conforme(item, documento);
         }
 
@@ -110,10 +118,5 @@ public final class RegraTratamentoDeAnexoNaoAproveitado extends RegraDeItem {
                 ValorEmRisco.naoCalculavel(
                         "Quantificar o que deixou de ser aproveitado exigiria saber que tratamento o anexo "
                                 + "confere, e o catálogo traz apenas o vínculo e o rótulo."));
-    }
-
-    // Método auxiliar que diz se o código é de tributação integral: o catálogo não marca como benefício e não informa redução.
-    private static boolean ehTributacaoIntegral(ClassificacaoTributaria classificacao) {
-        return !classificacao.indicadorDeBeneficio() && classificacao.percentualReducao().isEmpty();
     }
 }

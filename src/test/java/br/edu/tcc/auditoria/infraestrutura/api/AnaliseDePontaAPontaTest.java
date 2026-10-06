@@ -1,5 +1,7 @@
 package br.edu.tcc.auditoria.infraestrutura.api;
 
+import br.edu.tcc.auditoria.aplicacao.identidade.Perfil;
+import br.edu.tcc.auditoria.aplicacao.identidade.ServicoDeUsuarios;
 import br.edu.tcc.auditoria.aplicacao.catalogo.CargaDeCatalogo;
 import br.edu.tcc.auditoria.aplicacao.catalogo.ServicoDeImportacaoDeCatalogo;
 import br.edu.tcc.auditoria.aplicacao.catalogo.Natureza;
@@ -100,6 +102,10 @@ class AnaliseDePontaAPontaTest {
             "classificacao_tributaria", "registro_ncm", "item_anexo", "aliquota_vigente",
             "cobertura_catalogo", "natureza_da_carga", "carga_catalogo");
 
+    // Etapa 12: toda chamada à API exige sessão; o teste entra como administrador, que alcança todos os endpoints lidos aqui.
+    @Autowired
+    private ServicoDeUsuarios usuariosDaSessao;
+
     @Autowired
     private TestRestTemplate rest;
 
@@ -120,6 +126,7 @@ class AnaliseDePontaAPontaTest {
     @BeforeEach
     void prepararBanco() {
         jdbc.execute("truncate table " + TABELAS + " cascade");
+        SessaoDeTeste.entrarComo(rest, usuariosDaSessao, Perfil.ADMINISTRADOR);
         importacaoDeCatalogo.importar(catalogoFicticio("carga-ficticia"));
     }
 
@@ -912,8 +919,9 @@ class AnaliseDePontaAPontaTest {
         assertThat(jdbc.queryForList(
                 "select tabela || '=' || natureza from natureza_da_carga order by tabela",
                 String.class))
-                .describedAs("o catálogo desta suíte declara duas tabelas, as duas fictícias")
-                .containsExactly("CLASSIFICACAO_TRIBUTARIA=FICTICIO", "NCM=FICTICIO");
+                // D021 (04/10/2026): a cobertura entrou na natureza.
+                .describedAs("o catálogo desta suíte declara duas tabelas e a cobertura, todas fictícias")
+                .containsExactly("CLASSIFICACAO_TRIBUTARIA=FICTICIO", "COBERTURA=FICTICIO", "NCM=FICTICIO");
     }
 
     /**

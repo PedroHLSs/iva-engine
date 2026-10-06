@@ -16,10 +16,26 @@ public record RespostaDaExecucao(
         Map<String, Integer> achadosPorSeveridade,
         Desfechos desfechos,
         List<PorRegra> porRegra,
-        int itensComAvaliacaoNaoConcluida) {
+        int itensComAvaliacaoNaoConcluida,
+        FaixaDeNatureza natureza,
+        ToleranciaExposta toleranciaDeValor) {
+
+    // Emenda de 04/10/2026 (D023): traz a tolerância de valor da R05 que a execução usou, com a origem.
+
+    // Emenda de 04/10/2026 (D021): traz a faixa de procedência do catálogo da execução. Até essa data a visão técnica mostrava apontamento CRÍTICO citando fonte fictícia sem aviso nenhum.
 
     // Valida a execução: exige identificador, data e hora, resultados, uma linha por regra e contagem por gravidade, e confere que a soma das regras bate com o total.
     public RespostaDaExecucao {
+        if (toleranciaDeValor == null) {
+            throw new RespostaInvalida(
+                    "A resposta traz a tolerância de valor da R05 que a execução usou, ou o motivo de não haver "
+                            + "(D023): duas execuções com tolerâncias diferentes dão resultados diferentes.");
+        }
+        if (natureza == null) {
+            throw new RespostaInvalida(
+                    "Toda resposta de resultado sai com a faixa de procedência do catálogo (D021). Dado de "
+                            + "demonstração sem aviso é afirmação falsa sobre a lei.");
+        }
         if (id == null || dataHora == null) {
             throw new RespostaInvalida("A execução precisa de identificador e data e hora.");
         }

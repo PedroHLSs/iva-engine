@@ -82,9 +82,10 @@ public record ProdutoExposto(
             String regraVersao,
             String motivoDaVersaoAusente,
             String estado,
-            String rotuloDoEstado) {
+            String rotuloDoEstado,
+            boolean recolhidaPorPadrao) {
 
-        // Valida que haja regra, nome ou motivo, versão ou motivo, estado e rótulo.
+        // Valida que haja regra, nome ou motivo, versão ou motivo, estado e rótulo; e, desde a Etapa 13, que só o estado sem divergência nasça recolhido.
         public VerificacaoExposta {
             if (regraId == null || regraId.isBlank()) {
                 throw new RespostaInvalida("A verificação precisa do identificador da regra.");
@@ -96,6 +97,13 @@ public record ProdutoExposto(
                 throw new RespostaInvalida(
                         "A verificação da regra %s precisa do estado e do rótulo dele."
                                 .formatted(regraId));
+            }
+            // Etapa 13: só "sem divergência identificada" pode nascer recolhido; pendência recolhida seria pendência escondida.
+            if (recolhidaPorPadrao && !"SEM_DIVERGENCIA_IDENTIFICADA".equals(estado)) {
+                throw new RespostaInvalida(
+                        ("O estado %s não pode nascer recolhido. Só o que não tem divergência nasce "
+                                + "recolhido; divergência e verificação não concluída nascem abertas.")
+                                .formatted(estado));
             }
         }
     }

@@ -1,30 +1,12 @@
-/* ---------------------------------------------------------------------------
-   Tela 1 - Execucoes.
-
-   POR QUE CADA CARTAO FAZ UMA SEGUNDA CHAMADA
-
-   GET /api/execucoes traz a identificacao da rodada e o total de apontamentos,
-   mas NAO traz nao avaliados nem conformes. Uma lista montada so com isso
-   escreveria "43 apontamentos" e pararia ali - e uma execucao com 4
-   apontamentos e 7 nao avaliados apareceria como lote quase limpo, que e
-   exatamente o que esta interface existe para nao deixar acontecer.
-
-   Entao cada linha busca o detalhe da propria execucao, que tem os tres
-   desfechos. Enquanto o detalhe nao chega, o cartao escreve "lendo..."; se
-   falhar, escreve que nao foi possivel ler. Em nenhum dos dois casos ele mostra
-   zero, e em nenhum dos dois ele some com a categoria.
-   --------------------------------------------------------------------------- */
-
 import { el, trocar } from '../dom.js';
-import { dataHora, inteiro, severidade } from '../formato.js';
-import { identificacao, painelDaPlanilha, falha } from '../comum.js';
+import { dataHora, inteiro } from '../formato.js';
+import { faixaDeNatureza, identificacao, painelDaPlanilha, falha } from '../comum.js';
 import { endereco } from '../roteador.js';
-import { barraDeDesfechos } from '../svg.js';
+import { barraPlana, botaoDeInformacao } from '../painel.js';
 import * as api from '../api.js';
 
 const LIMITES = [25, 50, 100, 200];
 
-/** Busca os detalhes com paralelismo limitado, para nao abrir 200 conexoes. */
 async function comDetalhes(execucoes, aoChegar) {
   const fila = execucoes.slice();
   const trabalhadores = new Array(Math.min(4, fila.length)).fill(null).map(async () => {
@@ -57,6 +39,7 @@ export async function desenhar(tela, parametros) {
   }
 
   const seletor = el('select', {
+    id: 'quantas-mostrar',
     aoMudar: (evento) => {
       window.location.hash = endereco('execucoes', null, { limite: evento.target.value });
     },
@@ -66,23 +49,26 @@ export async function desenhar(tela, parametros) {
 
   const corpo = el('div', {});
   trocar(tela, [
-    el('h1', { texto: 'Execucoes' }),
-    el('p', {
-      classe: 'sub',
-      texto: 'Da mais recente para a mais antiga. Cada rodada aparece com a identificacao '
-        + 'inteira - catalogo, conjunto de regras e hash da entrada - porque e o que permite '
-        + 'comparar duas rodadas sem abrir as duas.',
-    }),
-    el('div', { classe: 'filtros' }, [
-      el('div', { classe: 'filtro' }, [
-        el('label', { texto: 'quantas mostrar' }),
-        seletor,
+    el('div', { classe: 'cabecalho-da-pagina' }, [
+      el('div', {}, [
+        el('h1', { texto: 'Execucoes' }),
+        el('p', {
+          classe: 'sub',
+          texto: 'Da mais recente para a mais antiga, com catalogo, conjunto de regras e hash da '
+            + 'entrada de cada rodada, para comparar duas sem abrir as duas.',
+        }),
       ]),
-      el('p', {
-        classe: 'contagem-do-recorte',
-        texto: 'mostrando ' + resposta.quantidade + ' de um recorte de ate ' + resposta.limite
-          + '. Se as duas contagens forem iguais, pode haver rodadas mais antigas fora da lista.',
-      }),
+      el('div', { classe: 'filtros barra-de-ferramentas' }, [
+        el('div', { classe: 'filtro' }, [
+          el('label', { for: 'quantas-mostrar', texto: 'quantas mostrar' }),
+          seletor,
+        ]),
+        el('p', {
+          classe: 'contagem-do-recorte',
+          texto: 'mostrando ' + resposta.quantidade + ' de um recorte de ate ' + resposta.limite
+            + '. Se as duas contagens forem iguais, pode haver rodadas mais antigas fora da lista.',
+        }),
+      ]),
     ]),
     corpo,
   ]);
@@ -117,12 +103,7 @@ function desenharCartao(execucao) {
     el('p', { classe: 'carregando', texto: 'lendo os tres desfechos desta rodada...' }),
   ]);
 
-  const porSeveridade = el('div', { classe: 'acoes' },
-    Object.entries(execucao.achadosPorSeveridade).map(([nome, quantidade]) => el('span', {
-      classe: 'chip chip-neutro',
-    }, [severidade(nome), ' ' + inteiro(quantidade)])));
-
-  const no = el('section', { classe: 'cartao' }, [
+  const no = el('section', { classe: 'cartao cartao-execucao' }, [
     el('div', { classe: 'cartao-titulo' }, [
       el('h2', { texto: dataHora(execucao.dataHora) }),
       el('div', { classe: 'acoes' }, [
@@ -135,49 +116,57 @@ function desenharCartao(execucao) {
       ]),
     ]),
     planilha.painel,
+    faixaDeNatureza(execucao.natureza),
     identificacao(execucao),
     desfechos,
     el('h3', { texto: 'apontamentos por severidade' }),
-    porSeveridade,
+    pilulasDeSeveridade(execucao.achadosPorSeveridade),
   ]);
 
   return { no, desfechos };
 }
 
-/**
- * Os tres desfechos do cartao.
- *
- * Nao avaliado nunca aparece somado a conforme, e conforme nunca aparece sem a
- * conta que o produziu: ele nao esta gravado em coluna nenhuma, e numero sem
- * procedencia numa auditoria e numero que ninguem confere.
- */
+function pilulasDeSeveridade(porSeveridade) {
+  const entradas = Object.entries(porSeveridade || {});
+  if (entradas.length === 0) {
+    return el('p', { classe: 'nota', texto: 'nenhum apontamento nesta rodada' });
+  }
+  return el('ul', { classe: 'pilulas', 'aria-label': 'apontamentos por severidade' },
+    entradas.map(([nome, quantidade]) => el('li', { classe: 'pilula pilula-' + nome }, [
+      el('span', { classe: 'pilula-nome', texto: nome }),
+      el('span', { classe: 'pilula-numero', texto: inteiro(quantidade) }),
+    ])));
+}
+
 function desenharDesfechos(detalhe) {
   const d = detalhe.desfechos;
   const conforme = d.conforme.valor === null ? null : Number(d.conforme.valor);
 
-  const linha = (classe, rotulo, valor, procedencia, motivo) => el('div', {
-    classe: 'desfecho ' + classe,
-  }, [
-    el('div', { classe: 'rotulo', texto: rotulo }),
-    valor === null
-      ? el('div', { classe: 'numero ausente', texto: 'nao derivavel' })
-      : el('div', { classe: 'numero', texto: inteiro(valor) }),
-    procedencia ? el('p', { classe: 'procedencia', texto: procedencia }) : null,
-    motivo ? el('p', { classe: 'explicacao', texto: motivo }) : null,
-  ]);
+  const indicador = (classe, rotulo, valor, explicacao, motivoAVista) => {
+    const info = explicacao ? botaoDeInformacao('Detalhe de ' + rotulo, explicacao) : null;
+    return el('div', { classe: 'desfecho ' + classe }, [
+      el('div', { classe: 'rotulo' }, [rotulo, info ? info.botao : null]),
+      valor === null
+        ? el('div', { classe: 'numero ausente', texto: 'nao derivavel' })
+        : el('div', { classe: 'numero', texto: inteiro(valor) }),
+      motivoAVista ? el('p', { classe: 'explicacao', texto: motivoAVista }) : null,
+      info ? info.balao : null,
+    ]);
+  };
 
   return [
     el('div', { classe: 'desfechos' }, [
-      linha('d-achado', 'apontamentos', d.achado, null, null),
-      linha('d-naoavaliado', 'nao avaliados', d.naoAvaliado, null,
+      indicador('d-achado', 'apontamentos', d.achado, null, null),
+      indicador('d-naoavaliado', 'nao avaliados', d.naoAvaliado,
         d.naoAvaliado > 0
           ? 'atingindo ' + inteiro(detalhe.itensComAvaliacaoNaoConcluida) + ' item(ns) distinto(s)'
-          : 'toda avaliacao concluiu nesta rodada'),
-      linha('d-conforme', 'conformes', conforme, d.conforme.derivacao, d.conforme.motivoDaAusencia),
+          : 'toda avaliacao concluiu nesta rodada',
+        null),
+      indicador('d-conforme', 'conformes', conforme, d.conforme.derivacao, d.conforme.motivoDaAusencia),
     ]),
-    barraDeDesfechos({ achado: d.achado, naoAvaliado: d.naoAvaliado, conforme }),
+    barraPlana({ achado: d.achado, naoAvaliado: d.naoAvaliado, conforme }),
     el('p', {
-      classe: 'nota',
+      classe: 'nota nota-da-barra',
       texto: 'Total de avaliacoes: ' + inteiro(d.avaliacoesProduzidas) + ' - ' + d.comoFoiObtido,
     }),
   ];

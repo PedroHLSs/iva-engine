@@ -32,6 +32,7 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalog
     private final RegistroNcmJpa ncms;
     private final ItemAnexoJpa itensDeAnexo;
     private final AliquotaVigenteJpa aliquotas;
+    private final AnexoDeclaradoJpa anexosDeclarados;
 
     // Construtor que recebe os repositórios de cada tabela do catálogo.
     ProvedorDeCatalogoNoBanco(
@@ -41,7 +42,8 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalog
             ClassificacaoTributariaJpa classificacoes,
             RegistroNcmJpa ncms,
             ItemAnexoJpa itensDeAnexo,
-            AliquotaVigenteJpa aliquotas) {
+            AliquotaVigenteJpa aliquotas,
+            AnexoDeclaradoJpa anexosDeclarados) {
         this.cargas = cargas;
         this.coberturas = coberturas;
         this.naturezas = naturezas;
@@ -49,6 +51,7 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalog
         this.ncms = ncms;
         this.itensDeAnexo = itensDeAnexo;
         this.aliquotas = aliquotas;
+        this.anexosDeclarados = anexosDeclarados;
     }
 
     // Carrega a carga mais recente; recusa se nenhuma foi importada.
@@ -99,7 +102,7 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalog
                                 .toList()));
     }
 
-    // Método auxiliar que lê a cobertura declarada da carga, tabela por tabela.
+    // Método auxiliar que lê a cobertura declarada da carga, tabela por tabela, e os anexos declarados; carga sem nenhum anexo declarado (como as gravadas antes de 01/10/2026) volta com a lista vazia.
     private CoberturaDoCatalogo cobertura(UUID cargaId, String versao) {
         Map<String, ProcedenciaNormativa> porTabela = new LinkedHashMap<>();
         for (CoberturaCatalogoEntidade linha : coberturas.findByCargaId(cargaId)) {
@@ -109,7 +112,8 @@ class ProvedorDeCatalogoNoBanco implements ProvedorDeCatalogo, ProvedorDeCatalog
         return new CoberturaDoCatalogo(
                 exigir(porTabela, TabelaNormativa.CLASSIFICACAO_TRIBUTARIA, versao),
                 exigir(porTabela, TabelaNormativa.NCM, versao),
-                exigir(porTabela, TabelaNormativa.ITEM_ANEXO, versao));
+                exigir(porTabela, TabelaNormativa.ITEM_ANEXO, versao),
+                anexosDeclarados.findByCargaId(cargaId).stream().map(AnexoDeclaradoEntidade::paraDominio).toList());
     }
 
     // Método auxiliar que exige a cobertura de uma tabela; recusa carga sem ela.

@@ -1,5 +1,6 @@
 package br.edu.tcc.auditoria.aplicacao.papeldetrabalho;
 
+import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
 import br.edu.tcc.auditoria.aplicacao.consulta.AchadoRegistrado;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeAchadosDaExecucao;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeDocumentos;
@@ -144,7 +145,8 @@ class MontadorDePapelDeTrabalhoTest {
                 execucaoId -> List.of(achadoAberto()),
                 execucaoId -> List.of(),
                 chaves -> Map.of(),
-                chave -> new IdentificadorPseudonimizado(PSEUDONIMO));
+                chave -> new IdentificadorPseudonimizado(PSEUDONIMO),
+                execucaoId -> Optional.of(List.of()), execucaoId -> Optional.of(0), versao -> NaturezaDaCarga.naoDeclarada(), execucaoId -> Optional.empty());
 
         assertThatThrownBy(() -> montador.montar(execucaoCom(1)))
                 .isInstanceOf(PapelDeTrabalhoInvalido.class)
@@ -157,7 +159,8 @@ class MontadorDePapelDeTrabalhoTest {
                 execucaoId -> List.of(),
                 execucaoId -> List.of(),
                 chaves -> Map.of(),
-                chave -> new IdentificadorPseudonimizado(PSEUDONIMO));
+                chave -> new IdentificadorPseudonimizado(PSEUDONIMO),
+                execucaoId -> Optional.of(List.of()), execucaoId -> Optional.of(0), versao -> NaturezaDaCarga.naoDeclarada(), execucaoId -> Optional.empty());
 
         assertThatThrownBy(() -> montador.montar(null))
                 .isInstanceOf(PapelDeTrabalhoInvalido.class);
@@ -174,7 +177,8 @@ class MontadorDePapelDeTrabalhoTest {
                 consultaDeAchados,
                 consultaDeNaoAvaliadas,
                 consultaDeDocumentos,
-                chave -> new IdentificadorPseudonimizado(PSEUDONIMO))
+                chave -> new IdentificadorPseudonimizado(PSEUDONIMO),
+                execucaoId -> Optional.of(List.of()), execucaoId -> Optional.of(0), versao -> NaturezaDaCarga.naoDeclarada(), execucaoId -> Optional.empty())
                 .montar(execucaoCom(achados.size()));
     }
 

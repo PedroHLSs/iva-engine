@@ -1,6 +1,8 @@
 package br.edu.tcc.auditoria.infraestrutura.api;
 
+import br.edu.tcc.auditoria.aplicacao.catalogo.ConsultaDaNaturezaDaCarga;
 import br.edu.tcc.auditoria.aplicacao.consulta.AchadoRegistrado;
+import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDaToleranciaDaExecucao;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeAchadosDaExecucao;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeDocumentos;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeExecucoes;
@@ -38,6 +40,8 @@ import java.util.TreeSet;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+// Emenda de 04/10/2026 (D021): toda resposta leva a faixa de procedência do catálogo da execução, lida da mesma consulta que a conferência usa.
+// Emenda de 04/10/2026 (D023): a execução, a lista de execuções, os apontamentos e os não avaliados levam a tolerância de valor da R05 que a execução usou, com a origem, ou o motivo de ela não ter sido registrada.
 // Classe que converte o que as consultas de leitura devolvem nas respostas da API das execuções. Não cria caminho novo até o banco, e os motivos de não avaliação são agrupados pelo mesmo montador do papel de trabalho, para a planilha e a API contarem igual.
 @Component
 class MontadorDeRespostas {
@@ -49,6 +53,8 @@ class MontadorDeRespostas {
     private final PseudonimizadorDeChave pseudonimizador;
     private final MontadorDePapelDeTrabalho papelDeTrabalho;
     private final PoliticaDeExposicao politica;
+    private final ConsultaDaNaturezaDaCarga naturezas;
+    private final ConsultaDaToleranciaDaExecucao tolerancias;
 
     // Construtor que recebe as consultas de leitura, o pseudonimizador, o montador do papel de trabalho e a política de exposição.
     MontadorDeRespostas(
@@ -58,7 +64,9 @@ class MontadorDeRespostas {
             ConsultaDeDocumentos documentos,
             PseudonimizadorDeChave pseudonimizador,
             MontadorDePapelDeTrabalho papelDeTrabalho,
-            PoliticaDeExposicao politica) {
+            PoliticaDeExposicao politica,
+            ConsultaDaNaturezaDaCarga naturezas,
+            ConsultaDaToleranciaDaExecucao tolerancias) {
         this.execucoes = execucoes;
         this.achadosDaExecucao = achadosDaExecucao;
         this.naoAvaliadas = naoAvaliadas;
@@ -66,12 +74,19 @@ class MontadorDeRespostas {
         this.pseudonimizador = pseudonimizador;
         this.papelDeTrabalho = papelDeTrabalho;
         this.politica = politica;
+        this.naturezas = naturezas;
+        this.tolerancias = tolerancias;
+    }
+
+    // Método auxiliar que monta a faixa de procedência do catálogo de uma execução (D021).
+    private FaixaDeNatureza faixaDe(ExecucaoAuditoria execucao) {
+        return FaixaDeNatureza.de(naturezas.daVersao(execucao.versaoCatalogo()), execucao.versaoCatalogo());
     }
 
     // Devolve as execuções mais recentes, resumidas.
     RespostaDeExecucoes execucoes(int limite) {
         List<ExecucaoResumida> resumidas = execucoes.ultimas(limite).stream()
-                .map(MontadorDeRespostas::resumir)
+                .map(this::resumir)
                 .toList();
         return RespostaDeExecucoes.de(resumidas, limite);
     }
@@ -107,7 +122,9 @@ class MontadorDeRespostas {
                                 naoAvaliado,
                                 "avaliacoesProduzidas")),
                 porRegra(execucao, papel.motivosAgrupados()),
-                papel.itensNaoAvaliados());
+                papel.itensNaoAvaliados(),
+                faixaDe(execucao),
+                ToleranciaExposta.de(tolerancias.daExecucao(execucao.id())));
     }
 
     // Devolve uma página dos achados de uma execução, filtrados por regra, gravidade e situação da tratativa.
@@ -119,7 +136,7 @@ class MontadorDeRespostas {
             int pagina,
             int tamanho) {
 
-        exigirExecucao(id);
+        ExecucaoAuditoria execucao = exigirExecucao(id);
 
         List<AchadoRegistrado> filtrados = achadosDaExecucao.daExecucao(id).stream()
                 .filter(registrado -> regraId
@@ -146,14 +163,16 @@ class MontadorDeRespostas {
                         regraId.orElse(null),
                         severidade.map(Severidade::name).orElse(null),
                         status.map(StatusDeTratativa::name).orElse(null)),
-                daPagina.stream().map(registrado -> expor(registrado, dados)).toList());
+                daPagina.stream().map(registrado -> expor(registrado, dados)).toList(),
+                faixaDe(execucao),
+                ToleranciaExposta.de(tolerancias.daExecucao(id)));
     }
 
     // Devolve uma página dos não avaliados de uma execução, podendo filtrar por regra.
     RespostaDeNaoAvaliados naoAvaliados(
             UUID id, Optional<String> regraId, int pagina, int tamanho) {
 
-        exigirExecucao(id);
+        ExecucaoAuditoria execucao = exigirExecucao(id);
 
         List<NaoAvaliadaRegistrada> filtradas = naoAvaliadas.daExecucao(id).stream()
                 .filter(registrada -> regraId
@@ -171,7 +190,9 @@ class MontadorDeRespostas {
                 id.toString(),
                 PaginaExposta.de(pagina, tamanho, filtradas.size()),
                 new FiltroExposto(regraId.orElse(null), null, null),
-                daPagina.stream().map(registrada -> expor(registrada, dados)).toList());
+                daPagina.stream().map(registrada -> expor(registrada, dados)).toList(),
+                faixaDe(execucao),
+                ToleranciaExposta.de(tolerancias.daExecucao(id)));
     }
 
     // Método auxiliar que busca a execução; recusa se ela não existir.
@@ -180,7 +201,7 @@ class MontadorDeRespostas {
     }
 
     // Método auxiliar que converte a execução para a linha da listagem.
-    private static ExecucaoResumida resumir(ExecucaoAuditoria execucao) {
+    private ExecucaoResumida resumir(ExecucaoAuditoria execucao) {
         return new ExecucaoResumida(
                 execucao.id().toString(),
                 execucao.dataHora(),
@@ -190,7 +211,9 @@ class MontadorDeRespostas {
                 execucao.quantidadeDocumentos(),
                 execucao.quantidadeItens(),
                 execucao.quantidadeDeAchados(),
-                porSeveridade(execucao));
+                porSeveridade(execucao),
+                faixaDe(execucao),
+                ToleranciaExposta.de(tolerancias.daExecucao(execucao.id())));
     }
 
     // Método auxiliar que conta os achados por gravidade, na ordem do enum. Usa LinkedHashMap, e não Map.copyOf, para a ordem não mudar de uma chamada para outra.

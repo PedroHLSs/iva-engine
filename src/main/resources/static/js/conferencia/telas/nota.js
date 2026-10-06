@@ -1,90 +1,52 @@
-/* ---------------------------------------------------------------------------
-   Resultado de uma nota: identificacao, os quatro numeros, e os produtos.
-   --------------------------------------------------------------------------- */
-
 import { el, trocar } from '../../dom.js';
 import { data, documentoCurto, inteiro } from '../../formato.js';
 import * as api from '../api.js';
-import {
-  avisoDeUso, blocoDaLeitura, cabecalhoDoResultado, produtosComPendencia,
-  quadroDeEstados, selo, valorOuMotivo,
-} from '../pecas.js';
-import { enderecoDeEnvio, enderecoDoProduto } from '../roteador.js';
+import { selo, valorOuMotivo } from '../pecas.js';
+import { botaoDeInformacao } from '../../painel.js';
+import { enderecoDoProduto } from '../roteador.js';
 
 const TAMANHO_DA_PAGINA = 50;
 
-export async function desenhar(raiz, resposta, rota) {
-  const corpo = el('div', {});
-
-  trocar(raiz, [
-    cabecalhoDoResultado(
-      'Resultado da nota',
-      null,
-      resposta.natureza,
-    ),
-    corpo,
-  ]);
-
-  await desenharPagina(corpo, resposta, rota, 0);
-}
-
-async function desenharPagina(corpo, resposta, rota, pagina) {
-  trocar(corpo, [el('p', { classe: 'carregando', texto: 'Carregando os produtos...' })]);
-
-  const listagem = await api.produtos(rota.analiseId, pagina, TAMANHO_DA_PAGINA);
-  const conferencia = resposta.conferencia;
-  const primeiro = listagem.produtos[0];
-
-  trocar(corpo, [
-    primeiro ? identificacaoDoDocumento(primeiro.documento) : null,
-
-    quadroDeEstados(conferencia.produtosPorSituacao, 'Situacao dos produtos'),
-    produtosComPendencia(
-      conferencia.produtosComAlgumaVerificacaoNaoConcluida,
-      conferencia.quantidadeDeProdutos,
-    ),
-    el('p', { classe: 'nota', texto: conferencia.comoFoiObtido }),
-
-    quadroDeEstados(conferencia.verificacoesPorEstado, 'Verificacoes, regra a regra'),
-
-    el('section', { classe: 'bloco' }, [
-      el('h2', { texto: 'Produtos' }),
-      tabelaDeProdutos(listagem.produtos, rota.analiseId),
-      paginacao(listagem.pagina, (destino) => desenharPagina(corpo, resposta, rota, destino)),
-    ]),
-
-    blocoDaLeitura(resposta.leitura),
-
-    el('div', { classe: 'acoes' }, [
-      el('a', { classe: 'botao', href: enderecoDeEnvio(), texto: 'Enviar outra nota' }),
-    ]),
-    avisoDeUso(resposta.aviso),
+export async function painelDeProdutos(painel, analiseId, pagina = 0) {
+  trocar(painel, [el('p', { classe: 'carregando', role: 'status', texto: 'Carregando os produtos...' })]);
+  const listagem = await api.produtos(analiseId, pagina, TAMANHO_DA_PAGINA);
+  trocar(painel, [
+    el('h2', { texto: 'Produtos' }),
+    tabelaDeProdutos(listagem.produtos, analiseId),
+    paginacao(listagem.pagina, (destino) => painelDeProdutos(painel, analiseId, destino)),
   ]);
 }
 
-/**
- * A nota, identificada sem identificar ninguem.
- *
- * Modelo, serie, numero, data e UF localizam o documento no sistema da empresa.
- * A chave de acesso so aparece se a instalacao a expuser — os digitos do meio
- * dela sao o CNPJ do emitente.
- */
-function identificacaoDoDocumento(documento) {
+export function identificacaoDoDocumento(documento) {
+  const par = (chave, conteudo, classe) => el('div', { classe: 'meta-par' }, [
+    el('dt', { texto: chave }),
+    el('dd', { classe: classe || null }, [].concat(conteudo)),
+  ]);
   return el('section', { classe: 'bloco' }, [
     el('h2', { texto: 'Documento' }),
-    el('dl', { classe: 'identificacao' }, [
-      el('dt', { texto: 'modelo / serie / numero' }),
-      el('dd', { texto: documentoCurto(documento) }),
-      el('dt', { texto: 'emissao' }),
-      el('dd', { texto: data(documento.dataEmissao) }),
-      el('dt', { texto: 'UF do emitente' }),
-      el('dd', { texto: documento.ufEmitente }),
-      el('dt', { texto: 'chave de acesso' }),
-      el('dd', {}, [valorOuMotivo(documento.chaveAcesso, documento.motivoDaChaveOmitida)]),
-      el('dt', { texto: 'pseudonimo' }),
-      el('dd', { classe: 'mono pseudonimo', texto: documento.pseudonimo }),
+    el('dl', { classe: 'metadados' }, [
+      par('modelo / serie / numero', documentoCurto(documento)),
+      par('emissao', data(documento.dataEmissao)),
+      par('UF do emitente', valorOuMotivo(documento.ufEmitente, null)),
+      par('chave de acesso', chaveDeAcesso(documento), documento.chaveAcesso ? 'mono quebra-tudo' : null),
+      par('pseudonimo', documento.pseudonimo, 'mono quebra-tudo'),
     ]),
   ]);
+}
+
+export function chaveDeAcesso(documento) {
+  if (documento.chaveAcesso) {
+    return documento.chaveAcesso;
+  }
+  if (!documento.motivoDaChaveOmitida) {
+    return valorOuMotivo(null, null);
+  }
+  const info = botaoDeInformacao('Por que a chave nao aparece', el('p', { texto: documento.motivoDaChaveOmitida }));
+  info.botao.textContent = '?';
+  return [
+    el('span', { classe: 'valor-com-info' }, [el('span', { classe: 'ausente', texto: 'nao exposta nesta instalacao' }), info.botao]),
+    info.balao,
+  ];
 }
 
 function tabelaDeProdutos(produtos, analiseId) {
@@ -93,30 +55,30 @@ function tabelaDeProdutos(produtos, analiseId) {
   }
 
   const linhas = produtos.map((produto) => el('tr', {}, [
-    el('td', { texto: String(produto.numeroItem) }),
-    el('td', {}, [valorOuMotivo(produto.ncm, produto.motivoDoNcmAusente)]),
-    el('td', {}, [valorOuMotivo(produto.cClassTrib, produto.motivoDoClassTribAusente)]),
-    el('td', { classe: 'numero mono', texto: produto.valorDoProduto }),
-    el('td', {}, [
+    el('td', { classe: 'coluna-situacao' }, [
       selo(produto.situacao, produto.rotuloDaSituacao, produto.explicacaoDaSituacao),
       produto.reprocessadoDepoisDestaAnalise
         ? el('p', { classe: 'nota aviso-reprocesso', texto: produto.avisoDeReprocessamento })
         : null,
     ]),
+    el('td', { texto: String(produto.numeroItem) }),
+    el('td', {}, [valorOuMotivo(produto.ncm, produto.motivoDoNcmAusente)]),
+    el('td', {}, [valorOuMotivo(produto.cClassTrib, produto.motivoDoClassTribAusente)]),
+    el('td', { classe: 'numero mono', texto: produto.valorDoProduto }),
     el('td', {}, [
-      el('a', { href: enderecoDoProduto(analiseId, produto.endereco), texto: 'detalhe' }),
+      el('a', { classe: 'botao-detalhe', href: enderecoDoProduto(analiseId, produto.endereco), texto: 'detalhe' }),
     ]),
   ]));
 
   return el('div', { classe: 'rolagem' }, [
     el('table', { classe: 'tabela' }, [
       el('thead', {}, [el('tr', {}, [
-        el('th', { texto: 'item' }),
-        el('th', { texto: 'NCM' }),
-        el('th', { texto: 'tratamento declarado (cClassTrib)' }),
-        el('th', { classe: 'numero', texto: 'valor do produto' }),
-        el('th', { texto: 'situacao' }),
-        el('th', { texto: '' }),
+        el('th', { scope: 'col', texto: 'situacao' }),
+        el('th', { scope: 'col', texto: 'item' }),
+        el('th', { scope: 'col', texto: 'NCM' }),
+        el('th', { scope: 'col', texto: 'tratamento declarado (cClassTrib)' }),
+        el('th', { scope: 'col', classe: 'numero', texto: 'valor do produto' }),
+        el('th', { scope: 'col', texto: 'detalhe' }),
       ])]),
       el('tbody', {}, linhas),
     ]),

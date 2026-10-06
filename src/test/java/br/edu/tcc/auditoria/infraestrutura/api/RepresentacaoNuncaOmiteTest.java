@@ -234,7 +234,9 @@ class RepresentacaoNuncaOmiteTest {
                 null,
                 null,
                 new PassoExposto.ExplicacaoExposta(
-                        "DERIVACAO", List.of(), null, null, null, "conta fictícia")))
+                        "DERIVACAO", List.of(), null, null, null, "conta fictícia"),
+                // Etapa 13: o campo novo não muda o que este teste confere.
+                true))
                 .isInstanceOf(RespostaInvalida.class)
                 .hasMessageContaining("não grava avaliação conforme");
     }
@@ -254,7 +256,7 @@ class RepresentacaoNuncaOmiteTest {
                 "POSSIVEL_DIVERGENCIA", "Possível divergência", "explicação fictícia",
                 "SOMENTE_CLASSTRIB", "rótulo fictício",
                 1, 1, "10.00", "valor dos produtos envolvidos",
-                quatroEstados(), 0))
+                quatroEstados(), 0, false))
                 .isInstanceOf(RespostaInvalida.class)
                 .hasMessageContaining("Componente vazio e mudo");
     }
@@ -266,7 +268,7 @@ class RepresentacaoNuncaOmiteTest {
                 "POSSIVEL_DIVERGENCIA", "Possível divergência", "explicação fictícia",
                 "NCM_E_CLASSTRIB", "rótulo fictício",
                 1, 2, "10.00", "valor dos produtos envolvidos",
-                quatroEstados(), 0))
+                quatroEstados(), 0, false))
                 .isInstanceOf(RespostaInvalida.class)
                 .hasMessageContaining("não pode haver mais notas que produtos");
     }

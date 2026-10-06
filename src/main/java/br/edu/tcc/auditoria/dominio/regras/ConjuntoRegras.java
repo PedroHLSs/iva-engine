@@ -10,8 +10,8 @@ import java.util.Set;
 // Guarda as regras que a auditoria aplica, na ordem em que rodam, e a versão desse conjunto. Se alguma regra mudar, a versão do conjunto também tem de mudar; um teste confere isso.
 public record ConjuntoRegras(String versao, List<RegraAuditoria> regras) {
 
-    // Versão do conjunto criado pelo método padrao.
-    public static final String VERSAO_PADRAO = "2026.1";
+    // Versão do conjunto criado pelo método padrao. 2026.4 desde 03/10/2026: a R07 passou a 1.1.0 (D015). 2026.5 no mesmo dia: a R05 passou a 1.2.0 e recebe a cobertura das classificações (D016). 2026.6: a R05 passou a 1.3.0 e lê no catálogo se a redução incide sobre a base (D017).
+    public static final String VERSAO_PADRAO = "2026.6";
 
     // Confere se o conjunto tem versão, pelo menos uma regra, nenhuma regra nula e nenhum código de regra repetido.
     public ConjuntoRegras {
@@ -52,9 +52,9 @@ public record ConjuntoRegras(String versao, List<RegraAuditoria> regras) {
         return new ConjuntoRegras(VERSAO_PADRAO, List.of(
                 new RegraClassificacaoTributariaExiste(cobertura.classificacoesTributarias()),
                 new RegraCstCompativelComClassificacao(),
-                new RegraBeneficioExigeNcmEmAnexo(cobertura.itensDeAnexo()),
+                new RegraBeneficioExigeNcmEmAnexo(cobertura.itensDeAnexo(), cobertura.anexosDeclarados()),
                 new RegraTratamentoDeAnexoNaoAproveitado(cobertura.itensDeAnexo()),
-                new RegraValorDeTributoConfere(tolerancia),
+                new RegraValorDeTributoConfere(tolerancia, cobertura.classificacoesTributarias()),
                 new RegraNcmExiste(cobertura.ncm()),
                 new RegraCamposObrigatoriosPreenchidos()));
     }

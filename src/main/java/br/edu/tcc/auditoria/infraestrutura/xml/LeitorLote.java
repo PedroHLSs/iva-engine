@@ -17,6 +17,7 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 // Classe que lê um lote de documentos, de uma pasta ou de um .zip, e devolve os documentos já normalizados, um arquivo de cada vez e sempre na mesma ordem. O fluxo devolvido precisa ser fechado; arquivo ruim vira FalhaDeLeitura e o lote continua, e só a falta de sal para tudo.
+// Emenda de 04/10/2026 (D019): lerComOrigem devolve cada documento com o arquivo de onde veio, para quem lê o lote poder nomear dois arquivos com a mesma chave de acesso. ler continua devolvendo só os documentos, na mesma ordem.
 public final class LeitorLote {
 
     private static final String EXTENSAO_DE_DOCUMENTO = ".xml";
@@ -46,6 +47,11 @@ public final class LeitorLote {
 
     // Lê o lote de uma pasta, procurando .xml também nas subpastas, ou de um .zip; recusa outra coisa.
     public Stream<DocumentoComItens> ler(Path origem) throws IOException {
+        return lerComOrigem(origem).map(DocumentoLido::documento);
+    }
+
+    // Lê o lote como ler, devolvendo cada documento com o arquivo de onde veio.
+    public Stream<DocumentoLido> lerComOrigem(Path origem) throws IOException {
         if (origem == null) {
             throw new IllegalArgumentException("Não há origem de lote a ler.");
         }
@@ -61,7 +67,7 @@ public final class LeitorLote {
     }
 
     // Método auxiliar que lê os .xml da pasta, em ordem.
-    private Stream<DocumentoComItens> lerDiretorio(Path diretorio) throws IOException {
+    private Stream<DocumentoLido> lerDiretorio(Path diretorio) throws IOException {
         Stream<Path> percurso = Files.walk(diretorio);
         try {
             return percurso
@@ -78,7 +84,7 @@ public final class LeitorLote {
     }
 
     // Método auxiliar que lê os .xml do .zip, em ordem, e fecha o pacote junto com o fluxo.
-    private Stream<DocumentoComItens> lerPacote(Path pacote) throws IOException {
+    private Stream<DocumentoLido> lerPacote(Path pacote) throws IOException {
         ZipFile arquivoCompactado = new ZipFile(pacote.toFile(), StandardCharsets.UTF_8);
         try {
             return arquivoCompactado.stream()
@@ -95,9 +101,10 @@ public final class LeitorLote {
     }
 
     // Método auxiliar que lê um arquivo da pasta; se falhar, registra a falha, menos quando falta o sal.
-    private Optional<DocumentoComItens> documentoDoArquivo(Path caminho) {
+    private Optional<DocumentoLido> documentoDoArquivo(Path caminho) {
         try (InputStream conteudo = new BufferedInputStream(Files.newInputStream(caminho))) {
-            return Optional.of(normalizador.normalizar(leitor.ler(conteudo), registroDeDescricoes));
+            return Optional.of(new DocumentoLido(caminho.toString(),
+                    normalizador.normalizar(leitor.ler(conteudo), registroDeDescricoes)));
         } catch (IOException erro) {
             return registrar(caminho.toString(), erro);
         } catch (SalDeInstalacaoInvalido erro) {
@@ -108,10 +115,11 @@ public final class LeitorLote {
     }
 
     // Método auxiliar que lê uma entrada do .zip; se falhar, registra a falha, menos quando falta o sal.
-    private Optional<DocumentoComItens> documentoDaEntrada(ZipFile arquivoCompactado, ZipEntry entrada) {
+    private Optional<DocumentoLido> documentoDaEntrada(ZipFile arquivoCompactado, ZipEntry entrada) {
         String origem = "%s!%s".formatted(arquivoCompactado.getName(), entrada.getName());
         try (InputStream conteudo = new BufferedInputStream(arquivoCompactado.getInputStream(entrada))) {
-            return Optional.of(normalizador.normalizar(leitor.ler(conteudo), registroDeDescricoes));
+            return Optional.of(new DocumentoLido(origem,
+                    normalizador.normalizar(leitor.ler(conteudo), registroDeDescricoes)));
         } catch (IOException erro) {
             return registrar(origem, erro);
         } catch (SalDeInstalacaoInvalido erro) {
@@ -122,7 +130,7 @@ public final class LeitorLote {
     }
 
     // Método auxiliar que registra a falha e devolve vazio.
-    private Optional<DocumentoComItens> registrar(String origem, Throwable erro) {
+    private Optional<DocumentoLido> registrar(String origem, Throwable erro) {
         registroDeFalhas.registrar(FalhaDeLeitura.de(origem, erro));
         return Optional.empty();
     }

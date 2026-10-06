@@ -3,12 +3,13 @@ package br.edu.tcc.auditoria.infraestrutura.api;
 import br.edu.tcc.auditoria.aplicacao.conferencia.ExplicacaoDaVerificacao;
 import br.edu.tcc.auditoria.aplicacao.conferencia.PassoDaConferencia;
 import br.edu.tcc.auditoria.aplicacao.conferencia.PassoDeEvidencia;
+import br.edu.tcc.auditoria.aplicacao.conferencia.RegraDeColapso;
 import br.edu.tcc.auditoria.aplicacao.conferencia.VersaoDaRegra;
 import br.edu.tcc.auditoria.dominio.ValorEmRisco;
 
 import java.util.List;
 
-// Representa uma linha do "por que este resultado" na tela do produto: a regra, o estado a que chegou, a versão e a explicação. A explicação é de um de três tipos, e o construtor confere que cada tipo traz só os campos dele.
+// Representa uma linha do "por que este resultado" na tela do produto: a regra, o estado a que chegou, a versão e a explicação. A explicação é de um de três tipos, e o construtor confere que cada tipo traz só os campos dele. Emenda da Etapa 13: ganhou recolhidaPorPadrao, decidido pela RegraDeColapso; a tela só obedece.
 public record PassoExposto(
         String regraId,
         String regraNome,
@@ -18,7 +19,8 @@ public record PassoExposto(
         String explicacaoDoEstado,
         String regraVersao,
         String motivoDaVersaoAusente,
-        ExplicacaoExposta explicacao) {
+        ExplicacaoExposta explicacao,
+        boolean recolhidaPorPadrao) {
 
     // Valida o passo: exige regra, nome ou motivo, estado com rótulo e explicação, versão ou motivo, e a explicação.
     public PassoExposto {
@@ -44,6 +46,13 @@ public record PassoExposto(
                     ("O passo da regra %s precisa da explicação. Um passo sem razão é a linha que a "
                             + "pessoa lê e continua sem saber o que aconteceu.").formatted(regraId));
         }
+        // Etapa 13: só "sem divergência identificada" pode nascer recolhido; pendência recolhida seria pendência escondida.
+        if (recolhidaPorPadrao && !"SEM_DIVERGENCIA_IDENTIFICADA".equals(estado)) {
+            throw new RespostaInvalida(
+                    ("O estado %s não pode nascer recolhido. Só o que não tem divergência nasce "
+                            + "recolhido; divergência e verificação não concluída nascem abertas.")
+                            .formatted(estado));
+        }
     }
 
     // Método estático que converte o passo da aplicação, pondo o nome da regra por extenso.
@@ -58,7 +67,8 @@ public record PassoExposto(
                 passo.estado().explicacao(),
                 versaoOuNulo(passo.versao()),
                 motivoDaVersao(passo.versao()),
-                ExplicacaoExposta.de(passo.explicacao()));
+                ExplicacaoExposta.de(passo.explicacao()),
+                RegraDeColapso.verificacaoNasceRecolhida(passo.estado()));
     }
 
     // Método auxiliar que devolve a versão registrada, ou null quando ela não foi gravada.

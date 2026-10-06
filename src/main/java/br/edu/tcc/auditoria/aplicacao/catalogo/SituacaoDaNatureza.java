@@ -6,8 +6,8 @@ public enum SituacaoDaNatureza {
     // Todas as tabelas com registro são de demonstração.
     INTEIRAMENTE_FICTICIO(
             "Dados de demonstração",
-            "Todas as tabelas desta carga foram declaradas como fictícias. Nada nesta tela pode ser "
-                    + "lido como afirmação sobre a legislação."),
+            "Todas as tabelas desta carga que declararam natureza foram declaradas como fictícias. Nada "
+                    + "nesta tela pode ser lido como afirmação sobre a legislação."),
 
     // Parte das tabelas é de demonstração, parte não.
     PARCIALMENTE_FICTICIO(
@@ -25,10 +25,10 @@ public enum SituacaoDaNatureza {
     // A carga é anterior à declaração de natureza, e não se supõe que ela seja normativa.
     NAO_DECLARADA(
             "Procedência não declarada",
-            "Esta carga foi importada antes de o sistema passar a exigir a declaração de natureza, e "
-                    + "não há como saber se o conteúdo dela é normativo ou de demonstração. Não se "
-                    + "supõe que seja normativo: reimporte o catálogo para que a procedência fique "
-                    + "registrada.");
+            "Ao menos uma tabela desta carga não tem natureza declarada: a carga foi importada antes de "
+                    + "o sistema passar a exigir a declaração — para a cobertura, antes de 04/10/2026 —, e "
+                    + "não há como saber se o conteúdo dela é normativo ou de demonstração. Não se supõe "
+                    + "que seja normativo: reimporte o catálogo para que a procedência fique registrada.");
 
     private final String rotulo;
     private final String explicacao;

@@ -65,7 +65,7 @@ class ComandoAvaliarAcuraciaTest {
         assertThat(saida.texto())
                 .contains("Avaliação de acurácia")
                 .contains("catálogo ........... catalogo-ficticio-0")
-                .contains("conjunto de regras . 2026.1")
+                .contains("conjunto de regras . 2026.6")
                 .contains("documentos ......... 1")
                 .contains("itens .............. 1");
     }

@@ -11,6 +11,7 @@ import br.edu.tcc.auditoria.aplicacao.conferencia.TratamentoIdentificado;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 // Representa o tratamento que a base normativa indica, como a tela recebe. Os três tributos (as duas parcelas do IBS e a CBS) vêm sempre, em blocos separados e sem total, porque somar as parcelas daria um percentual que nenhuma linha da carga declara; a versão do catálogo e a data vão junto.
 public record TratamentoExposto(
@@ -139,7 +140,11 @@ public record TratamentoExposto(
                 "a carga não declarou redução para este cClassTrib. Não é redução de zero: é a fonte "
                         + "não ter dito nada a respeito";
         static final String SEM_CAMPO_CONDICIONADO =
-                "a carga não lista campo que passe a ser exigido por este cClassTrib";
+                "a carga declara que este cClassTrib não exige campo condicionado (NENHUM)";
+        // Emenda de 03/10/2026 (D015): até essa data só havia o motivo acima, escrito "a carga não lista campo que passe a ser exigido", e ele valia também para a célula em branco — que não é declaração de nada.
+        static final String CAMPOS_NAO_DECLARADOS =
+                "a carga não declara os campos exigidos por este cClassTrib (célula em branco). Não é "
+                        + "\"nenhum campo exigido\": é a fonte não ter dito nada a respeito";
 
         // Valida que haja código, e que CSTs, campos exigidos e redução venham com conteúdo ou com o motivo de faltar.
         public ClassificacaoExposta {
@@ -170,11 +175,17 @@ public record TratamentoExposto(
                     classificacao.indicadorDeBeneficio(),
                     classificacao.percentualReducao().map(BigDecimal::toPlainString).orElse(null),
                     classificacao.percentualReducao().isPresent() ? null : SEM_REDUCAO,
-                    classificacao.camposObrigatoriosCondicionados(),
-                    classificacao.camposObrigatoriosCondicionados().isEmpty()
-                            ? SEM_CAMPO_CONDICIONADO
-                            : null,
+                    classificacao.camposObrigatoriosCondicionados().orElse(List.of()),
+                    motivoDosCampos(classificacao.camposObrigatoriosCondicionados()),
                     ReferenciaExposta.de(classificacao.referencia()));
+        }
+
+        // Método auxiliar que escreve por que a lista de campos exigidos está vazia, separando "não declarou" de NENHUM (D015).
+        private static String motivoDosCampos(Optional<List<String>> campos) {
+            if (campos.isEmpty()) {
+                return CAMPOS_NAO_DECLARADOS;
+            }
+            return campos.get().isEmpty() ? SEM_CAMPO_CONDICIONADO : null;
         }
 
         // Método auxiliar que exige lista não nula, com conteúdo ou com o motivo de estar vazia.

@@ -1,20 +1,9 @@
-/* ---------------------------------------------------------------------------
-   Tela 2b - Nao avaliados, linha a linha.
-
-   Existe porque o panorama mostra o agregado, e clicar em "118 nao avaliados"
-   precisa levar a algum lugar. Sem esta tela, NAO_AVALIADO seria uma categoria
-   que a interface conta mas nao deixa examinar - e a regra 1 viraria slogan.
-
-   As linhas nao sao deduplicadas entre execucoes, e nao deveriam ser: nao
-   concluir e fato da rodada, nao do documento. A mesma regra sobre o mesmo item
-   pode nao concluir hoje por falta de tabela e concluir amanha.
-   --------------------------------------------------------------------------- */
-
 import { el, trocar } from '../dom.js';
+import { recolhivel } from '../colapso.js';
 import {
   inteiro, data, documentoCurto, chipDesfecho, rotuloDaRegra, regraEmTexto,
 } from '../formato.js';
-import { navegacaoDaExecucao, painelDaPlanilha, falha } from '../comum.js';
+import { faixaDeNatureza, linhaDaTolerancia, navegacaoDaExecucao, painelDaPlanilha, falha } from '../comum.js';
 import { endereco } from '../roteador.js';
 import * as api from '../api.js';
 
@@ -62,6 +51,8 @@ export async function desenhar(tela, parametros, rota) {
       el('div', { classe: 'acoes' }, [planilha.botao]),
     ]),
     planilha.painel,
+    faixaDeNatureza(execucao.natureza),
+    linhaDaTolerancia(execucao.toleranciaDeValor),
     navegacaoDaExecucao(execucao.id, 'naoAvaliados'),
     el('p', {
       classe: 'sub',
@@ -83,7 +74,6 @@ export async function desenhar(tela, parametros, rota) {
   ]);
 }
 
-/** Agrupa por (regra, motivo): o que se corrige e a causa, nao a linha. */
 function porMotivo(linhas) {
   if (linhas.length === 0) {
     return el('p', {
@@ -109,8 +99,8 @@ function porMotivo(linhas) {
   const ordenados = Array.from(grupos.values())
     .sort((a, b) => b.linhas.length - a.linhas.length);
 
-  return el('div', {}, ordenados.map((grupo) => el('details', { classe: 'grupo' }, [
-    el('summary', {}, [
+  return el('div', {}, ordenados.map((grupo) => recolhivel(
+    el('div', { classe: 'grupo-resumo' }, [
       el('div', { classe: 'grupo-chave' }, [
         rotuloDaRegra(grupo),
         el('span', { classe: 'campo', texto: grupo.motivo }),
@@ -121,7 +111,9 @@ function porMotivo(linhas) {
       ]),
     ]),
     el('div', { classe: 'grupo-corpo' }, [tabela(grupo.linhas)]),
-  ])));
+    false,
+    'grupo',
+  )));
 }
 
 function tabela(linhas) {

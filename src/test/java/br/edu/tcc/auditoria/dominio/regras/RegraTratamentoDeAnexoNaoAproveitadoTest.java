@@ -5,6 +5,7 @@ import br.edu.tcc.auditoria.dominio.ItemDocumento;
 import br.edu.tcc.auditoria.dominio.ResultadoAvaliacao;
 import br.edu.tcc.auditoria.dominio.Severidade;
 import br.edu.tcc.auditoria.dominio.catalogo.CatalogoFicticio;
+import br.edu.tcc.auditoria.dominio.catalogo.ClassificacaoTributaria;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -24,7 +25,8 @@ class RegraTratamentoDeAnexoNaoAproveitadoTest {
         ItemDocumento item = itemCom(CenarioFicticio.NCM, CenarioFicticio.CODIGO);
         ContextoNormativoFalso catalogo = ContextoNormativoFalso.vazio()
                 .com(CenarioFicticio.itemAnexo(CenarioFicticio.NCM, CenarioFicticio.ANEXO))
-                .com(CenarioFicticio.classificacao(CenarioFicticio.CODIGO, CenarioFicticio.CST));
+                .com(declarandoIntegral(
+                        CenarioFicticio.classificacao(CenarioFicticio.CODIGO, CenarioFicticio.CST), true));
 
         Avaliacao avaliacao = REGRA_COBERTA.avaliar(item, CenarioFicticio.documento(), catalogo);
 
@@ -38,7 +40,8 @@ class RegraTratamentoDeAnexoNaoAproveitadoTest {
         ItemDocumento item = itemCom(CenarioFicticio.NCM, CenarioFicticio.CODIGO);
         ContextoNormativoFalso catalogo = ContextoNormativoFalso.vazio()
                 .com(CenarioFicticio.itemAnexo(CenarioFicticio.NCM, CenarioFicticio.ANEXO))
-                .com(CenarioFicticio.classificacao(CenarioFicticio.CODIGO, CenarioFicticio.CST));
+                .com(declarandoIntegral(
+                        CenarioFicticio.classificacao(CenarioFicticio.CODIGO, CenarioFicticio.CST), true));
 
         Avaliacao avaliacao = REGRA_COBERTA.avaliar(item, CenarioFicticio.documento(), catalogo);
 
@@ -53,7 +56,9 @@ class RegraTratamentoDeAnexoNaoAproveitadoTest {
         ItemDocumento item = itemCom(CenarioFicticio.NCM, CenarioFicticio.CODIGO);
         ContextoNormativoFalso catalogo = ContextoNormativoFalso.vazio()
                 .com(CenarioFicticio.itemAnexo(CenarioFicticio.NCM, CenarioFicticio.ANEXO))
-                .com(CenarioFicticio.classificacaoComBeneficio(CenarioFicticio.CODIGO, CenarioFicticio.CST));
+                .com(declarandoIntegral(
+                        CenarioFicticio.classificacaoComBeneficio(CenarioFicticio.CODIGO, CenarioFicticio.CST),
+                        false));
 
         Avaliacao avaliacao = REGRA_COBERTA.avaliar(item, CenarioFicticio.documento(), catalogo);
 
@@ -66,12 +71,12 @@ class RegraTratamentoDeAnexoNaoAproveitadoTest {
         ItemDocumento item = itemCom(CenarioFicticio.NCM, CenarioFicticio.CODIGO);
         ContextoNormativoFalso catalogo = ContextoNormativoFalso.vazio()
                 .com(CenarioFicticio.itemAnexo(CenarioFicticio.NCM, CenarioFicticio.ANEXO))
-                .com(CenarioFicticio.classificacao(
+                .com(declarandoIntegral(CenarioFicticio.classificacao(
                         CenarioFicticio.CODIGO,
                         false,
                         Optional.of(new BigDecimal("99.99")),
                         List.of(),
-                        CenarioFicticio.CST));
+                        CenarioFicticio.CST), false));
 
         Avaliacao avaliacao = REGRA_COBERTA.avaliar(item, CenarioFicticio.documento(), catalogo);
 
@@ -101,6 +106,20 @@ class RegraTratamentoDeAnexoNaoAproveitadoTest {
     }
 
     @Test
+    void naoDeveAvaliarQuandoOCatalogoNaoDeclaraSeOCodigoEDeTributacaoIntegral() {
+        // R04 1.1.0: sem a declaração, a regra não deduz "integral" de benefício nem de redução.
+        ItemDocumento item = itemCom(CenarioFicticio.NCM, CenarioFicticio.CODIGO);
+        ContextoNormativoFalso catalogo = ContextoNormativoFalso.vazio()
+                .com(CenarioFicticio.itemAnexo(CenarioFicticio.NCM, CenarioFicticio.ANEXO))
+                .com(CenarioFicticio.classificacao(CenarioFicticio.CODIGO, CenarioFicticio.CST));
+
+        Avaliacao avaliacao = REGRA_COBERTA.avaliar(item, CenarioFicticio.documento(), catalogo);
+
+        assertThat(avaliacao.resultado()).isEqualTo(ResultadoAvaliacao.NAO_AVALIADO);
+        assertThat(avaliacao.motivoDaNaoAvaliacao().orElseThrow()).contains("tributacaoIntegral");
+    }
+
+    @Test
     void naoDeveDizerConformeQuandoATabelaDeAnexosNaoAlcancaADataDeEmissao() {
         // Sem cobertura, "não consta de anexo" é falta de dado. Conformidade aqui
         // esconderia a lacuna atrás de uma linha de aparência tranquilizadora.
@@ -120,7 +139,8 @@ class RegraTratamentoDeAnexoNaoAproveitadoTest {
         ContextoNormativoFalso catalogo = ContextoNormativoFalso.vazio()
                 .com(CenarioFicticio.itemAnexo(CenarioFicticio.NCM, CenarioFicticio.ANEXO_ALTERNATIVO))
                 .com(CenarioFicticio.itemAnexo(CenarioFicticio.NCM, CenarioFicticio.ANEXO))
-                .com(CenarioFicticio.classificacao(CenarioFicticio.CODIGO, CenarioFicticio.CST));
+                .com(declarandoIntegral(
+                        CenarioFicticio.classificacao(CenarioFicticio.CODIGO, CenarioFicticio.CST), true));
 
         Avaliacao avaliacao = REGRA_COBERTA.avaliar(item, CenarioFicticio.documento(), catalogo);
 
@@ -129,6 +149,20 @@ class RegraTratamentoDeAnexoNaoAproveitadoTest {
                 .map(evidencia -> evidencia.valorEncontrado().orElseThrow())
                 .toList();
         assertThat(anexosNaEvidencia).isSorted();
+    }
+
+    // Mesma classificação, com a tributação integral declarada (R04 1.1.0, 30/09/2026).
+    private static ClassificacaoTributaria declarandoIntegral(ClassificacaoTributaria base, boolean integral) {
+        return new ClassificacaoTributaria(
+                base.codigo(),
+                base.cstsCompativeis(),
+                base.dispositivoLegal(),
+                base.indicadorDeBeneficio(),
+                base.percentualReducao(),
+                Optional.of(integral),
+                base.anexosAdmitidos(),
+                base.camposObrigatoriosCondicionados(),
+                base.procedencia());
     }
 
     private static ItemDocumento itemCom(String ncm, String codigo) {

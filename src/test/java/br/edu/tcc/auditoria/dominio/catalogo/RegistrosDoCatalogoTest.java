@@ -120,7 +120,7 @@ class RegistrosDoCatalogoTest {
 
         campos.add("campoFicticioDois");
 
-        assertThat(classificacao.camposObrigatoriosCondicionados()).containsExactly("campoFicticioUm");
+        assertThat(classificacao.camposObrigatoriosCondicionados()).hasValue(List.of("campoFicticioUm"));
     }
 
     @Test

@@ -20,7 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 class RegraValorDeTributoConfereTest {
 
     private static final RegraValorDeTributoConfere REGRA_EXATA =
-            new RegraValorDeTributoConfere(ToleranciaDeValor.exata());
+            new RegraValorDeTributoConfere(
+                    ToleranciaDeValor.exata(), CenarioFicticio.coberturaTotal().classificacoesTributarias());
 
     private static final String BASE = "100.00";
     private static final String PERCENTUAL = "99.99";
@@ -102,7 +103,9 @@ class RegraValorDeTributoConfereTest {
     @Test
     void deveAcomodarDiferencaDentroDaTolerancia() {
         RegraValorDeTributoConfere regraTolerante =
-                new RegraValorDeTributoConfere(ToleranciaDeValor.de(new BigDecimal("0.01")));
+                new RegraValorDeTributoConfere(
+                        ToleranciaDeValor.de(new BigDecimal("0.01")),
+                        CenarioFicticio.coberturaTotal().classificacoesTributarias());
         ItemDocumento item = itemCompleto("99.98", VALOR_ESPERADO, VALOR_ESPERADO);
 
         Avaliacao avaliacao = regraTolerante.avaliar(item, CenarioFicticio.documento(), catalogoCompleto());
@@ -113,7 +116,9 @@ class RegraValorDeTributoConfereTest {
     @Test
     void deveApontarAMesmaDiferencaQuandoNaoCabeNaTolerancia() {
         RegraValorDeTributoConfere regraTolerante =
-                new RegraValorDeTributoConfere(ToleranciaDeValor.de(new BigDecimal("0.01")));
+                new RegraValorDeTributoConfere(
+                        ToleranciaDeValor.de(new BigDecimal("0.01")),
+                        CenarioFicticio.coberturaTotal().classificacoesTributarias());
         ItemDocumento item = itemCompleto("99.97", VALOR_ESPERADO, VALOR_ESPERADO);
 
         Avaliacao avaliacao = regraTolerante.avaliar(item, CenarioFicticio.documento(), catalogoCompleto());

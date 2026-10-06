@@ -9,13 +9,14 @@ import java.util.List;
 import java.util.Optional;
 
 // Representa o que a carga diz sobre o cClassTrib declarado; redução não declarada fica Optional vazio, nunca zero.
+// Emenda de 03/10/2026 (D015): os campos exigidos passaram a Optional, como no domínio — vazio é "a carga não declarou", lista vazia é NENHUM. Antes os dois chegavam aqui como a mesma lista vazia.
 public record ClassificacaoDoCatalogo(
         String codigo,
         List<String> cstsAdmitidos,
         String dispositivoLegal,
         boolean indicadorDeBeneficio,
         Optional<BigDecimal> percentualReducao,
-        List<String> camposObrigatoriosCondicionados,
+        Optional<List<String>> camposObrigatoriosCondicionados,
         ReferenciaNormativa referencia) {
 
     // Valida a classificação: exige código, dispositivo e referência, e recusa redução nula.
@@ -30,8 +31,8 @@ public record ClassificacaoDoCatalogo(
         }
         if (cstsAdmitidos == null || camposObrigatoriosCondicionados == null) {
             throw new ConferenciaInvalida(
-                    "As listas de CST e de campos condicionados devem ser vazias quando não há nenhum, "
-                            + "nunca nulas.");
+                    "A lista de CST deve ser vazia quando não há nenhum, e os campos condicionados "
+                            + "Optional.empty() quando a carga não os declara; nunca nulos.");
         }
         if (percentualReducao == null) {
             throw new ConferenciaInvalida(
@@ -42,7 +43,7 @@ public record ClassificacaoDoCatalogo(
             throw new ConferenciaInvalida("A classificação precisa da vigência e da fonte.");
         }
         cstsAdmitidos = List.copyOf(cstsAdmitidos);
-        camposObrigatoriosCondicionados = List.copyOf(camposObrigatoriosCondicionados);
+        camposObrigatoriosCondicionados = camposObrigatoriosCondicionados.map(List::copyOf);
     }
 
     // Método estático que cria a classificação de exibição a partir do registro do catálogo.

@@ -74,8 +74,9 @@ class ComandoServir implements Comando {
 
         saida.linha("API no ar. Encerre com Ctrl+C.");
         // Mudou na Etapa 11: antes esta linha dizia "Somente GET", o que deixou de valer com o POST /api/analises.
-        saida.linha("Leitura e envio de documento para análise. Importar catálogo e tratar achado "
-                + "continuam na CLI.");
+        // Mudou na Etapa 12: antes dizia "Importar catálogo e tratar achado continuam na CLI", o que deixou de valer com o login e os perfis.
+        saida.linha("Toda chamada exige login. Importar catálogo é do administrador, e tratar achado, do "
+                + "fiscal e do administrador; a permissão é conferida no servidor.");
         esperarOFechamentoDoContexto();
     }
 

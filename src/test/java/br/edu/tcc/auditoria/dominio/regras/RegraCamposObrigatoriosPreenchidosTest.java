@@ -98,13 +98,21 @@ class RegraCamposObrigatoriosPreenchidosTest {
                 .anySatisfy(valor -> assertThat(valor).contains("campoInexistenteXX"));
     }
 
+    // Até 03/10/2026 este teste se chamava deveDizerConformeQuandoOCatalogoNaoCondicionaCampoAlgum e afirmava CONFORME com lista vazia — o defeito corrigido pela D015. Hoje só NENHUM declarado conclui; o caminho da lista não declarada está em R07NaoConcluiSemDeclaracaoTest.
     @Test
-    void deveDizerConformeQuandoOCatalogoNaoCondicionaCampoAlgum() {
+    void deveDizerConformeQuandoOCatalogoDeclaraQueNaoExigeCampoAlgum() {
+        Avaliacao avaliacao = CaminhoDaR07.NENHUM_CAMPO_DECLARADO.avaliar();
+
+        assertThat(avaliacao.resultado()).isEqualTo(ResultadoAvaliacao.CONFORME);
+    }
+
+    @Test
+    void naoDeveAvaliarQuandoOCatalogoNaoDeclaraOsCamposExigidos() {
         ItemDocumento item = ConstrutorDeItem.item().classificacao(CenarioFicticio.CODIGO).construir();
 
         Avaliacao avaliacao = REGRA.avaliar(item, CenarioFicticio.documento(), catalogoExigindo(List.of()));
 
-        assertThat(avaliacao.resultado()).isEqualTo(ResultadoAvaliacao.CONFORME);
+        assertThat(avaliacao.resultado()).isEqualTo(ResultadoAvaliacao.NAO_AVALIADO);
     }
 
     @Test

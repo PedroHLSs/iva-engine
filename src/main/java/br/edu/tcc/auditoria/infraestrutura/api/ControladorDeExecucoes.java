@@ -8,7 +8,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
-// Controlador que responde, só por GET, a lista das execuções gravadas e o detalhe de uma. Importar catálogo e tratar achado continuam só na linha de comando.
+// Controlador que responde, só por GET, a lista das execuções gravadas e o detalhe de uma. Importar catálogo e tratar achado continuam só na linha de comando. Emenda da Etapa 12: essa última frase deixou de valer; os dois entraram na API, com login e perfil conferidos no servidor.
 @RestController
 @RequestMapping("/api/execucoes")
 class ControladorDeExecucoes {

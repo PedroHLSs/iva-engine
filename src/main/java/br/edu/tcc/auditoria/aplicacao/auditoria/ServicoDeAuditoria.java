@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 // Serviço que audita um lote de documentos, usando o motor de auditoria e registrando os resultados.
@@ -24,16 +25,29 @@ public final class ServicoDeAuditoria {
     private final ProvedorDeCatalogo provedorDeCatalogo;
     private final RepositorioDaAuditoria repositorio;
     private final MotorAuditoria motor;
-    private final ToleranciaDeValor tolerancia;
+    private final ToleranciaDaExecucao tolerancia;
     private final Clock relogio;
 
-    // Construtor do serviço de auditoria, que recebe as dependências necessárias para realizar a auditoria.
+    // Construtor na forma anterior à D023: a tolerância informada por quem chama é registrada como configurada.
     public ServicoDeAuditoria(
             FonteDeLoteDeDocumentos fonte,
             ProvedorDeCatalogo provedorDeCatalogo,
             RepositorioDaAuditoria repositorio,
             MotorAuditoria motor,
             ToleranciaDeValor tolerancia,
+            Clock relogio) {
+        this(fonte, provedorDeCatalogo, repositorio, motor,
+                tolerancia == null ? null : new ToleranciaDaExecucao(tolerancia, OrigemDaTolerancia.CONFIGURADA),
+                relogio);
+    }
+
+    // Construtor do serviço de auditoria, que recebe as dependências necessárias para realizar a auditoria. Emenda de 04/10/2026 (D023): a tolerância vem com a origem, e segue no resultado para ser gravada junto da execução.
+    public ServicoDeAuditoria(
+            FonteDeLoteDeDocumentos fonte,
+            ProvedorDeCatalogo provedorDeCatalogo,
+            RepositorioDaAuditoria repositorio,
+            MotorAuditoria motor,
+            ToleranciaDaExecucao tolerancia,
             Clock relogio) {
 
         this.fonte = exigir(fonte, "a fonte de documentos");
@@ -60,7 +74,7 @@ public final class ServicoDeAuditoria {
             throw new AuditoriaInvalida("O provedor de catálogo não devolveu catálogo.");
         }
 
-        ConjuntoRegras conjunto = ConjuntoRegras.padrao(catalogo.cobertura(), tolerancia);
+        ConjuntoRegras conjunto = ConjuntoRegras.padrao(catalogo.cobertura(), tolerancia.valor());
         List<Avaliacao> avaliacoes = motor.auditar(lote.documentos(), catalogo, conjunto);
 
         List<AchadoLocalizado> achados = localizar(avaliacoes, lote);
@@ -77,8 +91,10 @@ public final class ServicoDeAuditoria {
                 conjunto.identificadores(),
                 achados.stream().map(AchadoLocalizado::achado).toList());
 
+        // D019: o lote já chega sem chave repetida, e a contagem das cópias descartadas segue com o resultado.
         ResultadoDaAuditoria resultado = new ResultadoDaAuditoria(
-                execucao, lote.documentos(), achados, avaliacoes.size(), naoAvaliadas);
+                execucao, lote.documentos(), achados, avaliacoes.size(), naoAvaliadas,
+                lote.documentosRepetidosDescartados(), Optional.of(tolerancia));
 
         repositorio.persistir(resultado);
         return resultado;

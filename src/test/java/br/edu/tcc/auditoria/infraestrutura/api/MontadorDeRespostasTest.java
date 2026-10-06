@@ -1,5 +1,6 @@
 package br.edu.tcc.auditoria.infraestrutura.api;
 
+import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
 import br.edu.tcc.auditoria.aplicacao.consulta.AchadoRegistrado;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeAchadosDaExecucao;
 import br.edu.tcc.auditoria.aplicacao.consulta.ConsultaDeDocumentos;
@@ -236,8 +237,11 @@ class MontadorDeRespostasTest {
                 naoAvaliadas,
                 documentos,
                 pseudonimizador,
-                new MontadorDePapelDeTrabalho(achados, naoAvaliadas, documentos, pseudonimizador),
-                politica);
+                new MontadorDePapelDeTrabalho(
+                        achados, naoAvaliadas, documentos, pseudonimizador, execucaoId -> Optional.of(List.of()), execucaoId -> Optional.of(0), versao -> NaturezaDaCarga.naoDeclarada(), execucaoId -> Optional.empty()),
+                politica,
+                versao -> NaturezaDaCarga.naoDeclarada(),
+                execucaoId -> Optional.empty());
     }
 
     /**

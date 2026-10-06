@@ -141,19 +141,37 @@ export AUDITORIA_BANCO_USUARIO="<usuário>"
 export AUDITORIA_BANCO_SENHA="<senha>"
 ```
 
-## Configuração obrigatória: tolerância de valor
+> **Emenda de 04/10/2026:** "nunca do repositório" deixou de valer em 21/09/2026
+> (`192c802`). Sem as duas variáveis, o `application.properties` usa `auditoria`
+> como usuário e como senha. Serve a um banco local de desenvolvimento; numa
+> instalação que processa documento fiscal real, defina as duas variáveis.
 
-A regra que confere valor de tributo contra base e alíquota precisa saber qual
-diferença de arredondamento **não** deve virar apontamento. **Isso não tem valor
-padrão** — não é conteúdo normativo, é escolha de quem audita, e decide quanta
-divergência some do relatório.
+## Tolerância de valor
+
+A regra que confere valor de tributo contra base e alíquota (R05) precisa saber
+qual diferença de arredondamento **não** deve virar apontamento. Não é conteúdo
+normativo: é escolha de quem audita, e decide quanta divergência some do
+relatório.
 
 ```bash
 export AUDITORIA_TOLERANCIA_DE_VALOR="0.01"   # um centavo
 export AUDITORIA_TOLERANCIA_DE_VALOR="0"      # exige igualdade exata
 ```
 
-Sem isso configurado, a aplicação para na subida dizendo o que falta.
+Sem a variável, vale o padrão declarado em `auditoria.tolerancia-de-valor-padrao`,
+no `application.properties`. **Toda execução grava o valor usado e a origem** —
+"configurada na instalação" ou "padrão do sistema; a instalação não configurou
+outra" —, e os dois aparecem na saída do `auditar` ("tolerância R05"), no Resumo
+da planilha ("Tolerância de valor (R05)"), no CSV e na tela de acurácia, nas
+respostas da API, no resumo fixo do resultado, no detalhe do produto, no
+histórico e nas telas da visão técnica. Execução gravada antes de 04/10/2026 sai
+com "não registrada", nunca com um valor. Sem a variável e sem o padrão, a
+aplicação para na subida dizendo o que falta. Ver D023.
+
+*(Até 04/10/2026 esta seção dizia que a tolerância não tinha padrão e que a
+aplicação parava na subida sem ela. Deixou de ser verdade em 21/09/2026, quando o
+`application.properties` passou a trazer `0.01` dentro do placeholder da
+propriedade — e nada registrava qual valor tinha sido usado.)*
 
 ## Como usar
 
@@ -170,9 +188,27 @@ um banco acessível, porque as migrations do Flyway e o mapeamento JPA sobem
 junto. Com o ambiente pronto, chamar sem argumento nenhum lista os comandos, e
 chamar um comando sem as opções obrigatórias mostra o modo de usar dele.
 
+> **Emenda de 04/10/2026:** "chamar sem argumento nenhum lista os comandos"
+> deixou de valer em 21/09/2026 (`192c802`). Sem argumento, a aplicação sobe o
+> `servir` com o perfil `api` (`AuditoriaApplication`): a interface web e a API
+> ficam no ar em `127.0.0.1`, e nada é listado. A lista de comandos sai quando o
+> nome do comando não é reconhecido. O resto da frase — comando sem as opções
+> obrigatórias mostra o modo de usar — continua valendo. E a "configuração
+> obrigatória acima" já não para a subida por falta: o sal se resolve sozinho
+> desde a Etapa 10 (D011), usuário e senha do banco têm padrão desde 21/09/2026
+> (ver a emenda em "Banco de dados"), e a tolerância tem padrão declarado desde a
+> D023. Sem banco acessível, a subida continua parando.
+
 Importar catálogo e tratar achado acontecem **só por aqui**, e continuam assim:
 o primeiro decide o que o sistema afirma sobre a norma, o segundo é ato de uma
 pessoa identificada, e não há autenticação na API.
+
+> **Emenda da Etapa 12 (D013):** o parágrafo acima valeu até a Etapa 11. Passou a
+> haver login, com três perfis, e os dois também estão na web — importar catálogo
+> só para administrador, tratar achado para fiscal e administrador. Ver
+> [Usuários e perfis](#usuários-e-perfis-etapa-12). Pela linha de comando,
+> `importar-catalogo` continua como operação de quem tem acesso à máquina, e
+> `tratar-achado` passou a exigir usuário e senha.
 
 Auditar também é comando. Desde a Etapa 11 há um segundo caminho para ele — a
 tela de conferência, que envia a nota por `POST /api/analises` e dispara o mesmo
@@ -197,11 +233,57 @@ O diretório precisa ter cinco arquivos, todos obrigatórios:
 | `registro-ncm.csv` | `ncm`, `descricao` |
 | `item-anexo.csv` | `ncm`, `identificadorDoAnexo`, `tipoDeTratamento` |
 | `aliquota-vigente.csv` | `tributo`, `percentual`, `abrangencia` |
-| `cobertura.csv` | `tabela` |
+| `cobertura.csv` | `tabela` (e `natureza`, desde 04/10/2026 — ver abaixo) |
 
 Todos levam também `vigenciaInicio`, `vigenciaFim` e `fonteNormativa`. O
 separador é `;`, listas dentro de um campo usam `|`, linhas começadas por `#`
 são comentário, e `vigenciaFim` em branco significa vigência aberta.
+
+> **Emenda de 04/10/2026 (D026): importação parcial.** "Cinco arquivos, todos
+> obrigatórios" passou a valer só para a **primeira** carga — quando o acervo
+> não tem nenhuma, inclusive quando ficou vazio porque todos os rascunhos foram
+> excluídos. Depois dela, um arquivo basta. As tabelas que não vieram são
+> copiadas da **carga mais recente**, que fica intacta, com a natureza que têm
+> lá, e o resultado é sempre uma carga nova, com a versão informada e a origem
+> gravada (`derivada_de`). Nada é herdado em silêncio:
+>
+> - pela linha de comando, a pasta incompleta exige
+>   `--partir-de=<versao>`, e a versão precisa ser a da mais recente. Sem a
+>   opção, ou com outra carga, o comando recusa e diz qual é a mais recente,
+>   com os instantes de importação e de alteração dela;
+>
+>   ```bash
+>   java -jar target/auditoria-ibs-cbs-0.0.1-SNAPSHOT.jar \
+>       importar-catalogo --diretorio=/caminho/so-com-aliquotas \
+>       --versao=2026-02 --partir-de=2026-01
+>   ```
+>
+> - pela tela de cargas, a origem e as tabelas que virão dela são escritas
+>   antes do botão, e o pedido leva a carga que a tela mostrou, com os dois
+>   instantes. Se outra passou a ser a mais recente, ou se a mesma foi alterada,
+>   ou excluída e importada de novo com o mesmo nome, nada é gravado e a tela
+>   mostra a origem nova.
+>
+> Trocar `classificacao-tributaria.csv`, `registro-ncm.csv` ou `item-anexo.csv`
+> exige `cobertura.csv` junto, e trocar `item-anexo.csv` exige
+> `anexos-declarados.csv` junto quando a carga declara algum anexo carregado —
+> na importação parcial e na edição. A cobertura herdada afirmaria, sobre a
+> tabela nova, o período que alguém declarou para a antiga. A carga montada
+> passa pelas mesmas recusas de uma importação completa.
+>
+> Com os cinco arquivos, a importação é **completa** e não herda nada — nem o
+> `anexos-declarados.csv` que não veio, que nesse caso nunca é herdado. Desde a
+> mesma data a tela de cargas aceita também o `anexos-declarados.csv`, que até
+> então ela recusava como "não é de nenhuma tabela do catálogo".
+
+**Os arquivos precisam estar em UTF-8.** Desde 04/10/2026, arquivo em outra
+codificação — o caso comum é Windows-1252, o "ANSI" do Excel e do Bloco de
+Notas — é recusado, pelo `importar-catalogo` e pela tela de cargas, com a mesma
+mensagem: o nome do arquivo, a linha e o byte que não forma caractere em UTF-8.
+O sistema nunca troca o caractere por "?" e grava. Até essa data a tela aceitava
+o arquivo e gravava "DESCRI?O", enquanto a linha de comando o recusava sem
+dizer a codificação esperada. O gabarito da acurácia segue a mesma regra. Ver
+D024.
 
 **Desde 14/09/2026:**
 
@@ -215,9 +297,103 @@ são comentário, e `vigenciaFim` em branco significa vigência aberta.
   escolhe entre os dois. As duas formas para o mesmo campo, ou só metade do par,
   também são recusadas. Ver a revisão de 14/09/2026 na D012.
 
+**Desde 30/09/2026**, `classificacao-tributaria.csv` aceita a coluna opcional
+`tributacaoIntegral`, com `S` ou `N`, que diz se o código é de tributação
+integral. É ela que a R04 1.1.0 lê. A redução deixou de ser o critério:
+
+- coluna ausente no arquivo, ou célula em branco, quer dizer "não declarado", e
+  a R04 responde não avaliado para NCM em anexo, com o motivo escrito. Um
+  arquivo anterior à coluna continua importando;
+- qualquer valor que não seja `S` ou `N` recusa a linha;
+- `S` com `indicadorDeBeneficio` `true`, ou `S` com redução diferente de zero,
+  recusa a linha. `S` com redução em branco é aceito;
+- como no resto do catálogo, uma linha recusada recusa a carga inteira.
+
+Quais códigos são integrais é decisão de quem monta o CSV, a partir da norma. O
+sistema não sabe isso e não preenche nada. **Cargas importadas antes desta
+coluna ficam com ela vazia** no banco: para a R04 voltar a concluir, importe uma
+carga nova com a coluna. Ver a revisão de 30/09/2026 na D012.
+
+**Desde 01/10/2026**, a R03 1.1.0 lê duas coisas novas do catálogo:
+
+- **a coluna opcional `anexosAdmitidos`**, em `classificacao-tributaria.csv`. Ela
+  traz os anexos em que o NCM de um código de benefício pode estar, como
+  identificadores do `item-anexo.csv` separados por `|`. O valor `NENHUM` quer
+  dizer que o código não exige anexo. Coluna ausente ou célula em branco quer
+  dizer "não declarado", e a R03 responde não avaliado;
+- **o arquivo opcional `anexos-declarados.csv`**, com as colunas
+  `identificadorDoAnexo`, `tipoDeCodigo` (`NCM`, `NBS` ou `NCM_E_NBS`),
+  `vigenciaInicio`, `vigenciaFim`, `fonteNormativa` e `natureza`. Ele faz duas
+  coisas:
+  - **lista os anexos válidos.** Se um código cita anexo fora da lista, a carga
+    é recusada inteira. Também é recusada se um código cita anexo e o arquivo
+    não veio;
+  - **diz quais anexos estão carregados.**
+
+**A vigência quer dizer coisas diferentes nos dois arquivos de anexo:**
+
+- **em `item-anexo.csv`**, é a vigência do vínculo entre o NCM e o anexo,
+  tirada da norma;
+- **em `anexos-declarados.csv`**, `vigenciaInicio` preenchida quer dizer "este
+  anexo está carregado **por completo** no `item-anexo.csv` a partir desta
+  data". **Não é a vigência da lei.**
+  - Anexo sem vigência existe, mas não está carregado. Para ele, a R03 responde
+    não avaliado com o motivo "anexo admitido não carregado", e não aponta,
+    porque um recorte do anexo não prova que o NCM está fora dele.
+  - Anexo `NBS` com vigência e sem nenhuma linha está carregado e vazio de NCM.
+    Para ele, a R03 aponta qualquer NCM.
+
+O `anexos-declarados.csv` declara `natureza` como os quatro arquivos de dados, e
+aparece na procedência da carga como a tabela `ANEXO_DECLARADO`.
+
+Quais anexos cada código admite, e quais estão carregados, é decisão de quem
+monta o CSV, a partir da norma. O sistema não preenche nada. Em
+`exemplos/catalogo`, os valores vêm dos arquivos de decisão
+`dados/decisoes/d2-anexos-admitidos.csv` e `dados/decisoes/anexos-declarados.csv`,
+que não são versionados. Só o ANEXO-II e o ANEXO-III estão declarados
+carregados. O IV, o V, o VI e o IX têm linhas no `item-anexo.csv`, mas são
+recortes.
+
+**Cargas importadas antes desta mudança** não têm nem a coluna nem o arquivo, e
+a R03 responde não avaliado para todo código de benefício. Para ela voltar a
+concluir, importe uma carga nova. Ver a revisão de 30/09 a 02/10/2026 na D012.
+
+**Desde 03/10/2026, `classificacao-tributaria.csv` aceita a coluna opcional
+`reducaoIncideSobre`**, com `ALIQUOTA` ou `BASE`, que diz sobre o que incide a
+redução declarada para o código. Com `BASE` e redução diferente de zero, a R05
+responde não avaliado, porque não sabe fazer a conta de redução de base. Coluna
+ausente ou célula em branco quer dizer alíquota, como a coluna de redução sempre
+significou; outro valor recusa a linha. Até essa data, a R05 reconhecia a redução
+de base por dois CST escritos no código dela. Ver D017.
+
+**Desde 03/10/2026**, a coluna `camposObrigatoriosCondicionados` de
+`classificacao-tributaria.csv` tem três estados, e a R07 1.1.0 só conclui quando
+o catálogo afirmou algo:
+
+- **célula em branco** quer dizer "não declarado", e a R07 responde não avaliado
+  com o motivo escrito. Até essa data, branco virava "nenhum campo exigido" e a
+  R07 respondia conforme sem ter conferido nada;
+- **`NENHUM`** declara que o código não exige campo condicionado — é o único
+  caminho para a R07 responder conforme sem lista de nomes;
+- **nomes separados por `|`**, os do vocabulário do sistema, que agora inclui os
+  seis campos do grupo de redução de alíquota do XML: `reducaoAliquotaIbsUf`,
+  `aliquotaEfetivaIbsUf`, `reducaoAliquotaIbsMunicipal`,
+  `aliquotaEfetivaIbsMunicipal`, `reducaoAliquotaCbs` e `aliquotaEfetivaCbs`;
+- coluna ausente continua recusando a carga, e `NENHUM` misturado com nome, nome
+  vazio entre `|`, nome com espaço em volta e nome repetido recusam a linha.
+
+Que campos cada código exige é decisão de quem monta o CSV, a partir da norma: o
+sistema não deduz isso da redução nem de outro campo. Com `exemplos/catalogo`,
+que não foi alterado, a R07 dá não avaliado em todos os códigos. **Cargas
+importadas antes desta mudança** ficam com os códigos sem nome como "não
+declarado"; só uma carga nova resolve. Ver D015.
+
 **Os quatro arquivos de dados levam ainda `natureza`** — `FICTICIO` ou
-`NORMATIVO` —, acrescentada na Etapa 11. `cobertura.csv` não a tem: ele declara
-período e fonte, não conteúdo.
+`NORMATIVO` —, acrescentada na Etapa 11. **Desde 04/10/2026 o `cobertura.csv`
+também leva**, com a mesma regra: a fonte que ele declara é citada como
+fundamento dos apontamentos, e sem a coluna uma fonte fictícia saía sob a faixa
+"Catálogo normativo". Carga gravada antes dessa data fica com a cobertura sem
+natureza declarada e deixa de ser dita normativa até ser reimportada. Ver D021.
 
 > **Se você já tem CSV de catálogo, eles param de importar até ganharem a
 > coluna.** O acréscimo é mecânico: `;natureza` no cabeçalho e `;FICTICIO` (ou
@@ -227,6 +403,11 @@ A coluna é obrigatória, e obrigatória de propósito: é ela que faz a tela av
 que está exibindo dado de demonstração, sem depender de ninguém lembrar de ligar
 uma configuração. Linha sem ela recusa o arquivo inteiro, e duas naturezas no
 mesmo arquivo também — um arquivo tem uma procedência só.
+
+**Desde 04/10/2026, dispositivo legal e fonte normativa sem nenhuma letra — "0",
+"-" — recusam a linha**, em todos os arquivos do catálogo e em cada lado da forma
+por tributo: um número solto não identifica norma alguma. O critério é só de
+forma; o sistema não confere se o texto aceito corresponde à norma. Ver D022.
 
 A procedência é guardada **por tabela**, e não por carga, por causa do caso misto:
 quem carregar um anexo transcrito da norma com o resto fictício vê "catálogo
@@ -246,9 +427,33 @@ registro" — que vira apontamento — de "esta tabela não foi carregada para e
 data" — que vira não avaliado. O sistema não deduz cobertura a partir das linhas
 importadas.
 
+**Desde 03/10/2026, a R05 também lê essa cobertura.** Quando o cClassTrib da
+nota não está na tabela de classificações, a regra só faz a conta com a alíquota
+cheia se a tabela cobre a data da nota; fora da cobertura, responde não avaliado,
+dizendo o período coberto e a data de emissão. Até essa data ela assumia "sem
+redução" nos dois casos, e chegava a apontar divergência em nota correta. Ver
+D016.
+
 **Arquivo ausente não é lido como tabela vazia.** Para declarar uma tabela sem
 registros, forneça o arquivo apenas com o cabeçalho: aí a ausência foi dita, e
 não suposta.
+
+> **Emenda da Etapa 12:** isso continua valendo só para `aliquota-vigente.csv`.
+> As três tabelas com cobertura declarada — classificação, NCM e item de anexo —
+> não podem mais vir vazias: dentro da cobertura, registro ausente vira
+> apontamento, e cobertura sobre tabela vazia faria todo item do período ser
+> apontado por silêncio do catálogo. A carga é recusada.
+>
+> **Desde 03/10/2026, a conferência é também por anexo:** cada anexo declarado
+> carregado em `anexos-declarados.csv`, de tipo `NCM` ou `NCM_E_NBS`, precisa de
+> ao menos uma linha em `item-anexo.csv` vigente no período em que foi declarado
+> carregado. Sem isso a carga é recusada, com o nome do anexo. Anexo de `NBS` e
+> anexo sem vigência continuam aceitos sem linha. Ver a revisão de 03/10/2026 na
+> D013.
+>
+> **A carga também é recusada inteira quando houver qualquer linha inválida**, e a
+> mensagem lista todas de uma vez — arquivo, linha, coluna e valor —, em vez de
+> parar na primeira.
 
 Cada importação vira uma carga identificada pela versão. A auditoria usa a mais
 recente e registra a versão dela em cada execução; as cargas antigas ficam, para
@@ -270,6 +475,22 @@ concluíram e arquivos que não puderam ser lidos. Os quatro números importam: 
 lote com zero apontamentos e milhares de avaliações não concluídas não é um lote
 limpo.
 
+**Desde 04/10/2026, os arquivos que não puderam ser lidos são gravados junto da
+execução**, e aparecem na API, na planilha — a linha "Arquivos que não puderam
+ser lidos", abaixo de "Itens auditados", e a aba "Não lidos" — e na tela. Até
+essa data o `auditar` só os imprimia, e as outras saídas diziam que nenhum arquivo
+tinha falhado. Execução gravada antes disso pelo `auditar` fica com a leitura
+"não registrada", e as três saídas dizem isso, em vez de zero. Ver D018.
+
+**Desde 04/10/2026, o mesmo documento repetido no lote conta uma vez.** O caso
+comum é o `-nfe.xml` e o `-procNFe.xml` da mesma nota. Se o conteúdo lido for
+igual, a cópia é descartada, e a quantidade de cópias descartadas aparece na
+CLI ("repetidos descartados"), na API, na planilha ("Documentos repetidos
+descartados") e na tela. Se dois arquivos tiverem a mesma chave de acesso e
+conteúdo diferente, **nenhum dos dois é auditado**: os dois aparecem na lista
+dos que ficaram de fora, com o motivo, e quem quiser auditar um deles precisa
+tirar o outro do lote. O sistema não escolhe. Ver D019.
+
 **Reprocessar o mesmo lote não duplica apontamento.** O apontamento é
 identificado pelo que aponta — resumo do conteúdo do item, identificador da regra
 e versão da regra —, não pela linha em que foi gravado.
@@ -290,10 +511,16 @@ justificativa; `--apenas-abertos` mostra só o que falta decidir.
 
 ```bash
 java -jar target/auditoria-ibs-cbs-0.0.1-SNAPSHOT.jar tratar-achado \
+    --usuario=<seu login> \
     --achado=<id que a listagem mostra> \
     --decisao=REFUTADO \
     --justificativa="Conferido com o contribuinte: o campo está correto."
 ```
+
+Desde a Etapa 12, o comando **pede a senha no terminal**, sem eco, e grava quem
+decidiu. A senha nunca entra como opção: opção fica no histórico do terminal. Sem
+terminal interativo — entrada redirecionada, roteiro —, o comando recusa. Perfil
+de consulta não registra tratativa.
 
 `ACEITO` quando a incoerência procede; `REFUTADO` quando o documento está
 correto. **A justificativa é obrigatória** — apontamento tratado sem razão
@@ -306,6 +533,19 @@ for gerada de novo, o apontamento já vem tratado.
 Isso é intencional: a justificativa foi dada contra um critério, e critério novo
 é pergunta nova. A tratativa antiga não é apagada — fica no banco, presa à versão
 em que foi dada. Mudar o conteúdo do item tem o mesmo efeito, pelo mesmo motivo.
+
+### `criar-administrador`
+
+```bash
+java -jar target/auditoria-ibs-cbs-0.0.1-SNAPSHOT.jar criar-administrador \
+    --login=<login> --nome="<nome da pessoa>"
+```
+
+**É assim que nasce o primeiro usuário**: nenhuma migration cria usuário nem
+senha padrão. A senha é pedida no terminal, duas vezes, sem eco; mínimo de 12
+caracteres. Se o login já existe, o comando redefine a senha, põe o perfil de
+administrador e reativa — é a recuperação de acesso, já que não há recuperação
+por e-mail.
 
 ### `exportar`
 
@@ -345,6 +585,14 @@ sai como `(não informado)`, regra sem valor de referência a opor como
 `(sem referência)`, vigência sem fim como `(sem fim declarado)`, e apontamento
 sem decisão como `ABERTO`. Célula vazia numa planilha lida meses depois é
 indistinguível de célula que ninguém preencheu.
+
+> **Emenda de 04/10/2026 (D025):** o parágrafo acima não valia para
+> "Justificativa" e "Tratado em", que saíam em branco no apontamento sem
+> tratativa; hoje dizem `(sem tratativa)`. E o lado da tabela das evidências de
+> R01 e R06 saía `(não informado)`, sobre um código que a nota informou; hoje diz
+> que a tabela não tem registro, inclusive nas execuções antigas. O valor em risco
+> sai na escala declarada — `7,11100`, e não `7,11` —, e o valor que um `double`
+> não representa exatamente sai como texto, para não ser arredondado em silêncio.
 
 ### `avaliar-acuracia`
 
@@ -409,6 +657,12 @@ Etapa 11 existe **uma** porta de escrita — `POST /api/analises`, que recebe a 
 e dispara o mesmo pipeline do comando `auditar`. Importar catálogo e tratar achado
 continuam sendo comandos.
 
+> **Emenda de 04/10/2026:** a última frase valeu até a Etapa 11. Desde a Etapa 12
+> (D013), com login e três perfis, importar catálogo e tratar achado existem
+> também pela web — importar catálogo só para administrador, tratar achado para
+> fiscal e administrador —, como a emenda da seção "Como usar" já registrava. A
+> frase tinha ficado para trás aqui.
+
 ```bash
 java -Dspring.profiles.active=api -jar target/auditoria-ibs-cbs-0.0.1-SNAPSHOT.jar servir
 # ou
@@ -460,6 +714,89 @@ Não há autenticação nesta etapa, e é justamente por isso que a API escuta s
 localhost — **trocar `server.address` por `0.0.0.0` sem antes resolver
 autenticação publica documento fiscal real para a rede inteira, e agora expõe
 também a capacidade de gravar.**
+
+> **Emenda da Etapa 12:** passou a haver autenticação, e a API **continua** em
+> `127.0.0.1`. Sem HTTPS, a senha trafegaria em texto claro pela rede; abrir o
+> bind exige HTTPS antes, e HTTPS continua fora do escopo.
+
+#### Histórico e acurácia pela web (Etapa 13)
+
+```
+GET  /api/analises                  ?pagina=0&tamanho=20&de=2026-01-01&ate=2026-01-31
+                                    &situacaoMaisGrave=NAO_FOI_POSSIVEL_CONCLUIR
+                                    &minimoDeDivergencias=1&maximoDeDivergencias=10
+                                    &executor=<login> | &semExecutorRegistrado=true
+GET  /api/analises/{id}/autoria     quem executou, ou "executor não registrado"
+GET  /api/acuracia/previa           qual carga a medição vai usar e selar
+POST /api/acuracia                  fiscal e administrador: "notas" (.zip/.xml),
+                                    "gabarito" (.csv) e "cargaEsperada"
+```
+
+O histórico é paginado e filtrado no servidor, da análise mais recente para a mais
+antiga. **O filtro de situação é pela situação mais grave presente**, e não pela
+da maioria: uma análise com um produto não concluído entra como "não foi
+possível concluir", mesmo que os outros estejam sem divergência. Execução feita
+pela linha de comando fica com **executor não registrado**, por desenho.
+
+**Desde 04/10/2026, execução da linha de comando também fica com a contagem de
+produtos "não registrado"**, e não com zeros: o `auditar` não grava os itens que
+leu, e sem eles não há produtos a contar. Os filtros de situação e de quantidade
+**não** excluem essas execuções, porque excluir por um valor que não foi medido
+esconderia resultado real; com um desses filtros ativo, a tela diz quantas estão
+incluídas e por quê. A análise pela web tem contagem; a da linha de comando, não —
+é escolha registrada na D020, com o que a resolveria.
+
+**Medir a acurácia sela a carga de catálogo mais recente**, como o comando
+`avaliar-acuracia` já fazia. A tela diz qual carga antes de medir, e o pedido
+leva a carga que ela mostrou: se a mais recente mudou, nada é medido nem selado.
+O consolidado é micro — soma das células —, e não há média macro (D008, D014).
+
+#### Usuários e perfis (Etapa 12)
+
+Toda a API exige sessão, aberta com login e senha em `POST /api/sessao`. A sessão
+fica no servidor; não há "lembrar-me" nem recuperação por e-mail.
+
+| Perfil | Pode |
+|---|---|
+| Administrador | tudo o que o fiscal faz, mais usuários e cargas de catálogo |
+| Fiscal | enviar nota, corrigir análise, registrar tratativa, ler tudo |
+| Consulta | só ler |
+
+A permissão é conferida **no servidor**, endpoint por endpoint, antes de qualquer
+controlador; esconder o botão na tela é só conveniência. A matriz está em
+`infraestrutura/seguranca/MatrizDePermissoes.java`. Execução, análise e achado
+não têm alteração nem exclusão para perfil nenhum.
+
+```
+POST   /api/sessao                         entrar: {"login", "senha"}
+GET    /api/sessao                         quem está logado
+DELETE /api/sessao                         sair
+PUT    /api/sessao/senha                   trocar a própria senha
+GET    /api/sessao/csrf                    o token que toda escrita manda de volta
+
+GET|POST        /api/usuarios              só administrador
+GET|PUT|DELETE  /api/usuarios/{id}         excluir quem já tratou achado desativa
+
+GET    /api/cargas                         qualquer perfil
+GET    /api/cargas/{versao}                inclui o que salvar uma edição faria
+POST   /api/cargas                         só administrador: "versao" e os cinco CSV em "arquivos"
+PUT    /api/cargas/{versao}                só administrador: "efeitoEsperado", "versaoNova" e os CSV que mudam
+DELETE /api/cargas/{versao}                só administrador; carga usada é recusada
+
+GET    /api/achados/{id}/tratativas        histórico, com quem decidiu e quando
+POST   /api/achados/{id}/tratativas        fiscal e administrador: {"decisao", "justificativa"}
+
+POST   /api/analises/{id}/correcoes        fiscal e administrador: análise nova, ligada a esta
+GET    /api/analises/{id}/vinculos
+```
+
+**Carga de catálogo usada por uma análise está selada.** Excluí-la é recusado,
+com a quantidade de análises que dependem dela; editá-la cria uma carga nova, e a
+original fica intacta — porque cada análise é reaberta com a carga que usou, e
+mudar aquela carga mudaria o fundamento que a análise cita. A tela diz o efeito
+antes de a pessoa confirmar. Rascunho, que nunca foi usado, é editado no lugar e
+excluído livremente. Editar é substituir tabela por CSV; não há formulário de
+linha.
 
 #### As telas
 
@@ -522,6 +859,10 @@ aparece inteira com a propriedade ligada.
 texto claro nem descrição de produto, ligadas ou não, e o guarda de vazamento da
 Etapa 6 confere isso a cada exportação.
 
+**A justificativa na planilha tem o próprio opt-in desde a Etapa 12**:
+`auditoria.exportacao.expor-justificativa`, desligada por padrão. Desligada, a
+célula traz o motivo da omissão. Até a Etapa 11 ela saía sempre.
+
 ## Como rodar os testes
 
 Requer JDK 21 e Maven 3.9+.
@@ -554,6 +895,16 @@ repositório não contém alíquotas, códigos nem qualquer valor da legislaçã
 
 Dados de exemplo existem apenas em `src/test/resources` e são explicitamente
 fictícios.
+
+> **Emenda de 04/10/2026:** a frase valeu até 03/09/2026. Desde então existe
+> também `exemplos/` — um catálogo, um gabarito e um relatório de acurácia de
+> demonstração —, fora de `src/test/resources` e fora do Git, porque é CSV (seção
+> 8 do `CLAUDE.md`). E o catálogo de lá não é explicitamente fictício: cinco dos
+> seis arquivos declaram a natureza `NORMATIVO`, e só o `cobertura.csv` declara
+> `FICTICIO` (D021). O cabeçalho do `aliquota-vigente.csv` diz que os percentuais
+> não são referência normativa, e as linhas declaram `NORMATIVO`; a correção desse
+> arquivo é do usuário, à mão, como na D022. Os dados de `src/test/resources`
+> continuam fictícios.
 
 ## Convenções
 

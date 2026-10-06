@@ -102,15 +102,18 @@ class ComandoServirTest {
      * a lista — importar catálogo e tratar achado, e não mais "tudo".</p>
      */
     @Test
-    void deveAnunciarOQueContinuaSendoSoNaCli() throws InterruptedException {
+    // Mudou na Etapa 12: antes conferia "Importar catálogo e tratar achado continuam na CLI", que deixou de ser verdade.
+    void deveAnunciarQueExigeLoginEQuemPodeEscrever() throws InterruptedException {
         ComandoServir comando = new ComandoServir(new ContextoComServidorFalso(), saida);
 
         Thread execucao = executarEmOutraThread(comando);
         esperarAteAnunciarQueEstaNoAr();
 
         assertThat(saida.texto())
-                .as("quem sobe o servidor precisa saber, ali mesmo, o que não passou para a web")
-                .contains("Importar catálogo e tratar achado continuam na CLI");
+                .as("quem sobe o servidor precisa saber, ali mesmo, que há login e quem pode escrever")
+                .contains("Toda chamada exige login")
+                .contains("conferida no servidor")
+                .doesNotContain("continuam na CLI");
         assertThat(saida.texto())
                 .as("e a frase antiga não pode sobreviver: ela afirmaria que nada grava")
                 .doesNotContain("Somente GET");

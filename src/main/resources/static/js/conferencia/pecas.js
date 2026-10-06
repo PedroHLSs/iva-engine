@@ -1,30 +1,7 @@
-/* ---------------------------------------------------------------------------
-   As pecas que se repetem entre as telas de conferencia.
-
-   Este arquivo e onde moram as quatro regras de apresentacao da etapa. Elas nao
-   estao espalhadas pelas telas de proposito: espalhadas, a tela nova esquece uma
-   e ninguem percebe.
-
-   1. "Nao foi possivel concluir" tem o MESMO peso visual dos outros tres. Nao e
-      cinza, nao esta atras de um clique, nao sai do resumo.
-   2. O resumo mostra sempre os quatro numeros, inclusive os zeros.
-   3. Cor nunca e a unica codificacao: todo estado sai com marca de forma e com
-      o rotulo por extenso, os dois vindos do servidor.
-   4. Em lugar nenhum um produto nao avaliado e somado aos sem divergencia.
-      Aqui isso e estrutural: nenhuma funcao deste arquivo soma contagens.
-   --------------------------------------------------------------------------- */
-
 import { el } from '../dom.js';
 import { inteiro } from '../formato.js';
+import { botaoDeInformacao } from '../painel.js';
 
-/**
- * A marca de forma de cada estado.
- *
- * NAO ha visto de certo em lugar nenhum desta tabela, e a ausencia e deliberada:
- * um "check" ao lado de "sem divergencia identificada" seria lido como
- * "conferido", que e exatamente a afirmacao que o sistema nao faz. As quatro
- * marcas sao geometricas e nao carregam juizo.
- */
 const MARCA = {
   POSSIVEL_DIVERGENCIA: '▲',
   REQUER_CONFERENCIA: '◆',
@@ -32,7 +9,6 @@ const MARCA = {
   SEM_DIVERGENCIA_IDENTIFICADA: '●',
 };
 
-/** Classe de cor de cada estado. A cor acompanha o rotulo; nunca o substitui. */
 const COR = {
   POSSIVEL_DIVERGENCIA: 'est-divergencia',
   REQUER_CONFERENCIA: 'est-conferencia',
@@ -40,7 +16,6 @@ const COR = {
   SEM_DIVERGENCIA_IDENTIFICADA: 'est-semdivergencia',
 };
 
-/** O selo de um estado: marca de forma, rotulo por extenso, cor por ultimo. */
 export function selo(estado, rotulo, explicacao) {
   return el('span', {
     classe: 'selo-estado ' + (COR[estado] || 'est-neutro'),
@@ -51,19 +26,8 @@ export function selo(estado, rotulo, explicacao) {
   ]);
 }
 
-/**
- * O quadro dos quatro estados.
- *
- * Recebe a lista que o servidor manda — ja na ordem de precedencia, ja com
- * rotulo e explicacao — e desenha uma celula por estado, na mesma caixa e com a
- * mesma tipografia. Zero e desenhado como qualquer outro numero.
- *
- * Nenhuma soma acontece aqui. Nao ha total, nao ha "conformes + nao avaliados",
- * nao ha porcentagem sobre subconjunto. Se um dia fizer falta um total, ele
- * precisa nascer de uma decisao, e nao de um reduce que alguem escreveu sem
- * pensar no que estava somando.
- */
-export function quadroDeEstados(contagens, titulo) {
+export function quadroDeEstados(contagens, titulo, opcoes = {}) {
+  const compacto = Boolean(opcoes.compacto);
   const celulas = (contagens || []).map((contagem) => el('div', {
     classe: 'estado-celula ' + (COR[contagem.estado] || 'est-neutro'),
   }, [
@@ -72,22 +36,33 @@ export function quadroDeEstados(contagens, titulo) {
       el('span', { classe: 'marca', 'aria-hidden': 'true', texto: MARCA[contagem.estado] || '○' }),
       el('span', { texto: contagem.rotulo }),
     ]),
-    el('p', { classe: 'estado-explicacao', texto: contagem.explicacao }),
+    compacto ? null : el('p', { classe: 'estado-explicacao', texto: contagem.explicacao }),
   ]));
 
-  return el('section', { classe: 'bloco' }, [
-    titulo ? el('h2', { texto: titulo }) : null,
+  if (!compacto) {
+    return el('section', { classe: 'bloco' }, [
+      titulo ? el('h2', { texto: titulo }) : null,
+      el('div', { classe: 'estados' }, celulas),
+    ]);
+  }
+
+  const info = botaoDeInformacao('O que cada situacao quer dizer', [
+    el('dl', { classe: 'definicoes-dos-estados' }, (contagens || []).flatMap((contagem) => [
+      el('dt', { texto: contagem.rotulo }),
+      el('dd', { texto: contagem.explicacao }),
+    ])),
+    opcoes.nota ? el('p', { texto: opcoes.nota }) : null,
+  ].filter(Boolean));
+  return el('section', { classe: 'bloco quadro-compacto' }, [
+    el('div', { classe: 'titulo-de-secao-linha' }, [
+      titulo ? el('h2', { texto: titulo }) : null,
+      info.botao,
+    ]),
+    info.balao,
     el('div', { classe: 'estados' }, celulas),
   ]);
 }
 
-/**
- * O terceiro numero, que so existe porque a precedencia esconde a pendencia.
- *
- * Um produto com uma divergencia e tres verificacoes sem conclusao aparece como
- * "possivel divergencia" na coluna de situacao — a mais forte prevalece. A
- * pendencia dele sumiria da tela se nao houvesse esta linha.
- */
 export function produtosComPendencia(quantidade, total) {
   return el('p', { classe: 'linha-pendencia' }, [
     el('strong', { texto: inteiro(quantidade) }),
@@ -96,12 +71,6 @@ export function produtosComPendencia(quantidade, total) {
   ]);
 }
 
-/**
- * A faixa de procedencia da carga.
- *
- * Vem do servidor inteira — codigo, rotulo, explicacao e a lista de tabelas
- * ficticias. A pagina nao decide quando avisar: ela obedece a `exigeAviso`.
- */
 export function faixaDeNatureza(natureza) {
   if (!natureza) {
     return null;
@@ -115,29 +84,47 @@ export function faixaDeNatureza(natureza) {
     tabelas.length
       ? el('p', { classe: 'nota', texto: 'Tabelas de demonstracao: ' + tabelas.join(', ') + '.' })
       : null,
+    (natureza.tabelasSemNaturezaDeclarada || []).length
+      ? el('p', { classe: 'nota', texto: 'Tabelas sem natureza declarada: '
+        + natureza.tabelasSemNaturezaDeclarada.join(', ') + '.' })
+      : null,
     el('p', { classe: 'nota', texto: 'Carga de catalogo: ' + natureza.versaoDoCatalogo }),
   ]);
 }
 
-/**
- * O aviso de uso, em toda tela de resultado.
- *
- * Discreto e sempre acessivel, e o texto vem do servidor. Se morasse aqui, cada
- * tela nova precisaria lembrar de escreve-lo, e a que esquecesse nao quebraria
- * nada — ficaria so sem aviso.
- */
+export function procedenciaCompacta(natureza) {
+  if (!natureza) {
+    return null;
+  }
+  const tabelas = natureza.tabelasFicticias || [];
+  const info = botaoDeInformacao('Sobre a carga de catalogo', [
+    el('p', { texto: natureza.explicacao }),
+    el('p', { texto: 'Carga de catalogo: ' + natureza.versaoDoCatalogo }),
+  ]);
+  return el('div', { classe: 'procedencia-compacta' + (natureza.exigeAviso ? ' avisa' : '') }, [
+    el('div', { classe: 'procedencia-linha' }, [
+      el('strong', { texto: natureza.rotulo }),
+      el('span', { classe: 'procedencia-versao', texto: natureza.versaoDoCatalogo }),
+      info.botao,
+    ]),
+    natureza.exigeAviso && tabelas.length
+      ? el('p', { classe: 'procedencia-tabelas', texto: 'Tabelas de demonstracao: ' + tabelas.join(', ') + '.' })
+      : null,
+    (natureza.tabelasSemNaturezaDeclarada || []).length
+      ? el('p', { classe: 'procedencia-tabelas', texto: 'Tabelas sem natureza declarada: '
+        + natureza.tabelasSemNaturezaDeclarada.join(', ') + '.' })
+      : null,
+    info.balao,
+  ]);
+}
+
 export function avisoDeUso(texto) {
   return el('p', { classe: 'aviso-de-uso', texto: texto || '' });
 }
 
-/**
- * O bloco de leitura: arquivos que entraram e os que nao puderam ser abertos.
- *
- * Separado do quadro de estados, e nunca dentro dele. Arquivo ilegivel nao e
- * nota sem divergencia: e ausencia, e nao existe celula em que soma-lo.
- */
 export function blocoDaLeitura(leitura) {
-  const ilegiveis = leitura.arquivosQueNaoForamLidos || [];
+  const registrada = leituraRegistrada(leitura);
+  const ilegiveis = registrada ? leitura.arquivosQueNaoForamLidos : [];
   return el('section', { classe: 'bloco' }, [
     el('h2', { texto: 'Leitura' }),
     el('dl', { classe: 'identificacao' }, [
@@ -146,8 +133,15 @@ export function blocoDaLeitura(leitura) {
       el('dt', { texto: 'itens lidos' }),
       el('dd', { texto: inteiro(leitura.itensLidos) }),
       el('dt', { texto: 'arquivos que nao puderam ser lidos' }),
-      el('dd', { classe: leitura.arquivosIlegiveis > 0 ? 'destaque-ausencia' : null,
-        texto: inteiro(leitura.arquivosIlegiveis) }),
+      registrada
+        ? el('dd', { classe: leitura.arquivosIlegiveis > 0 ? 'destaque-ausencia' : null,
+          texto: inteiro(leitura.arquivosIlegiveis) })
+        : el('dd', {}, [valorOuMotivo(null, leitura.motivoDosArquivosIlegiveisAusentes)]),
+      el('dt', { texto: 'documentos repetidos descartados' }),
+      el('dd', {}, [valorOuMotivo(
+        leitura.documentosRepetidosDescartados === null || leitura.documentosRepetidosDescartados === undefined
+          ? null : inteiro(leitura.documentosRepetidosDescartados),
+        leitura.motivoDosRepetidosAusentes)]),
     ]),
     el('p', { classe: 'nota', texto: leitura.comoFoiALeitura }),
     ilegiveis.length
@@ -159,7 +153,10 @@ export function blocoDaLeitura(leitura) {
   ]);
 }
 
-/** Um valor, ou o motivo de nao haver valor. Nunca branco. */
+export function leituraRegistrada(leitura) {
+  return leitura.arquivosIlegiveis !== null && leitura.arquivosIlegiveis !== undefined;
+}
+
 export function valorOuMotivo(valor, motivo) {
   if (valor !== null && valor !== undefined && valor !== '') {
     return el('span', { texto: String(valor) });
@@ -170,7 +167,6 @@ export function valorOuMotivo(valor, motivo) {
   });
 }
 
-/** Uma leitura do catalogo: o conteudo, ou o motivo de nao haver conteudo. */
 export function leituraDoCatalogo(leitura, comoDesenhar) {
   if (!leitura) {
     return el('p', { classe: 'ausente', texto: 'a resposta nao trouxe este bloco' });
@@ -182,7 +178,6 @@ export function leituraDoCatalogo(leitura, comoDesenhar) {
   return comoDesenhar(encontrado);
 }
 
-/** Uma falha, dita por inteiro. */
 export function falha(erro) {
   const partes = [
     el('strong', { texto: 'Nao foi possivel continuar. ' }),
@@ -194,7 +189,6 @@ export function falha(erro) {
   return el('div', { classe: 'aviso erro' }, partes);
 }
 
-/** Cabecalho comum das telas de resultado: titulo, faixa e voltar. */
 export function cabecalhoDoResultado(titulo, subtitulo, natureza) {
   return el('header', { classe: 'cabecalho-resultado' }, [
     el('h1', { texto: titulo }),

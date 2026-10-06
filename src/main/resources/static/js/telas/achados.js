@@ -1,32 +1,10 @@
-/* ---------------------------------------------------------------------------
-   Tela 3 - Achados.
-
-   ORDEM PADRAO E VALOR EM RISCO, NAO SEVERIDADE
-
-   Tres ocorrencias somando muito vem antes de oitocentas somando pouco. A
-   severidade continua visivel em toda linha e continua sendo criterio de
-   ordenacao a um clique, mas nao e o padrao: quem recebe o lote precisa saber
-   o que corrigir primeiro, e "primeiro" e uma pergunta sobre dinheiro.
-
-   POR QUE TUDO E CARREGADO ANTES DE ORDENAR
-
-   Ordenar por valor e agrupar por cadastro sao operacoes globais. Feitas sobre
-   uma pagina, dariam um resultado que parece certo e esta errado. Entao a tela
-   busca todas as paginas antes de desenhar, mostrando o progresso.
-
-   GRUPO SEM VALOR CALCULAVEL NAO VAI PARA O FIM DA LISTA
-
-   Ele sai numa secao propria, com titulo proprio. Ausencia de valor nao e valor
-   zero, e o rodape de uma lista ordenada por dinheiro e exatamente o lugar onde
-   se le "isso aqui nao vale nada".
-   --------------------------------------------------------------------------- */
-
 import { el, trocar } from '../dom.js';
+import { recolhivel } from '../colapso.js';
 import {
   inteiro, severidade, documentoCurto, data, ausente, rotuloDaRegra, regraEmTexto,
 } from '../formato.js';
 import { comoQuantia } from '../decimal.js';
-import { navegacaoDaExecucao, painelDaPlanilha, falha } from '../comum.js';
+import { faixaDeNatureza, linhaDaTolerancia, navegacaoDaExecucao, painelDaPlanilha, falha } from '../comum.js';
 import { endereco, enderecoDoAchado } from '../roteador.js';
 import { agrupar, ordenarAchados, porGravidade, porOcorrencias } from '../agrupamento.js';
 import * as api from '../api.js';
@@ -85,6 +63,8 @@ export async function desenhar(tela, parametros, rota) {
       el('div', { classe: 'acoes' }, [planilha.botao]),
     ]),
     planilha.painel,
+    faixaDeNatureza(execucao.natureza),
+    linhaDaTolerancia(execucao.toleranciaDeValor),
     navegacaoDaExecucao(execucao.id, 'achados'),
     barraDeFiltros(rota.execucaoId, filtros, ordem, agrupado, execucao),
     resumoDoRecorte(carregado, execucao),
@@ -100,8 +80,6 @@ function irComFiltro(execucaoId, filtros, ordem, agrupado, mudanca) {
 }
 
 function barraDeFiltros(execucaoId, filtros, ordem, agrupado, execucao) {
-  // Opcao e texto simples, ou { valor, texto } quando o que se mostra nao e o que
-  // vai no endereco - caso da regra, que mostra o nome e filtra pelo codigo.
   const escolha = (rotulo, chave, opcoes, atual) => {
     const seletor = el('select', {
       aoMudar: (evento) => irComFiltro(execucaoId, filtros, ordem, agrupado,
@@ -146,19 +124,10 @@ function barraDeFiltros(execucaoId, filtros, ordem, agrupado, execucao) {
   ]);
 }
 
-/**
- * Quantos apontamentos entraram, e quantos existem.
- *
- * Filtrar nao e esconder: o total antes do recorte vem escrito, para que uma
- * listagem curta nao passe por acervo limpo, e o filtro aplicado vem escrito,
- * para que ninguem confunda "nada atende" com "ninguem procurou".
- */
 function resumoDoRecorte(carregado, execucao) {
   const f = carregado.filtro;
   const criterios = [];
   if (f.regraId) {
-    // O filtro volta so com o codigo; o nome sai da linha por regra desta
-    // execucao. Codigo que a execucao nao tem fica como veio.
     const daExecucao = execucao.porRegra.find((regra) => regra.regraId === f.regraId);
     criterios.push('regra ' + (daExecucao ? regraEmTexto(daExecucao) : f.regraId));
   }
@@ -251,15 +220,6 @@ function faixa(titulo, explicacao, semValor) {
   ]);
 }
 
-/**
- * Um grupo, com o nivel de agrupamento escrito no proprio cartao.
- *
- * O selo do nivel nao e enfeite: sem ele, um grupo de R05 - que nao expoe NCM
- * nem cClassTrib e por isso so pode ser agrupado por regra - teria a mesma
- * aparencia de um grupo de R03 agrupado pela chave inteira, e as duas coisas
- * dizem coisas diferentes sobre o que corrigir. Quando algum componente falta,
- * o proprio motivo observado vai escrito ao lado.
- */
 function desenharGrupo(execucaoId, grupo) {
   const componente = (rotulo, valor, motivo) => el('span', { classe: 'campo' }, [
     rotulo + ' ',
@@ -281,7 +241,7 @@ function desenharGrupo(execucaoId, grupo) {
     }),
   ]);
 
-  const resumo = el('summary', {}, [
+  const resumo = el('div', { classe: 'grupo-resumo' }, [
     el('div', { classe: 'grupo-chave' }, [
       rotuloDaRegra(grupo),
       severidade(grupo.severidade),
@@ -317,10 +277,9 @@ function desenharGrupo(execucaoId, grupo) {
     tabelaDeOcorrencias(execucaoId, grupo.achados),
   ]);
 
-  return el('details', { classe: 'grupo' }, [resumo, corpo]);
+  return recolhivel(resumo, corpo, false, 'grupo');
 }
 
-/** As ocorrencias, uma linha por apontamento, sem identificador em texto claro. */
 function tabelaDeOcorrencias(execucaoId, achados) {
   const linhas = achados.map((achado) => el('tr', {}, [
     el('td', { classe: 'mono', texto: achado.documento.pseudonimo.slice(0, 12) }),

@@ -1,5 +1,6 @@
 package br.edu.tcc.auditoria.infraestrutura.exportacao;
 
+import br.edu.tcc.auditoria.aplicacao.catalogo.NaturezaDaCarga;
 import br.edu.tcc.auditoria.aplicacao.consulta.AchadoRegistrado;
 import br.edu.tcc.auditoria.aplicacao.consulta.DadosDoDocumento;
 import br.edu.tcc.auditoria.aplicacao.consulta.NaoAvaliadaRegistrada;
@@ -14,7 +15,10 @@ import br.edu.tcc.auditoria.dominio.Severidade;
 import br.edu.tcc.auditoria.dominio.Uf;
 import br.edu.tcc.auditoria.dominio.ValorEmRisco;
 import br.edu.tcc.auditoria.dominio.execucao.ExecucaoAuditoria;
+import br.edu.tcc.auditoria.dominio.tratativa.ChaveDeTratativa;
+import br.edu.tcc.auditoria.dominio.tratativa.DecisaoDeTratativa;
 import br.edu.tcc.auditoria.dominio.tratativa.HashDoItem;
+import br.edu.tcc.auditoria.dominio.tratativa.Tratativa;
 import br.edu.tcc.auditoria.infraestrutura.xml.Pseudonimizador;
 import br.edu.tcc.auditoria.infraestrutura.xml.SalDeInstalacao;
 
@@ -194,6 +198,58 @@ class NenhumIdentificadorEmTextoClaroNaExportacaoTest {
                 .isEmpty();
     }
 
+    // -----------------------------------------------------------------------
+    // Justificativa da tratativa. Acrescentado na Etapa 12.
+    //
+    // Até aqui este guarda fiscalizava um campo que nunca via: o papel montado
+    // acima não tem tratativa, então a coluna "Justificativa" saía sempre vazia, e
+    // a afirmação de que a justificativa estava sob opt-in na exportação não era
+    // verdade — ela saía sempre. Com a tratativa pela web, a justificativa passou
+    // a ser digitada por mais gente, e é texto livre: pode trazer CNPJ e razão
+    // social.
+    //
+    // Os dois testes abaixo plantam um CNPJ e uma razão social fictícios na
+    // justificativa e conferem as duas direções. Por padrão, nenhum dos dois sai
+    // no arquivo. Com a exposição ligada, os dois saem — e é isso que prova que o
+    // guarda olha a coluna certa, em vez de passar por não ter visto nada.
+    // -----------------------------------------------------------------------
+
+    private static final String CNPJ_NA_JUSTIFICATIVA = "99.999.999/9999-99";
+    private static final String RAZAO_SOCIAL_NA_JUSTIFICATIVA = "EMPRESA FICTICIA DE TESTE LTDA";
+    private static final String JUSTIFICATIVA_COM_IDENTIFICADOR =
+            "Conferido com o cliente " + RAZAO_SOCIAL_NA_JUSTIFICATIVA + ", CNPJ "
+                    + CNPJ_NA_JUSTIFICATIVA + ": a nota está certa.";
+
+    @Test
+    void naoDeveEscreverAJustificativaDaTratativaQuandoAInstalacaoNaoALiga() throws IOException {
+        Path planilha = pasta.resolve("com-tratativa.xlsx");
+        new ExportadorXlsx(ZoneOffset.UTC).exportar(papelComTratativa(), planilha);
+
+        String conteudo = conteudoDescompactado(planilha);
+        assertThat(conteudo)
+                .as("o CNPJ digitado na justificativa não pode sair na planilha")
+                .doesNotContain(CNPJ_NA_JUSTIFICATIVA)
+                .doesNotContain(CNPJ_NA_JUSTIFICATIVA.replaceAll("\\D", ""));
+        assertThat(conteudo)
+                .as("a razão social digitada na justificativa não pode sair na planilha")
+                .doesNotContain(RAZAO_SOCIAL_NA_JUSTIFICATIVA);
+        assertThat(conteudo)
+                .as("no lugar, a célula diz por que a justificativa não está ali")
+                .contains("(omitida)");
+    }
+
+    @Test
+    void autoverificacaoDeveEncontrarAJustificativaQuandoAInstalacaoALiga() throws IOException {
+        Path planilha = pasta.resolve("com-tratativa-exposta.xlsx");
+        new ExportadorXlsx(ZoneOffset.UTC, true).exportar(papelComTratativa(), planilha);
+
+        assertThat(conteudoDescompactado(planilha))
+                .as("autoverificação: com a exposição ligada o CNPJ aparece, o que prova que a "
+                        + "varredura acima olha a coluna em que ele estaria")
+                .contains(CNPJ_NA_JUSTIFICATIVA)
+                .contains(RAZAO_SOCIAL_NA_JUSTIFICATIVA);
+    }
+
     /** Comentário e Javadoc podem citar o que o código não pode usar. */
     private static boolean ehComentario(String linha) {
         String limpa = linha.strip();
@@ -208,8 +264,13 @@ class NenhumIdentificadorEmTextoClaroNaExportacaoTest {
      * conteúdo por divergência de tamanho.</p>
      */
     private String conteudoDescompactado() throws IOException {
+        return conteudoDescompactado(arquivo);
+    }
+
+    /** O mesmo, para uma planilha qualquer. Acrescentado na Etapa 12. */
+    private static String conteudoDescompactado(Path planilha) throws IOException {
         StringBuilder conteudo = new StringBuilder();
-        try (ZipFile zip = new ZipFile(arquivo.toFile())) {
+        try (ZipFile zip = new ZipFile(planilha.toFile())) {
             Enumeration<? extends ZipEntry> entradas = zip.entries();
             while (entradas.hasMoreElements()) {
                 ZipEntry entrada = entradas.nextElement();
@@ -237,7 +298,35 @@ class NenhumIdentificadorEmTextoClaroNaExportacaoTest {
                         chave, 2, "RYY", "0.0.0-ficticia", "Motivo ficticio de teste.")),
                 chaves -> Map.of(chave, new DadosDoDocumento(
                         chave, "99", "999", "111111", LocalDate.of(1900, 6, 15), Uf.SP)),
-                new PseudonimizadorDeChaveComSal(pseudonimizador()))
+                new PseudonimizadorDeChaveComSal(pseudonimizador()),
+                execucaoId -> Optional.of(List.of()), execucaoId -> Optional.of(0), versao -> NaturezaDaCarga.naoDeclarada(), execucaoId -> Optional.empty())
+                .montar(execucao());
+    }
+
+    /** Papel com um apontamento tratado, cuja justificativa traz CNPJ e razão social fictícios. */
+    private static PapelDeTrabalho papelComTratativa() {
+        ChaveAcesso chave = new ChaveAcesso(CHAVE_DE_ACESSO);
+        HashDoItem hash = new HashDoItem("e".repeat(64));
+        Achado achado = achado(chave);
+        AchadoRegistrado tratado = new AchadoRegistrado(
+                UUID.fromString("00000000-0000-0000-0000-0000000000ef"),
+                achado,
+                hash,
+                Optional.of(new Tratativa(
+                        ChaveDeTratativa.de(hash, achado),
+                        DecisaoDeTratativa.REFUTADO,
+                        JUSTIFICATIVA_COM_IDENTIFICADOR,
+                        Instant.parse("1900-01-03T03:04:05Z"))),
+                Instant.parse("1900-01-02T03:04:05Z"),
+                Instant.parse("1900-01-02T03:04:05Z"));
+
+        return new MontadorDePapelDeTrabalho(
+                execucaoId -> List.of(tratado),
+                execucaoId -> List.of(),
+                chaves -> Map.of(chave, new DadosDoDocumento(
+                        chave, "99", "999", "111111", LocalDate.of(1900, 6, 15), Uf.SP)),
+                new PseudonimizadorDeChaveComSal(pseudonimizador()),
+                execucaoId -> Optional.of(List.of()), execucaoId -> Optional.of(0), versao -> NaturezaDaCarga.naoDeclarada(), execucaoId -> Optional.empty())
                 .montar(execucao());
     }
 

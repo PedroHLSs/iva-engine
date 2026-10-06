@@ -1,0 +1,124 @@
+body:has(.tela-usuarios){ background:#f4f7f9; }
+
+.tela-usuarios{
+  --us-cartao:#ffffff;
+  --us-borda:#e2e8f0;
+  --us-azul:#2563eb;
+  --us-texto:#0f1f33;
+  --us-texto2:#475569;
+  --us-discreto:#64748b;
+
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color:var(--us-texto);
+  max-width:1000px; margin:0 auto;
+}
+
+.tela-usuarios .us-cabecalho{ margin:0 0 18px; }
+.tela-usuarios .us-titulo{ display:flex; align-items:center; gap:10px; }
+.tela-usuarios .us-titulo h1{ font-size:26px; font-weight:680; margin:0; }
+.tela-usuarios .botao-info{
+  width:20px; height:20px; padding:0; border-radius:50%; flex:none;
+  border:1px solid #cbd5e1; background:#ffffff; cursor:pointer;
+  font:italic 700 11.5px/1 Georgia, "Times New Roman", serif; color:var(--us-texto2);
+}
+.tela-usuarios .botao-info:hover,
+.tela-usuarios .botao-info[aria-expanded="true"]{ border-color:var(--us-azul); color:var(--us-azul); }
+.tela-usuarios .botao-info:focus-visible{ outline:2px solid var(--us-azul); outline-offset:2px; }
+.tela-usuarios .balao-info{
+  margin:10px 0 0; padding:10px 12px; border-radius:8px; max-width:640px;
+  background:#ffffff; border:1px solid var(--us-borda); box-shadow:0 4px 12px rgba(15,31,51,.08);
+  font-size:13px; line-height:1.5; color:var(--us-texto2);
+}
+.tela-usuarios .balao-info[hidden]{ display:none; }
+.tela-usuarios .balao-info p{ margin:0; }
+
+.tela-usuarios .us-mensagem:not(:empty){ margin:0 0 16px; }
+
+.tela-usuarios .us-cartao{
+  background:var(--us-cartao); border:1px solid var(--us-borda); border-radius:12px;
+  box-shadow:0 1px 2px rgba(15,31,51,.04); margin:0 0 20px;
+}
+.tela-usuarios .us-cartao-tabela{ overflow:hidden; }
+
+.tela-usuarios .us-rolagem{ overflow-x:auto; }
+.tela-usuarios .data-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+.tela-usuarios .data-table th{
+  background:#f8fafc; color:var(--us-discreto);
+  font-size:11px; font-weight:650; letter-spacing:.06em; text-transform:uppercase;
+  text-align:left; padding:10px 14px; border-bottom:1px solid var(--us-borda); white-space:nowrap;
+}
+.tela-usuarios .data-table td{
+  padding:9px 14px; border-bottom:1px solid var(--us-borda); vertical-align:middle; white-space:nowrap;
+}
+.tela-usuarios .data-table tbody tr:last-child td{ border-bottom:none; }
+.tela-usuarios .data-table tbody tr{ transition:background-color .12s ease; }
+.tela-usuarios .data-table tbody tr:hover{ background:#f8fafc; }
+.tela-usuarios .mono{ font-family:ui-monospace, "Cascadia Mono", Consolas, monospace; font-size:12.5px; }
+
+.tela-usuarios .us-selo.perfil{ background:#f1f5f9; color:#334155; border:1px solid #e2e8f0; font-weight:600; }
+
+.tela-usuarios .us-situacao{ display:inline-flex; align-items:center; gap:8px; }
+.tela-usuarios .us-selo{
+  display:inline-block; padding:2px 9px; border-radius:999px;
+  font-size:11.5px; font-weight:650; line-height:1.5; white-space:nowrap;
+}
+.tela-usuarios .us-selo.ativo{ background:#f0fdf4; color:#166534; border:1px solid #bbf7d0; }
+.tela-usuarios .us-selo.desativado{ background:#f1f5f9; color:#475569; border:1px solid #d5dde6; }
+.tela-usuarios .us-data{ font-size:12px; color:var(--us-discreto); }
+
+.tela-usuarios .data-table th.us-coluna-acoes,
+.tela-usuarios .data-table td.us-coluna-acoes{ text-align:center; }
+.tela-usuarios .us-acoes-da-linha{ display:flex; justify-content:center; align-items:center; gap:12px; }
+
+.tela-usuarios .us-icone{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:32px; height:32px; padding:6px; box-sizing:border-box;
+  background:transparent; border:none; border-radius:50%; cursor:pointer;
+  color:#64748b;
+  transition:background-color .15s ease, color .15s ease;
+}
+.tela-usuarios .us-icone svg{ display:block; width:18px; height:18px; stroke:currentColor; }
+.tela-usuarios .us-icone:hover{ color:#2563eb; background-color:#f1f5f9; }
+.tela-usuarios .us-icone:focus-visible{ outline:2px solid #2563eb; outline-offset:1px; color:#2563eb; }
+.tela-usuarios .us-icone.perigo:hover,
+.tela-usuarios .us-icone.perigo:focus-visible{ color:#ef4444; background-color:#fef2f2; }
+
+.tela-usuarios .us-botao{
+  display:inline-block; white-space:nowrap; cursor:pointer;
+  font-family:inherit; font-size:12.5px; font-weight:600; line-height:1.4;
+  padding:4px 12px; border-radius:6px;
+  border:1px solid #d5dde6; background:transparent; color:#334155; text-decoration:none;
+  transition:background-color .15s ease, border-color .15s ease, color .15s ease;
+}
+.tela-usuarios .us-botao:hover{ background:#eef2f7; border-color:#94a3b8; color:#1a365d; }
+.tela-usuarios .us-botao:focus-visible{ outline:2px solid var(--us-azul); outline-offset:2px; }
+.tela-usuarios .us-botao.perigo:hover,
+.tela-usuarios .us-botao.perigo:focus-visible{ background:#fef2f2; border-color:#fca5a5; color:#991b1b; }
+.tela-usuarios .us-formulario .us-acoes .us-botao{ padding:8px 16px; }
+
+.tela-usuarios .us-formulario{ padding:22px 24px; }
+.tela-usuarios .us-formulario h2{ font-size:16px; font-weight:650; margin:0 0 18px; }
+.tela-usuarios .us-formulario-acao{ border-left:3px solid var(--us-azul); }
+.tela-usuarios .us-grade{ display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 2fr); gap:16px 20px; }
+.tela-usuarios .us-campo{ display:flex; flex-direction:column; gap:6px; min-width:0; }
+.tela-usuarios .us-formulario-acao .us-campo{ max-width:360px; }
+.tela-usuarios .us-campo label{ font-size:14px; font-weight:600; color:var(--us-texto); }
+.tela-usuarios .us-campo input,
+.tela-usuarios .us-campo select{
+  font:inherit; font-size:14px; color:var(--us-texto); box-sizing:border-box; width:100%;
+  padding:9px 12px; border:1px solid var(--us-borda); border-radius:8px; background:#ffffff;
+  transition:border-color .15s ease;
+}
+.tela-usuarios .us-campo input:hover,
+.tela-usuarios .us-campo select:hover{ border-color:#cbd5e1; }
+.tela-usuarios .us-campo input:focus,
+.tela-usuarios .us-campo select:focus{ outline:2px solid var(--us-azul); outline-offset:1px; border-color:var(--us-azul); }
+.tela-usuarios .us-ajuda{ font-size:12px; line-height:1.45; color:var(--us-discreto); margin:-2px 0 0; }
+.tela-usuarios .us-acoes{
+  display:flex; justify-content:flex-end; gap:8px;
+  margin-top:20px; padding-top:16px; border-top:1px solid var(--us-borda);
+}
+
+@media (max-width:640px){
+  .tela-usuarios .us-grade{ grid-template-columns:1fr; }
+}

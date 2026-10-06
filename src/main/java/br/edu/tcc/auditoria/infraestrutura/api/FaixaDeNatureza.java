@@ -15,7 +15,10 @@ public record FaixaDeNatureza(
         boolean exigeAviso,
         String versaoDoCatalogo,
         List<TabelaExposta> porTabela,
-        List<String> tabelasFicticias) {
+        List<String> tabelasFicticias,
+        List<String> tabelasSemNaturezaDeclarada) {
+
+    // Emenda de 04/10/2026 (D021): a cobertura entrou em porTabela, e tabelasSemNaturezaDeclarada lista a tabela com conteúdo que não declarou natureza — a cobertura das cargas anteriores a esta data. É ela que impede essas cargas de saírem "normativas".
 
     // Valida que a faixa tenha código, rótulo, explicação e versão do catálogo, e que as listas não venham nulas.
     public FaixaDeNatureza {
@@ -29,12 +32,13 @@ public record FaixaDeNatureza(
         if (versaoDoCatalogo == null || versaoDoCatalogo.isBlank()) {
             throw new RespostaInvalida("A faixa precisa dizer de qual carga ela fala.");
         }
-        if (porTabela == null || tabelasFicticias == null) {
+        if (porTabela == null || tabelasFicticias == null || tabelasSemNaturezaDeclarada == null) {
             throw new RespostaInvalida(
                     "As listas devem ser vazias quando não há nada a listar, nunca nulas.");
         }
         porTabela = List.copyOf(porTabela);
         tabelasFicticias = List.copyOf(tabelasFicticias);
+        tabelasSemNaturezaDeclarada = List.copyOf(tabelasSemNaturezaDeclarada);
     }
 
     // Método estático que monta a faixa a partir da procedência da carga.
@@ -52,7 +56,8 @@ public record FaixaDeNatureza(
                 situacao.exigeAviso(),
                 versaoDoCatalogo,
                 porTabela,
-                natureza.tabelasFicticias());
+                natureza.tabelasFicticias(),
+                natureza.tabelasSemNaturezaDeclarada());
     }
 
     // Representa uma tabela da carga e a procedência que ela declarou.

@@ -1,14 +1,3 @@
-/* ---------------------------------------------------------------------------
-   Fundacao visual: tokens, tipografia, e os estados de ausencia.
-
-   A paleta e a mesma de visualizacao/resultados.html, de proposito: as figuras
-   do TCC e a tela precisam usar a mesma cor para o mesmo estado, ou quem le o
-   trabalho tem de reaprender o codigo de cor a cada pagina.
-
-   Cor NUNCA e a unica codificacao. Todo estado tem rotulo escrito, e os
-   graficos tem hachura alem da cor. Ver componentes.css.
-   --------------------------------------------------------------------------- */
-
 :root{
   color-scheme: light;
 
@@ -22,7 +11,6 @@
   --eixo:#c3c2b7;
   --borda:rgba(11,11,11,.10);
 
-  /* Os tres desfechos. Nunca reutilizar estas tres para outra coisa. */
   --achado:#d03b3b;
   --achado-fraco:#fbeded;
   --naoavaliado:#eda100;
@@ -57,7 +45,6 @@ a{color:#1c5fb0}
 .nota{color:var(--tinta3);font-size:12.5px;margin:8px 0 0;max-width:88ch}
 .mono{font-family:var(--mono)}
 
-/* --- topo ---------------------------------------------------------------- */
 .topo{background:var(--superficie);border-bottom:1px solid var(--borda)}
 .topo-conteudo{
   max-width:1180px;margin:0 auto;padding:14px 24px 0;
@@ -83,19 +70,11 @@ a{color:#1c5fb0}
 .rodape{border-top:1px solid var(--borda);background:var(--superficie)}
 .rodape p{max-width:1180px;margin:0 auto;padding:16px 24px;font-size:12.5px;color:var(--tinta3)}
 
-/* --- ausencia é escrita, nunca deixada em branco -------------------------- */
-/*
-   Estas duas classes sao a regra de apresentacao numero 1 traduzida em CSS.
-   .ausente marca um valor que NAO existe e diz por que; .indefinida marca
-   metrica sem denominador. Nenhuma das duas se parece com zero: sao italicas,
-   em cinza, e sempre acompanhadas de texto.
-*/
 .ausente{font-style:italic;color:var(--tinta3)}
 .indefinida{font-style:italic;color:var(--tinta3);font-family:var(--mono);font-size:13px}
 
 .carregando{color:var(--tinta3);font-style:italic}
 
-/* --- avisos -------------------------------------------------------------- */
 .aviso{
   border-left:3px solid var(--naoavaliado);background:var(--naoavaliado-fraco);
   padding:11px 15px;margin:14px 0;font-size:13.5px;color:var(--tinta2);

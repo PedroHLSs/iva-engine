@@ -1,10 +1,3 @@
-/* ---------------------------------------------------------------------------
-   As notas e os itens que compoem um grupo.
-
-   E o caminho de volta ao concreto: do erro de parametrizacao para as notas em
-   que ele aparece, e de la para o detalhe de cada produto.
-   --------------------------------------------------------------------------- */
-
 import { el, trocar } from '../../dom.js';
 import { data, documentoCurto, inteiro } from '../../formato.js';
 import * as api from '../api.js';

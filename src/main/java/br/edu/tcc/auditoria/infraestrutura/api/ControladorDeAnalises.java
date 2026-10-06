@@ -5,12 +5,15 @@ import br.edu.tcc.auditoria.aplicacao.conferencia.ChaveDoGrupo;
 import br.edu.tcc.auditoria.aplicacao.conferencia.EstadoDeConferencia;
 import br.edu.tcc.auditoria.aplicacao.conferencia.OrdemDosGrupos;
 import br.edu.tcc.auditoria.aplicacao.analise.ServicoDeAnalise;
+import br.edu.tcc.auditoria.aplicacao.historico.ServicoDoHistorico;
+import br.edu.tcc.auditoria.infraestrutura.seguranca.UsuarioAutenticado;
 import br.edu.tcc.auditoria.infraestrutura.upload.AreaDaAnalise;
 import br.edu.tcc.auditoria.infraestrutura.upload.LimitesDeUpload;
 import br.edu.tcc.auditoria.infraestrutura.upload.PacoteRecusado;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,7 +27,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.util.UUID;
 
-// Controlador de /api/analises, a única porta de escrita da API: recebe um .xml ou um .zip, roda a análise e devolve o resultado. Importar catálogo e tratar achado continuam fora, o servidor só escuta em 127.0.0.1, e o arquivo recebido passa pelo GuardaDePacote antes de ser lido.
+// Emenda da Etapa 13: o envio passou a gravar quem executou. Controlador de /api/analises, a única porta de escrita da API: recebe um .xml ou um .zip, roda a análise e devolve o resultado. Importar catálogo e tratar achado continuam fora, o servidor só escuta em 127.0.0.1, e o arquivo recebido passa pelo GuardaDePacote antes de ser lido. Emenda da Etapa 12: deixou de ser a única porta de escrita, e importar catálogo e tratar achado entraram na API, com login e perfil conferidos no servidor; o bind em 127.0.0.1 e o GuardaDePacote continuam.
 @RestController
 @RequestMapping("/api/analises")
 class ControladorDeAnalises {
@@ -36,23 +39,27 @@ class ControladorDeAnalises {
     private final MontadorDeRecibo recibos;
     private final MontadorDaConferenciaExposta conferencias;
     private final LimitesDeUpload limites;
+    private final ServicoDoHistorico historico;
 
-    // Construtor que recebe o serviço de análise, os dois montadores de resposta e os limites de envio.
+    // Construtor que recebe o serviço de análise, os dois montadores de resposta, os limites de envio e, desde a Etapa 13, o histórico, onde fica quem executou.
     ControladorDeAnalises(
             ServicoDeAnalise analises,
             MontadorDeRecibo recibos,
             MontadorDaConferenciaExposta conferencias,
-            LimitesDeUpload limites) {
+            LimitesDeUpload limites,
+            ServicoDoHistorico historico) {
         this.analises = analises;
         this.recibos = recibos;
         this.conferencias = conferencias;
         this.limites = limites;
+        this.historico = historico;
     }
 
     // Recebe o arquivo, roda a análise e devolve o resultado com o endereço dela. A área temporária é apagada no fim, mesmo se a análise falhar.
     @PostMapping
     ResponseEntity<RespostaDaConferencia> analisar(
-            @RequestParam(CAMPO_DO_ARQUIVO) MultipartFile arquivo) {
+            @RequestParam(CAMPO_DO_ARQUIVO) MultipartFile arquivo,
+            @AuthenticationPrincipal UsuarioAutenticado quem) {
 
         if (arquivo == null || arquivo.isEmpty()) {
             throw new PedidoInvalido(
@@ -65,6 +72,8 @@ class ControladorDeAnalises {
                      arquivo.getOriginalFilename(), conteudo, limites)) {
 
             ResultadoDaAnalise resultado = analises.analisar(area.origem());
+            // Etapa 13: grava quem disparou a análise, para o histórico filtrar por executor.
+            historico.registrarExecutor(resultado.id(), quem.id());
             ReciboDaAnalise recibo = recibos.de(resultado);
             return ResponseEntity.created(URI.create(recibo.recurso()))
                     .body(conferencias.resultado(resultado.id()));

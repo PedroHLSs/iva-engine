@@ -6,13 +6,15 @@ import br.edu.tcc.auditoria.dominio.execucao.ExecucaoAuditoria;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 // Representa uma análise inteira no vocabulário de quem confere, com a execução, o resumo, os produtos e os arquivos ilegíveis.
+// Emenda de 04/10/2026 (D018): os ilegíveis vêm vazios quando a leitura da execução não foi registrada. Lista vazia passou a querer dizer só "nenhum falhou".
 public record ConferenciaDaAnalise(
         ExecucaoAuditoria execucao,
         ResumoDaConferencia resumo,
         List<ProdutoConferido> produtos,
-        List<ArquivoIlegivel> arquivosIlegiveis) {
+        Optional<List<ArquivoIlegivel>> arquivosIlegiveis) {
 
     // Valida a conferência e confere que o resumo conta o mesmo número de produtos da lista.
     public ConferenciaDaAnalise {
@@ -30,7 +32,7 @@ public record ConferenciaDaAnalise(
                             + "nenhum, nunca nulas.");
         }
         if (produtos.stream().anyMatch(Objects::isNull)
-                || arquivosIlegiveis.stream().anyMatch(Objects::isNull)) {
+                || arquivosIlegiveis.orElse(List.of()).stream().anyMatch(Objects::isNull)) {
             throw new ConferenciaInvalida("Nenhuma das duas listas pode conter elemento nulo.");
         }
         if (resumo.quantidadeDeProdutos() != produtos.size()) {
@@ -40,11 +42,12 @@ public record ConferenciaDaAnalise(
                             .formatted(resumo.quantidadeDeProdutos(), produtos.size()));
         }
         produtos = List.copyOf(produtos);
-        arquivosIlegiveis = List.copyOf(arquivosIlegiveis);
+        arquivosIlegiveis = arquivosIlegiveis.map(List::copyOf);
     }
 
-    public int quantidadeDeArquivosIlegiveis() {
-        return arquivosIlegiveis.size();
+    // Retorna quantos arquivos não foram lidos; vazio quando a leitura não foi registrada.
+    public OptionalInt quantidadeDeArquivosIlegiveis() {
+        return arquivosIlegiveis.map(lista -> OptionalInt.of(lista.size())).orElse(OptionalInt.empty());
     }
 
     // Retorna quantas notas a análise leu, o que decide se abre a tela da nota ou a do lote.

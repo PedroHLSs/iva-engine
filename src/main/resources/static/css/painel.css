@@ -1,0 +1,283 @@
+body.visual-painel{
+  --pn-fundo:#f4f7f9;
+  --pn-cartao:#ffffff;
+  --pn-destaque:#1a365d;
+  --pn-texto:#0f1f33;
+  --pn-texto2:#475569;
+  --pn-discreto:#5b6778;
+  --pn-borda:#e3e8ee;
+  --pn-borda-campo:#cbd5e1;
+
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background:var(--pn-fundo);
+  color:var(--pn-texto);
+}
+
+.visual-painel .cabecalho-da-pagina{
+  display:flex; justify-content:space-between; align-items:flex-end; gap:16px 28px;
+  flex-wrap:wrap; margin:0 0 22px;
+}
+.visual-painel .cabecalho-da-pagina h1{ font-size:26px; font-weight:680; margin:0 0 4px; }
+.visual-painel .cabecalho-da-pagina .sub{ font-size:13.5px; color:var(--pn-texto2); margin:0; max-width:62ch; }
+
+.visual-painel .barra-de-ferramentas{
+  background:var(--pn-cartao); border:1px solid var(--pn-borda); border-radius:10px;
+  box-shadow:0 1px 2px rgba(15,31,51,.05);
+  padding:12px 16px; margin:0; gap:14px; align-items:center; max-width:460px;
+}
+.visual-painel .barra-de-ferramentas .filtro label{
+  font-size:11px; letter-spacing:.08em; color:var(--pn-discreto); font-weight:650;
+}
+.visual-painel .barra-de-ferramentas select{
+  -webkit-appearance:none; appearance:none;
+  font-family:inherit; font-size:14px; color:var(--pn-texto);
+  padding:8px 34px 8px 12px; min-width:92px;
+  border:1px solid var(--pn-borda-campo); border-radius:8px; background-color:#ffffff;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5l5 5 5-5' fill='none' stroke='%231a365d' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center;
+  cursor:pointer; transition:border-color .15s ease, box-shadow .15s ease;
+}
+.visual-painel .barra-de-ferramentas select:hover{ border-color:#94a3b8; }
+.visual-painel .barra-de-ferramentas select:focus-visible{
+  outline:none; border-color:var(--pn-destaque);
+  box-shadow:0 0 0 1px var(--pn-destaque), 0 0 0 4px rgba(26,54,93,.18);
+}
+.visual-painel .contagem-do-recorte{ font-size:12px; color:var(--pn-discreto); margin:0; flex:1; min-width:180px; }
+
+.visual-painel .cartao-execucao{
+  background:var(--pn-cartao); border:1px solid var(--pn-borda); border-radius:12px;
+  box-shadow:0 1px 2px rgba(15,31,51,.05), 0 6px 18px rgba(15,31,51,.06);
+  padding:22px 24px 20px; margin:0 0 20px;
+}
+.visual-painel .cartao-execucao .cartao-titulo{ align-items:center; margin:0 0 16px; }
+.visual-painel .cartao-execucao .cartao-titulo h2{
+  font-size:18px; font-weight:680; letter-spacing:-.01em; font-variant-numeric:tabular-nums;
+}
+
+.visual-painel .cartao-execucao .cartao-titulo .botao,
+.visual-painel .cabecalho-do-panorama .botao{
+  font-family:inherit; font-size:13px; font-weight:600;
+  padding:7px 14px; border-radius:8px;
+  border:1px solid #b8c4d4; background:transparent; color:var(--pn-destaque);
+  transition:background-color .15s ease, border-color .15s ease;
+}
+.visual-painel .cartao-execucao .cartao-titulo .botao:hover,
+.visual-painel .cabecalho-do-panorama .botao:hover{
+  background:rgba(26,54,93,.07); border-color:var(--pn-destaque);
+}
+
+.visual-painel .metadados{
+  display:grid; grid-template-columns:repeat(3, minmax(0, 1fr)); gap:14px 24px;
+  margin:0 0 20px; padding:14px 16px; background:#f8fafc; border-radius:9px;
+}
+.visual-painel .meta-par{ min-width:0; }
+.visual-painel .metadados dt{
+  font-size:11px; text-transform:uppercase; letter-spacing:.08em; font-weight:650;
+  color:var(--pn-discreto); margin:0 0 3px;
+}
+.visual-painel .metadados dd{ margin:0; font-size:14px; color:var(--pn-texto); overflow-wrap:anywhere; }
+.visual-painel .metadados dd.hash{
+  font-family:ui-monospace, "Cascadia Mono", Consolas, monospace; font-size:12px;
+  color:var(--pn-discreto);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;
+  overflow-wrap:normal; cursor:text; border-radius:3px;
+}
+.visual-painel .metadados dd.hash:focus{ white-space:normal; word-break:break-all; }
+
+.visual-painel .desfechos{ gap:14px; margin:0 0 18px; }
+.visual-painel .desfecho{
+  border:0; border-radius:10px; padding:14px 16px 16px;
+}
+.visual-painel .desfecho.d-achado{ background:var(--achado-fraco); }
+.visual-painel .desfecho.d-naoavaliado{ background:var(--naoavaliado-fraco); }
+.visual-painel .desfecho.d-conforme{ background:var(--conforme-fraco); }
+
+.visual-painel .desfecho .rotulo{
+  display:flex; align-items:center; gap:7px;
+  font-size:11px; letter-spacing:.08em; color:var(--pn-texto2); font-weight:650;
+}
+.visual-painel .desfecho .rotulo::before{ font-size:11px; letter-spacing:0; }
+.visual-painel .desfecho.d-achado .rotulo::before{ content:"\25CF"; color:var(--texto-divergencia); }
+.visual-painel .desfecho.d-naoavaliado .rotulo::before{ content:"\25B2"; color:var(--texto-inconcluso); }
+.visual-painel .desfecho.d-conforme .rotulo::before{ content:"\25A0"; color:var(--texto-semdivergencia); }
+
+.visual-painel .desfecho .numero{ font-size:34px; font-weight:700; color:var(--pn-texto); margin:8px 0 0; }
+.visual-painel .desfecho .numero.ausente{ font-size:18px; font-weight:500; color:var(--pn-discreto); }
+.visual-painel .desfecho .explicacao{ font-size:11.5px; color:var(--pn-discreto); margin:6px 0 0; }
+
+.visual-painel .botao-info{
+  margin-left:auto; width:20px; height:20px; padding:0; border-radius:50%;
+  border:1px solid rgba(15,31,51,.28); background:rgba(255,255,255,.7);
+  font:italic 700 11.5px/1 Georgia, "Times New Roman", serif; color:var(--pn-texto2);
+  cursor:pointer; transition:background-color .15s ease, border-color .15s ease;
+}
+.visual-painel .botao-info:hover,
+.visual-painel .botao-info[aria-expanded="true"]{ background:#ffffff; border-color:var(--pn-destaque); color:var(--pn-destaque); }
+.visual-painel .balao-info{
+  margin:10px 0 0; padding:8px 10px; border-radius:7px;
+  background:#ffffff; border:1px solid var(--pn-borda);
+  box-shadow:0 4px 12px rgba(15,31,51,.08);
+  font:11.5px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace; color:var(--pn-discreto);
+  overflow-wrap:anywhere;
+}
+.visual-painel .balao-info[hidden]{ display:none; }
+.visual-painel .balao-info p{ margin:0; }
+.visual-painel .balao-info p + p{ margin-top:6px; }
+
+.visual-painel .barra-dos-desfechos{ margin:0 0 6px; }
+.visual-painel .barra-plana{
+  display:flex; gap:2px; height:14px; border-radius:7px; overflow:hidden;
+  background:#e8edf2;
+}
+.visual-painel .fatia{
+  flex-basis:0; min-width:6px;
+  display:flex; align-items:center; justify-content:center; overflow:hidden;
+}
+.visual-painel .fatia.f-achado{ background:var(--achado); }
+.visual-painel .fatia.f-naoavaliado{ background:var(--naoavaliado); }
+.visual-painel .fatia.f-conforme{ background:var(--conforme); }
+.visual-painel .fatia-marca{ font-size:8px; line-height:1; color:rgba(15,31,51,.55); white-space:nowrap; }
+
+.visual-painel .legenda-plana{
+  list-style:none; display:flex; flex-wrap:wrap; gap:6px 20px;
+  margin:10px 0 0; padding:0; font-size:12px; color:var(--pn-discreto);
+}
+.visual-painel .legenda-plana li{ display:inline-flex; align-items:center; gap:6px; }
+.visual-painel .legenda-marca{ font-size:11px; }
+.visual-painel .legenda-marca.f-achado{ color:var(--texto-divergencia); }
+.visual-painel .legenda-marca.f-naoavaliado{ color:var(--texto-inconcluso); }
+.visual-painel .legenda-marca.f-conforme{ color:var(--texto-semdivergencia); }
+.visual-painel .legenda-marca.sem-valor{ opacity:.45; }
+.visual-painel .nota-da-barra{ font-size:11.5px; color:var(--pn-discreto); margin:8px 0 0; }
+
+.visual-painel .cartao-execucao h3{
+  font-size:11px; letter-spacing:.08em; color:var(--pn-discreto); margin:20px 0 10px;
+}
+.visual-painel .pilulas{ list-style:none; display:flex; flex-wrap:wrap; gap:8px; margin:0; padding:0; }
+.visual-painel .pilula{
+  display:inline-flex; align-items:center; gap:8px;
+  padding:5px 12px; border-radius:50px;
+  background:rgba(100,116,139,.12); color:#334155;
+  font-size:12px; font-weight:600;
+}
+.visual-painel .pilula-nome{ letter-spacing:.04em; }
+.visual-painel .pilula-numero{ font-variant-numeric:tabular-nums; font-weight:700; }
+.visual-painel .pilula-CRITICA{ background:rgba(185,28,28,.11); color:#991b1b; }
+.visual-painel .pilula-GRAVE{ background:rgba(234,88,12,.12); color:#9a3412; }
+.visual-painel .pilula-MODERADA{ background:rgba(202,138,4,.15); color:#7a4a00; }
+.visual-painel .pilula-INFORMATIVA{ background:rgba(100,116,139,.12); color:#334155; }
+
+.abas-da-execucao{
+  display:flex; gap:28px; border-bottom:1px solid #e2e8f0; margin:0 0 20px;
+  overflow-x:auto;
+}
+.aba-da-execucao{
+  display:inline-block; padding:10px 2px; margin-bottom:-1px;
+  font-size:14px; font-weight:500; color:#64748b; text-decoration:none; white-space:nowrap;
+  background:transparent; border:0; border-bottom:2px solid transparent;
+  transition:color .15s ease, border-color .15s ease;
+}
+.aba-da-execucao:hover{ color:#1e293b; }
+.aba-da-execucao[aria-current="page"]{ color:#1a365d; font-weight:650; border-bottom-color:#1a365d; }
+
+.visual-painel .cabecalho-do-panorama{ align-items:center; margin:0 0 14px; }
+.visual-painel .cabecalho-do-panorama h1{ font-size:24px; font-weight:680; margin:0; }
+.visual-painel .cartao-painel{
+  background:var(--pn-cartao); border:1px solid var(--pn-borda); border-radius:12px;
+  box-shadow:0 1px 2px rgba(15,31,51,.05), 0 6px 18px rgba(15,31,51,.06);
+  padding:22px 24px; margin:0 0 20px;
+}
+.visual-painel .cartao-painel .metadados{ margin:0; }
+.visual-painel .titulo-de-secao{ margin:0 0 16px; }
+.visual-painel .titulo-de-secao-linha{ display:flex; align-items:center; gap:10px; }
+.visual-painel .titulo-de-secao h2{ font-size:16px; font-weight:680; margin:0; color:var(--pn-texto); }
+.visual-painel .titulo-de-secao-linha .botao-info{ margin-left:0; }
+
+.visual-painel .desfecho{ display:flex; flex-direction:column; }
+.visual-painel .ver-linhas{
+  margin-top:auto; padding-top:12px; align-self:flex-start;
+  font-size:12.5px; font-weight:600; color:var(--pn-destaque); text-decoration:none;
+}
+.visual-painel .ver-linhas:hover{ text-decoration:underline; }
+
+.visual-painel .tabela-limpa{ border-collapse:collapse; width:100%; font-size:14px; }
+.visual-painel .tabela-limpa caption{
+  text-align:left; font-size:12px; color:var(--pn-discreto); padding:0 0 10px;
+}
+.visual-painel .tabela-limpa th,
+.visual-painel .tabela-limpa td{
+  padding:12px 16px; border:0; border-bottom:1px solid #e2e8f0; vertical-align:middle;
+}
+.visual-painel .tabela-limpa thead th{
+  font-size:11px; font-weight:650; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--pn-discreto); border-bottom:1px solid #cbd5e1;
+}
+.visual-painel .tabela-limpa tbody tr{ transition:background-color .12s ease; }
+.visual-painel .tabela-limpa tbody tr:hover{ background:#f8fafc; }
+.visual-painel .tabela-limpa tbody tr:last-child td{ border-bottom:0; }
+.visual-painel .tabela-limpa .num{
+  text-align:right; font-family:inherit; font-size:14px; font-variant-numeric:tabular-nums;
+}
+.visual-painel .tabela-limpa .num a{ color:var(--pn-destaque); font-weight:600; text-decoration:none; }
+.visual-painel .tabela-limpa .num a:hover{ text-decoration:underline; }
+.visual-painel .tabela-limpa .regra-nome{ font-weight:560; color:var(--pn-texto); }
+.visual-painel .tabela-limpa .regra-codigo{
+  display:inline-block; margin-left:8px; padding:1px 7px; border-radius:5px;
+  background:#f1f5f9; color:#334155; font:600 11px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+.visual-painel .tabela-limpa a .regra-codigo{ text-decoration:none; }
+
+.visual-painel .situacao{ display:inline-flex; align-items:center; gap:7px; font-size:13px; white-space:nowrap; }
+.visual-painel .situacao-marca{ font-size:10px; line-height:1; }
+.visual-painel .situacao-completa{ color:#15803d; }
+.visual-painel .situacao-incompleta{ color:var(--texto-inconcluso); font-weight:600; }
+
+.visual-painel .cabecalho-da-acuracia{ max-width:600px; margin:8px auto 22px; text-align:center; }
+.visual-painel .cabecalho-da-acuracia .titulo-de-secao-linha{ justify-content:center; }
+.visual-painel .cabecalho-da-acuracia h1{ font-size:26px; font-weight:680; color:var(--pn-texto); margin:0; }
+.visual-painel .cabecalho-da-acuracia .balao-info{ max-width:600px; text-align:left; }
+.visual-painel .cabecalho-da-acuracia .sub{ font-size:14px; color:var(--pn-texto2); margin:6px auto 0; max-width:62ch; }
+
+.campo-arquivo-oculto{
+  position:absolute; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0;
+}
+.visual-painel .zona-de-arquivo{
+  position:relative; display:flex; flex-direction:column; align-items:center; gap:14px;
+  max-width:600px; padding:40px; margin:0 auto 24px;
+  background:var(--pn-cartao); border:2px dashed #cbd5e1; border-radius:8px;
+  text-align:center; cursor:pointer;
+  transition:background-color .15s ease, border-color .15s ease;
+}
+.visual-painel .zona-de-arquivo:hover{ background:#f1f6fc; border-color:#94a3b8; }
+.visual-painel .zona-de-arquivo:focus-within{
+  border-color:var(--pn-destaque); background:#f1f6fc;
+  outline:3px solid var(--foco); outline-offset:2px;
+}
+.visual-painel .zona-de-arquivo-titulo{ font-size:15px; font-weight:600; color:var(--pn-texto); }
+.visual-painel .zona-de-arquivo-botao{
+  display:inline-block; padding:9px 20px; border-radius:8px;
+  background:var(--pn-destaque); color:#ffffff; font-size:14px; font-weight:600;
+  transition:background-color .15s ease;
+}
+.visual-painel .zona-de-arquivo:hover .zona-de-arquivo-botao{ background:#122a4a; }
+.visual-painel .zona-de-arquivo-estado{ font-size:12.5px; color:var(--pn-discreto); margin:0; }
+
+@media (max-width:760px){
+  .visual-painel .metadados{ grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width:480px){
+  .visual-painel .metadados{ grid-template-columns:minmax(0, 1fr); }
+  .visual-painel .cartao-execucao,
+  .visual-painel .cartao-painel{ padding:18px 16px; }
+  .visual-painel .zona-de-arquivo{ padding:28px 16px; }
+  .visual-painel .tabela-limpa th,
+  .visual-painel .tabela-limpa td{ padding:10px 10px; }
+}
+@media (prefers-reduced-motion:reduce){
+  .visual-painel *,
+  .aba-da-execucao{ transition:none !important; }
+}
+@media print{
+  .abas-da-execucao{ display:none; }
+}

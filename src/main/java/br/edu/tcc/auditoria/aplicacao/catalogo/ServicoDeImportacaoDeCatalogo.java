@@ -26,19 +26,22 @@ public final class ServicoDeImportacaoDeCatalogo {
                 carga.classificacoesTributarias().size(),
                 carga.registrosDeNcm().size(),
                 carga.itensDeAnexo().size(),
-                carga.aliquotas().size());
+                carga.aliquotas().size(),
+                carga.cobertura().anexosDeclarados().size());
     }
 
     // Representa o resumo da importação, com a versão e a quantidade de registros gravados por tabela.
+    // Emenda de 04/10/2026 (D025): conta também os anexos declarados, a quinta tabela da carga desde a revisão de 30/09 a 02/10/2026, e os soma no total. Até essa data o resumo listava quatro tabelas.
     public record ResumoDaImportacao(
             String versao,
             int classificacoesTributarias,
             int registrosDeNcm,
             int itensDeAnexo,
-            int aliquotas) {
+            int aliquotas,
+            int anexosDeclarados) {
 
         public int total() {
-            return classificacoesTributarias + registrosDeNcm + itensDeAnexo + aliquotas;
+            return classificacoesTributarias + registrosDeNcm + itensDeAnexo + aliquotas + anexosDeclarados;
         }
     }
 }

@@ -28,6 +28,7 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
     private final RegistroNcmJpa ncms;
     private final ItemAnexoJpa itensDeAnexo;
     private final AliquotaVigenteJpa aliquotas;
+    private final AnexoDeclaradoJpa anexosDeclarados;
     private final Clock relogio;
 
     // Construtor que recebe os repositórios de cada tabela do catálogo e o relógio.
@@ -39,6 +40,7 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
             RegistroNcmJpa ncms,
             ItemAnexoJpa itensDeAnexo,
             AliquotaVigenteJpa aliquotas,
+            AnexoDeclaradoJpa anexosDeclarados,
             Clock relogio) {
         this.cargas = cargas;
         this.coberturas = coberturas;
@@ -47,6 +49,7 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
         this.ncms = ncms;
         this.itensDeAnexo = itensDeAnexo;
         this.aliquotas = aliquotas;
+        this.anexosDeclarados = anexosDeclarados;
         this.relogio = relogio;
     }
 
@@ -77,6 +80,10 @@ class RepositorioDeCargaDeCatalogoNoBanco implements RepositorioDeCargaDeCatalog
                 .toList());
         aliquotas.saveAll(carga.aliquotas().stream()
                 .map(registro -> MapeadorDeCatalogo.paraEntidade(registro, cargaId))
+                .toList());
+        // 01/10/2026: a lista de anexos declarados, que a R03 usa como cobertura por anexo.
+        anexosDeclarados.saveAll(carga.cobertura().anexosDeclarados().stream()
+                .map(anexo -> AnexoDeclaradoEntidade.de(anexo, cargaId))
                 .toList());
     }
 

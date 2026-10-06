@@ -1,12 +1,3 @@
-/* ---------------------------------------------------------------------------
-   Tela inicial: uma acao, e so uma.
-
-   Ela NAO abre com uma lista de analises anteriores. Quem chega aqui quer
-   conferir uma nota, e uma lista de execucoes no lugar do campo de envio
-   obriga a pessoa a procurar o botao antes de fazer a unica coisa que veio
-   fazer. O historico existe, e esta a um clique — abaixo, discreto.
-   --------------------------------------------------------------------------- */
-
 import { el, trocar } from '../../dom.js';
 import * as api from '../api.js';
 import { falha } from '../pecas.js';
@@ -14,11 +5,10 @@ import { enderecoDaBase, enderecoDoHistorico, enderecoDoResultado, irPara } from
 
 const EXTENSOES_ACEITAS = '.xml,.zip';
 
-/** O que a tela diz enquanto o arquivo sobe e o motor roda. */
 const ENVIANDO = 'Lendo o arquivo e aplicando as regras cadastradas...';
 
 export async function desenhar(raiz) {
-  const situacao = el('p', { classe: 'estado-do-envio', role: 'status' });
+  const situacao = el('p', { classe: 'estado-do-envio', role: 'status', 'aria-live': 'polite' });
   const erro = el('div', {});
 
   const campo = el('input', {
@@ -37,6 +27,10 @@ export async function desenhar(raiz) {
     ocupado = true;
     trocar(erro, []);
     situacao.textContent = ENVIANDO;
+    const inicio = Date.now();
+    const relogio = setInterval(() => {
+      situacao.textContent = ENVIANDO + ' ' + Math.round((Date.now() - inicio) / 1000) + ' s';
+    }, 1000);
 
     try {
       const resultado = await api.analisar(arquivo);
@@ -45,6 +39,7 @@ export async function desenhar(raiz) {
       situacao.textContent = '';
       trocar(erro, [falha(naoDeuCerto)]);
     } finally {
+      clearInterval(relogio);
       ocupado = false;
       campo.value = '';
     }
@@ -55,19 +50,15 @@ export async function desenhar(raiz) {
   const area = el('div', { classe: 'area-de-envio' }, [
     el('p', { classe: 'area-titulo', texto: 'Arraste a nota aqui' }),
     el('p', { classe: 'area-ou', texto: 'ou' }),
-    el('label', { classe: 'botao principal', for: 'arquivo', texto: 'Escolher arquivo' }),
     campo,
+    el('label', { classe: 'botao-enviar', for: 'arquivo', texto: 'Escolher arquivo' }),
     el('p', {
-      classe: 'nota',
-      texto: 'Um .xml de NF-e ou NFC-e, ou um .zip com varios. Arquivo do pacote que nao puder '
-        + 'ser lido nao interrompe os outros: ele e contado a parte, com o motivo.',
+      classe: 'formatos-aceitos',
+      texto: 'Formatos aceitos: .xml (NF-e/NFC-e) ou arquivos compactados em .zip. '
+        + '(Atencao: formato .rar nao suportado.)',
     }),
   ]);
 
-  /*
-   * Arrastar exige cancelar dragover: sem isso o navegador abre o arquivo numa
-   * aba e a pagina some junto com o que a pessoa estava fazendo.
-   */
   area.addEventListener('dragover', (evento) => {
     evento.preventDefault();
     area.classList.add('recebendo');
@@ -80,24 +71,25 @@ export async function desenhar(raiz) {
     enviar(arquivos && arquivos[0]);
   });
 
+  const atalho = (href, icone, texto) => el('a', { classe: 'atalho-fantasma', href }, [
+    el('span', { classe: 'atalho-icone', 'aria-hidden': 'true', texto: icone }),
+    texto,
+  ]);
+
   trocar(raiz, [
-    el('h1', { texto: 'Conferir enquadramento de IBS e CBS' }),
-    el('p', {
-      classe: 'sub',
-      texto: 'Envie a nota e o sistema mostra, produto a produto, que tratamento a base normativa '
-        + 'cadastrada indica e se o que o documento declara corresponde a ele.',
-    }),
-    area,
-    situacao,
-    erro,
-    el('div', { classe: 'atalhos-discretos' }, [
-      el('a', { href: enderecoDoHistorico(), texto: 'Analises anteriores' }),
-      el('a', { href: enderecoDaBase(), texto: 'Base tributaria carregada' }),
+    el('div', { classe: 'tela-de-envio' }, [
+      el('h1', { texto: 'Conferir enquadramento de IBS e CBS' }),
+      el('p', {
+        classe: 'sub',
+        texto: 'Faca o upload do XML ou ZIP para conferir o enquadramento tributario produto a produto.',
+      }),
+      area,
+      situacao,
+      erro,
+      el('nav', { classe: 'atalhos-do-envio', 'aria-label': 'Outras telas' }, [
+        atalho(enderecoDoHistorico(), '\u{1F552}', 'Analises anteriores'),
+        atalho(enderecoDaBase(), '\u{1F5C4}\u{FE0F}', 'Base tributaria carregada'),
+      ]),
     ]),
-    el('p', {
-      classe: 'nota',
-      texto: 'Formato .rar nao e aceito: nao ha biblioteca Java confiavel para ele. Compacte em '
-        + '.zip.',
-    }),
   ]);
 }

@@ -12,6 +12,7 @@ import java.time.Instant;
 import java.util.Optional;
 
 // Classe que converte o documento e os itens entre o domínio e as linhas gravadas, escrita à mão para Optional vazio virar null, e nunca zero nem texto vazio, nos dois sentidos.
+// Emenda de 03/10/2026 (D015, V18): o item passou a levar os seis campos do grupo gRed, gravados e lidos como os outros — null é "não veio", nunca zero.
 final class MapeadorDeDocumento {
 
     // Construtor privado: ninguém cria objeto desta classe, só usa os métodos estáticos.
@@ -41,7 +42,13 @@ final class MapeadorDeDocumento {
                 Optional.ofNullable(entidade.aliquotaCbs()),
                 Optional.ofNullable(entidade.valorIbsUf()),
                 Optional.ofNullable(entidade.valorIbsMunicipal()),
-                Optional.ofNullable(entidade.valorCbs()));
+                Optional.ofNullable(entidade.valorCbs()),
+                Optional.ofNullable(entidade.reducaoAliquotaIbsUf()),
+                Optional.ofNullable(entidade.aliquotaEfetivaIbsUf()),
+                Optional.ofNullable(entidade.reducaoAliquotaIbsMunicipal()),
+                Optional.ofNullable(entidade.aliquotaEfetivaIbsMunicipal()),
+                Optional.ofNullable(entidade.reducaoAliquotaCbs()),
+                Optional.ofNullable(entidade.aliquotaEfetivaCbs()));
     }
 
     // Método auxiliar que converte o CST gravado, ou vazio quando a coluna é null.
@@ -83,7 +90,13 @@ final class MapeadorDeDocumento {
                 quantia(item.aliquotaCbs()),
                 quantia(item.valorIbsUf()),
                 quantia(item.valorIbsMunicipal()),
-                quantia(item.valorCbs()));
+                quantia(item.valorCbs()),
+                quantia(item.reducaoAliquotaIbsUf()),
+                quantia(item.aliquotaEfetivaIbsUf()),
+                quantia(item.reducaoAliquotaIbsMunicipal()),
+                quantia(item.aliquotaEfetivaIbsMunicipal()),
+                quantia(item.reducaoAliquotaCbs()),
+                quantia(item.aliquotaEfetivaCbs()));
     }
 
     // Método auxiliar que troca Optional vazio por null.
