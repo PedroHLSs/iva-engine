@@ -129,7 +129,7 @@ e consulta — conferidos no servidor; escuta só em `127.0.0.1`, porque não h�
 
 | Variável | Padrão | Para quê |
 |---|---|---|
-| `AUDITORIA_BANCO_URL` / `_USUARIO` / `_SENHA` | `jdbc:postgresql://localhost:5432/auditoria` / `auditoria` / `auditoria` | banco |
+| `AUDITORIA_BANCO_URL` / `_USUARIO` / `_SENHA` | `jdbc:postgresql://localhost:5432/auditoria` / `auditoria` / `-` | banco |
 | `AUDITORIA_PSEUDONIMIZACAO_SAL` | arquivo local, ou sorteado e gravado nele | sal da pseudonimização (32+ caracteres) |
 | `AUDITORIA_TOLERANCIA_DE_VALOR` | `0.01` (`auditoria.tolerancia-de-valor-padrao`) | diferença que a R05 não aponta |
 | `AUDITORIA_API_PORTA` / `AUDITORIA_SESSAO_DURACAO` | `8080` / `30m` | porta do servidor e duração da sessão |
